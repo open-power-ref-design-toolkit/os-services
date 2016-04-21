@@ -1,0 +1,41 @@
+---
+# Copyright 2016 IBM Corp.
+#
+# All Rights Reserved.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
+- name: Copy environment files to /etc
+  command: /bin/cp -a "{{ osa_git_path }}/etc/openstack_deploy" /etc/openstack_deploy
+  args:
+    creates: /etc/openstack_deploy
+  register: environment_copied
+
+- name: Backup sample user_secrets file
+  command: cp user_secrets.yml user_secrets.yml.orig
+  args:
+    chdir: /etc/openstack_deploy
+    creates: /etc/openstack_deploy/user_secrets.yml.orig
+  when: environment_copied.changed
+
+- name: Create default secrets
+  command: python pw-token-gen.py --file /etc/openstack_deploy/user_secrets.yml
+  args:
+    chdir: "{{ osa_git_path }}/scripts"
+  when: environment_copied.changed
+
+- name: Ensure kvm is always used
+  lineinfile:
+    dest: /etc/openstack_deploy/user_variables.yml
+    state: present
+    line: 'nova_virt_type: kvm'
