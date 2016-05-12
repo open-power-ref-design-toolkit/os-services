@@ -15,7 +15,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-openstack_ansible_version: 12.0.10
+openstack_ansible_version: 13.1.0
 osa_git_path: /opt/openstack-ansible
 
 deployer_packages_to_install:
