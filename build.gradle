@@ -1,0 +1,14 @@
+task build (type : Exec) {
+     print 'Building Ceph'
+     //TODO: Project team need to implement build task
+     //executable = "Command_Or_Script_To_Run"; args = ["Arguments_To_Command_Or_Script"]
+    standardOutput = new ByteArrayOutputStream()
+    ext.output = {
+       return standardOutput.toString()
+    }
+}
+task do_all{
+  build.execute();
+}
+
+
