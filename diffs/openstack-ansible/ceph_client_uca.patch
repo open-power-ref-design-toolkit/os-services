@@ -1,55 +1,6 @@
-From 45d5ee522db6cba2aaccecd8b157e867740e0d81 Mon Sep 17 00:00:00 2001
-From: Samuel Matzek <smatzek@us.ibm.com>
-Date: Wed, 04 May 2016 11:22:13 -0500
-Subject: [PATCH] Refactor ceph_client for multi-OS and ceph
-
-This patch refactors the ceph_client role to add support for multiple
-operating system distros and multiple sources for Ceph packages.
-
-The support of multiple sources for the Ceph packages  is important
-to organizations that must get packages from Canonical for service and
-support. The current Ceph repo setup goes to upstream ceph.com
-repositories and does not work with the UCA.
-
-The use of UCA is also important when running OpenStack on the ppc64le
-architecture because ceph.com does not have Debian packages available
-for this architecture and the default trusty and trusty-updates repos
-only have Ceph Giant, whereas the user can get later releases such as
-Ceph Jewel from UCA.
-
-The multiple operating system support for Trusty and Xenial also plays
-into this since Xenial has Ceph Jewel by default.  For Xenial OSA
-deployments users may want to use the modern ceph client already
-available for the distro.
-
-The choice of which Ceph source to use is simple for deployers. They
-simply set it with the ceph_pkg_source variable but have additional
-variables they can tweak to pick specific Ceph versions from the
-sources:
-
-The ceph_pkg_source variable controls the install source for the
-Ceph packages.
-Valid values include:
-  * ceph This option installs Ceph from a ceph.com repo.  Additional
-         variables to adjust items such as Ceph release and regional
-         download mirror can be found in vars/*.yml
-
-  * uca  This option installs Ceph from the Ubuntu Cloud Archive.
-         Additional variables to adjust items such as the
-         OpenStack/Ceph release can be found in vars/*.yml.
-
-  * distro This options installs Ceph from the operating system's
-           default repository and unlike the other options does not
-           attempt to manage package keys or add additional package
-           repositories.
-
-Change-Id: Ib21b3f76ccf4556548180c8694786d43fa0a024f
----
-
-diff --git a/playbooks/roles/ceph_client/defaults/main.yml b/playbooks/roles/ceph_client/defaults/main.yml
-index 09c5666..8c53838 100644
---- a/playbooks/roles/ceph_client/defaults/main.yml
-+++ b/playbooks/roles/ceph_client/defaults/main.yml
+diff -Naur a/opt/openstack-ansible/playbooks/roles/ceph_client/defaults/main.yml b/opt/openstack-ansible/playbooks/roles/ceph_client/defaults/main.yml
+--- a/opt/openstack-ansible/playbooks/roles/ceph_client/defaults/main.yml	2016-05-31 12:34:10.683287834 -0400
++++ b/opt/openstack-ansible/playbooks/roles/ceph_client/defaults/main.yml	2016-05-31 12:34:48.227288505 -0400
 @@ -1,5 +1,6 @@
  ---
  # Copyright 2015, Serge van Ginderachter <serge@vanginderachter.be>
@@ -108,10 +59,9 @@ index 09c5666..8c53838 100644
  
  ceph_apt_pinned_packages: [{ package: "*", release: Inktank,  priority: 1001 }]
  
-diff --git a/playbooks/roles/ceph_client/tasks/ceph_all.yml b/playbooks/roles/ceph_client/tasks/ceph_all.yml
-index a045a8b..a11bc93 100644
---- a/playbooks/roles/ceph_client/tasks/ceph_all.yml
-+++ b/playbooks/roles/ceph_client/tasks/ceph_all.yml
+diff -Naur a/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_all.yml b/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_all.yml
+--- a/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_all.yml	2016-05-31 12:34:10.683287834 -0400
++++ b/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_all.yml	2016-05-31 12:34:48.227288505 -0400
 @@ -22,7 +22,18 @@
      - ceph-config
      - ceph-auth
@@ -131,61 +81,9 @@ index a045a8b..a11bc93 100644
    tags:     ceph-preinstall
  
  - include:  ceph_install.yml
-diff --git a/playbooks/roles/ceph_client/tasks/ceph_install.yml b/playbooks/roles/ceph_client/tasks/ceph_install.yml
-index 4aaabd4..48f7deb 100644
---- a/playbooks/roles/ceph_client/tasks/ceph_install.yml
-+++ b/playbooks/roles/ceph_client/tasks/ceph_install.yml
-@@ -1,5 +1,5 @@
- ---
--# Copyright 2015, Serge van Ginderachter <serge@vanginderachter.be>
-+# Copyright 2016 IBM Corp
- #
- # Licensed under the Apache License, Version 2.0 (the "License");
- # you may not use this file except in compliance with the License.
-@@ -13,35 +13,8 @@
- # See the License for the specific language governing permissions and
- # limitations under the License.
- 
--#TODO(evrardjp): Replace the next 2 tasks by a standard apt with cache
--#when https://github.com/ansible/ansible-modules-core/pull/1517 is merged
--#in 1.9.x or we move to 2.0 (if tested working)
--- name: Check apt last update file
--  stat:
--    path: /var/cache/apt
--  register: apt_cache_stat
-+- include: ceph_install_apt.yml
-+  when:
-+    - ansible_pkg_mgr == 'apt'
-   tags:
-     - ceph-apt-packages
--
--- name: Update apt if needed
--  apt:
--    update_cache: yes
--  when: "ansible_date_time.epoch|float - apt_cache_stat.stat.mtime > {{cache_timeout}}"
--  tags:
--    - ceph-apt-packages
--
--- name: Install ceph packages
--  apt:
--    name: '{{ item.1 }}'
--    state: latest
--  register: install_packages
--  until: install_packages|success
--  retries: 5
--  delay: 2
--  with_subelements:
--  - ceph_components
--  - package
--  when: inventory_hostname in groups[item.0.component]
--  notify:
--  - Restart os services
--
-diff --git a/playbooks/roles/ceph_client/tasks/ceph_install_apt.yml b/playbooks/roles/ceph_client/tasks/ceph_install_apt.yml
-new file mode 100644
-index 0000000..5983fba
---- /dev/null
-+++ b/playbooks/roles/ceph_client/tasks/ceph_install_apt.yml
+diff -Naur a/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_install_apt.yml b/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_install_apt.yml
+--- a/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_install_apt.yml	1969-12-31 19:00:00.000000000 -0500
++++ b/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_install_apt.yml	2016-05-31 12:34:48.227288505 -0400
 @@ -0,0 +1,46 @@
 +---
 +# Copyright 2015, Serge van Ginderachter <serge@vanginderachter.be>
@@ -233,91 +131,58 @@ index 0000000..5983fba
 +  when: inventory_hostname in groups[item.0.component]
 +  notify:
 +  - Restart os services
-diff --git a/playbooks/roles/ceph_client/tasks/ceph_preinstall.yml b/playbooks/roles/ceph_client/tasks/ceph_preinstall.yml
-index 419d949..7fbce34 100644
---- a/playbooks/roles/ceph_client/tasks/ceph_preinstall.yml
-+++ b/playbooks/roles/ceph_client/tasks/ceph_preinstall.yml
-@@ -1,5 +1,6 @@
+diff -Naur a/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_install.yml b/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_install.yml
+--- a/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_install.yml	2016-05-31 12:34:10.683287834 -0400
++++ b/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_install.yml	2016-05-31 12:34:48.227288505 -0400
+@@ -1,5 +1,5 @@
  ---
- # Copyright 2015, Serge van Ginderachter <serge@vanginderachter.be>
+-# Copyright 2015, Serge van Ginderachter <serge@vanginderachter.be>
 +# Copyright 2016 IBM Corp
  #
  # Licensed under the Apache License, Version 2.0 (the "License");
  # you may not use this file except in compliance with the License.
-@@ -13,65 +14,8 @@
+@@ -13,35 +13,8 @@
  # See the License for the specific language governing permissions and
  # limitations under the License.
  
--- name: Remove revoked ceph apt-keys
--  apt_key:
--    id: "{{ item }}"
--    state: "absent"
--  register: revoke_keys
--  with_items: ceph_revoked_gpg_keys
-+- include: ceph_preinstall_apt.yml
+-#TODO(evrardjp): Replace the next 2 tasks by a standard apt with cache
+-#when https://github.com/ansible/ansible-modules-core/pull/1517 is merged
+-#in 1.9.x or we move to 2.0 (if tested working)
+-- name: Check apt last update file
+-  stat:
+-    path: /var/cache/apt
+-  register: apt_cache_stat
++- include: ceph_install_apt.yml
 +  when:
 +    - ansible_pkg_mgr == 'apt'
    tags:
-     - ceph-apt-keys
+     - ceph-apt-packages
 -
--- name: Add ceph apt-keys
--  apt_key:
--    id: "{{ item.hash_id }}"
--    keyserver: "{{ item.keyserver | default(omit) }}"
--    data: "{{ item.data | default(omit) }}"
--    url: "{{ item.url | default(omit) }}"
--    state: "present"
--  register: add_keys
--  until: add_keys|success
--  ignore_errors: True
--  retries: 5
--  delay: 2
--  with_items: ceph_gpg_keys
--  tags:
--    - ceph-apt-keys
--
--- name: Add ceph apt-keys using fallback keyserver
--  apt_key:
--    id: "{{ item.hash_id }}"
--    keyserver: "{{ item.fallback_keyserver | default(omit) }}"
--    url: "{{ item.fallback_url | default(omit) }}"
--    state: "present"
--  register: add_keys_fallback
--  until: add_keys_fallback|success
--  retries: 5
--  delay: 2
--  with_items: ceph_gpg_keys
--  when: add_keys|failed and (item.fallback_keyserver is defined or item.fallback_url is defined)
--  tags:
--    - ceph-apt-keys
--
--- name: Add ceph repo(s)
--  apt_repository:
--    repo: "{{ ceph_apt_repo.repo }}"
--    state: "{{ ceph_apt_repo.state }}"
--  register: add_repos
--  until: add_repos|success
--  retries: 5
--  delay: 2
--  tags:
--    - ceph-repos
--
--# This is being added specifically for when a key is revoked, but should apply
--# to other tasks also.  The cache needs updating after changing keys but
--# ceph_install.yml (where packages get installed) only does so if cache > 600
--# seconds.
--- name: Update apt cache
+-- name: Update apt if needed
 -  apt:
 -    update_cache: yes
--  when: revoke_keys|changed or add_keys|changed or add_keys_fallback|changed or add_repos|changed
+-  when: "ansible_date_time.epoch|float - apt_cache_stat.stat.mtime > {{cache_timeout}}"
 -  tags:
--    - ceph-apt-keys
--    - ceph-repos
-diff --git a/playbooks/roles/ceph_client/tasks/ceph_preinstall_apt.yml b/playbooks/roles/ceph_client/tasks/ceph_preinstall_apt.yml
-new file mode 100644
-index 0000000..1b49a4a
---- /dev/null
-+++ b/playbooks/roles/ceph_client/tasks/ceph_preinstall_apt.yml
+-    - ceph-apt-packages
+-
+-- name: Install ceph packages
+-  apt:
+-    name: '{{ item.1 }}'
+-    state: latest
+-  register: install_packages
+-  until: install_packages|success
+-  retries: 5
+-  delay: 2
+-  with_subelements:
+-  - ceph_components
+-  - package
+-  when: inventory_hostname in groups[item.0.component]
+-  notify:
+-  - Restart os services
+-
+diff -Naur a/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_preinstall_apt.yml b/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_preinstall_apt.yml
+--- a/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_preinstall_apt.yml	1969-12-31 19:00:00.000000000 -0500
++++ b/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_preinstall_apt.yml	2016-05-31 12:34:48.227288505 -0400
 @@ -0,0 +1,93 @@
 +---
 +# Copyright 2016 IBM Corp
@@ -412,11 +277,88 @@ index 0000000..1b49a4a
 +  tags:
 +    - ceph-apt-keys
 +    - ceph-repos
-diff --git a/playbooks/roles/ceph_client/vars/ubuntu-14.04.yml b/playbooks/roles/ceph_client/vars/ubuntu-14.04.yml
-new file mode 100644
-index 0000000..7297f47
---- /dev/null
-+++ b/playbooks/roles/ceph_client/vars/ubuntu-14.04.yml
+diff -Naur a/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_preinstall.yml b/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_preinstall.yml
+--- a/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_preinstall.yml	2016-05-31 12:34:10.683287834 -0400
++++ b/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_preinstall.yml	2016-05-31 12:34:48.227288505 -0400
+@@ -1,5 +1,6 @@
+ ---
+ # Copyright 2015, Serge van Ginderachter <serge@vanginderachter.be>
++# Copyright 2016 IBM Corp
+ #
+ # Licensed under the Apache License, Version 2.0 (the "License");
+ # you may not use this file except in compliance with the License.
+@@ -13,65 +14,8 @@
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+ 
+-- name: Remove revoked ceph apt-keys
+-  apt_key:
+-    id: "{{ item }}"
+-    state: "absent"
+-  register: revoke_keys
+-  with_items: ceph_revoked_gpg_keys
++- include: ceph_preinstall_apt.yml
++  when:
++    - ansible_pkg_mgr == 'apt'
+   tags:
+     - ceph-apt-keys
+-
+-- name: Add ceph apt-keys
+-  apt_key:
+-    id: "{{ item.hash_id }}"
+-    keyserver: "{{ item.keyserver | default(omit) }}"
+-    data: "{{ item.data | default(omit) }}"
+-    url: "{{ item.url | default(omit) }}"
+-    state: "present"
+-  register: add_keys
+-  until: add_keys|success
+-  ignore_errors: True
+-  retries: 5
+-  delay: 2
+-  with_items: ceph_gpg_keys
+-  tags:
+-    - ceph-apt-keys
+-
+-- name: Add ceph apt-keys using fallback keyserver
+-  apt_key:
+-    id: "{{ item.hash_id }}"
+-    keyserver: "{{ item.fallback_keyserver | default(omit) }}"
+-    url: "{{ item.fallback_url | default(omit) }}"
+-    state: "present"
+-  register: add_keys_fallback
+-  until: add_keys_fallback|success
+-  retries: 5
+-  delay: 2
+-  with_items: ceph_gpg_keys
+-  when: add_keys|failed and (item.fallback_keyserver is defined or item.fallback_url is defined)
+-  tags:
+-    - ceph-apt-keys
+-
+-- name: Add ceph repo(s)
+-  apt_repository:
+-    repo: "{{ ceph_apt_repo.repo }}"
+-    state: "{{ ceph_apt_repo.state }}"
+-  register: add_repos
+-  until: add_repos|success
+-  retries: 5
+-  delay: 2
+-  tags:
+-    - ceph-repos
+-
+-# This is being added specifically for when a key is revoked, but should apply
+-# to other tasks also.  The cache needs updating after changing keys but
+-# ceph_install.yml (where packages get installed) only does so if cache > 600
+-# seconds.
+-- name: Update apt cache
+-  apt:
+-    update_cache: yes
+-  when: revoke_keys|changed or add_keys|changed or add_keys_fallback|changed or add_repos|changed
+-  tags:
+-    - ceph-apt-keys
+-    - ceph-repos
+diff -Naur a/opt/openstack-ansible/playbooks/roles/ceph_client/vars/ubuntu-14.04.yml b/opt/openstack-ansible/playbooks/roles/ceph_client/vars/ubuntu-14.04.yml
+--- a/opt/openstack-ansible/playbooks/roles/ceph_client/vars/ubuntu-14.04.yml	1969-12-31 19:00:00.000000000 -0500
++++ b/opt/openstack-ansible/playbooks/roles/ceph_client/vars/ubuntu-14.04.yml	2016-05-31 12:34:48.227288505 -0400
 @@ -0,0 +1,49 @@
 +---
 +# Copyright 2016 IBM Corp
@@ -467,11 +409,9 @@ index 0000000..7297f47
 +    uca:
 +        repo: "deb {{ uca_apt_repo_url }} {{ uca_repo_dist }} main"
 +        state: "present"
-diff --git a/playbooks/roles/ceph_client/vars/ubuntu-16.04.yml b/playbooks/roles/ceph_client/vars/ubuntu-16.04.yml
-new file mode 100644
-index 0000000..a39c8ff
---- /dev/null
-+++ b/playbooks/roles/ceph_client/vars/ubuntu-16.04.yml
+diff -Naur a/opt/openstack-ansible/playbooks/roles/ceph_client/vars/ubuntu-16.04.yml b/opt/openstack-ansible/playbooks/roles/ceph_client/vars/ubuntu-16.04.yml
+--- a/opt/openstack-ansible/playbooks/roles/ceph_client/vars/ubuntu-16.04.yml	1969-12-31 19:00:00.000000000 -0500
++++ b/opt/openstack-ansible/playbooks/roles/ceph_client/vars/ubuntu-16.04.yml	2016-05-31 12:34:48.227288505 -0400
 @@ -0,0 +1,50 @@
 +---
 +# Copyright 2016 IBM Corp
@@ -523,11 +463,9 @@ index 0000000..a39c8ff
 +    uca:
 +        repo: "deb {{ uca_apt_repo_url }} {{ uca_repo_dist }} main"
 +        state: "present"
-diff --git a/releasenotes/notes/ceph-from-uca-and-distro-2fa04e03c39a61bc.yaml b/releasenotes/notes/ceph-from-uca-and-distro-2fa04e03c39a61bc.yaml
-new file mode 100644
-index 0000000..d8f18d9
---- /dev/null
-+++ b/releasenotes/notes/ceph-from-uca-and-distro-2fa04e03c39a61bc.yaml
+diff -Naur a/opt/openstack-ansible/releasenotes/notes/ceph-from-uca-and-distro-2fa04e03c39a61bc.yaml b/opt/openstack-ansible/releasenotes/notes/ceph-from-uca-and-distro-2fa04e03c39a61bc.yaml
+--- a/opt/openstack-ansible/releasenotes/notes/ceph-from-uca-and-distro-2fa04e03c39a61bc.yaml	1969-12-31 19:00:00.000000000 -0500
++++ b/opt/openstack-ansible/releasenotes/notes/ceph-from-uca-and-distro-2fa04e03c39a61bc.yaml	2016-05-31 12:34:48.227288505 -0400
 @@ -0,0 +1,21 @@
 +---
 +features:

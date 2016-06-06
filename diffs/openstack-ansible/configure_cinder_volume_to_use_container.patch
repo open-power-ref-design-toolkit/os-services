@@ -1,0 +1,11 @@
+diff -Naur a/opt/openstack-ansible/etc/openstack_deploy/env.d/cinder.yml b/opt/openstack-ansible/etc/openstack_deploy/env.d/cinder.yml
+--- a/opt/openstack-ansible/etc/openstack_deploy/env.d/cinder.yml	2016-05-31 14:52:41.918750471 +0000
++++ b/opt/openstack-ansible/etc/openstack_deploy/env.d/cinder.yml	2016-05-31 14:54:43.090460021 +0000
+@@ -59,7 +59,6 @@
+ # Otherwise if cinder-volumes is already running in containers you may want to
+ # leave is_metal off, alternatively you will have to migrate your volumes once
+ # deployed on metal.
+-      is_metal: true
+       service_name: cinder
+       container_release: trusty
+ 
