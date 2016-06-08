@@ -1,20 +1,3 @@
-diff -Naur '--exclude=.galaxy_install_info' a/opt/openstack-ansible/etc/openstack_deploy/user_variables.yml b/opt/openstack-ansible/etc/openstack_deploy/user_variables.yml
---- a/opt/openstack-ansible/etc/openstack_deploy/user_variables.yml	2016-06-07 05:09:13.220040644 -0400
-+++ b/opt/openstack-ansible/etc/openstack_deploy/user_variables.yml	2016-06-07 05:08:59.980065608 -0400
-@@ -25,11 +25,11 @@
- 
- ## Common Override to enable Ceilometer for each service.
- ## By default all service are *not* enabled.
--# swift_ceilometer_enabled: False
-+swift_ceilometer_enabled: False
- # heat_ceilometer_enabled: True
- # cinder_ceilometer_enabled: True
- # glance_ceilometer_enabled: True
--# nova_ceilometer_enabled: False
-+nova_ceilometer_enabled: False
- # neutron_ceilometer_enabled: True
- # keystone_ceilometer_enabled: True
- 
 diff -Naur '--exclude=.galaxy_install_info' a/opt/openstack-ansible/playbooks/os-neutron-install.yml b/opt/openstack-ansible/playbooks/os-neutron-install.yml
 --- a/opt/openstack-ansible/playbooks/os-neutron-install.yml	2016-06-07 05:09:13.216040789 -0400
 +++ b/opt/openstack-ansible/playbooks/os-neutron-install.yml	2016-06-07 05:08:59.980065608 -0400
@@ -29,7 +12,7 @@ diff -Naur '--exclude=.galaxy_install_info' a/opt/openstack-ansible/playbooks/os
 +        - ansible_architecture == 'x86_64'
 +      tags:
 +        - neutron-config
-+    - name: Set neutron venv download url for other architectures like ppc64le 
++    - name: Set neutron venv download url for other architectures like ppc64le
 +      set_fact:
 +        neutron_download_url: "{{ openstack_repo_url }}/venvs/{{ openstack_release }}/{{ ansible_distribution | lower }}/neutron-{{ openstack_release }}-{{ ansible_architecture }}.tgz"
 +      when:
