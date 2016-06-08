@@ -1,0 +1,34 @@
+diff -Naur '--exclude=.galaxy_install_info' a/etc/ansible/roles/os_nova/defaults/main.yml b/etc/ansible/roles/os_nova/defaults/main.yml
+--- a/etc/ansible/roles/os_nova/defaults/main.yml	2016-06-07 05:15:52.051288402 -0400
++++ b/etc/ansible/roles/os_nova/defaults/main.yml	2016-06-07 05:14:35.411434193 -0400
+@@ -365,7 +365,7 @@
+   - kpartx
+   - libvirt-bin
+   - open-iscsi
+-  - python-libguestfs
++#  - python-libguestfs
+   - python-libvirt
+   - qemu
+   - qemu-utils
+diff -Naur '--exclude=.galaxy_install_info' a/etc/ansible/roles/os_nova/meta/main.yml b/etc/ansible/roles/os_nova/meta/main.yml
+--- a/etc/ansible/roles/os_nova/meta/main.yml	2016-06-07 05:15:52.047288410 -0400
++++ b/etc/ansible/roles/os_nova/meta/main.yml	2016-06-07 05:19:29.310841609 -0400
+@@ -37,5 +37,5 @@
+     when:
+       - nova_developer_mode | bool
+   - apt_package_pinning
+-  - galera_client
++  - { role: 'galera_client', when: ansible_architecture != 'ppc64le' }
+   - openstack_openrc
+diff -Naur '--exclude=.galaxy_install_info' a/etc/ansible/roles/os_nova/tasks/nova_virt_detect.yml b/etc/ansible/roles/os_nova/tasks/nova_virt_detect.yml
+--- a/etc/ansible/roles/os_nova/tasks/nova_virt_detect.yml	2016-06-07 05:15:52.051288402 -0400
++++ b/etc/ansible/roles/os_nova/tasks/nova_virt_detect.yml	2016-06-07 05:14:35.407434201 -0400
+@@ -15,7 +15,7 @@
+ 
+ - name: Get virt type value and store as var
+   shell: |
+-    `which egrep` -c '(vmx|svm)' /proc/cpuinfo
++    `which egrep` -c '(vmx|svm|PowerNV)' /proc/cpuinfo
+   register: virt_type_value
+   changed_when: false
+   failed_when: false
