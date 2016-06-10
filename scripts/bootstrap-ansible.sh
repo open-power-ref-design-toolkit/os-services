@@ -24,6 +24,6 @@
 #   - run the openstack-ansible bootstrap-ansible script to get ansible running
 #
 
-echo "TODO: This script is not implemented.  Read the contents for an overview."
+echo "TODO: This script is not implemented. Read the contents for an overview."
 exit 1
 
