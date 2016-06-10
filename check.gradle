@@ -1,0 +1,10 @@
+task check (type : Exec) {
+    print 'Running Check Task on os-services'
+    workingDir '.'
+    executable = "ls";
+    standardOutput = new ByteArrayOutputStream()
+    ext.output = {
+       return standardOutput.toString()
+    }
+}
+
