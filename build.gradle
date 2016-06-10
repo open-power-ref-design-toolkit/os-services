@@ -1,7 +1,7 @@
 task build (type : Exec) {
-     print 'Building Ceph'
-     //TODO: Project team need to implement build task
-     //executable = "Command_Or_Script_To_Run"; args = ["Arguments_To_Command_Or_Script"]
+     print 'Building os-services'
+     //TODO: Project team need to implement build task. Please replace the ls command with the script/command that you need to execute to build the code
+     commandLine 'ls'
     standardOutput = new ByteArrayOutputStream()
     ext.output = {
        return standardOutput.toString()
