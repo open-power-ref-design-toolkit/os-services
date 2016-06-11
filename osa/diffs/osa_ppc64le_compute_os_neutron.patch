@@ -1,0 +1,39 @@
+diff -Naur '--exclude=.galaxy_install_info' a/etc/ansible/roles/os_neutron/defaults/main.yml b/etc/ansible/roles/os_neutron/defaults/main.yml
+--- a/etc/ansible/roles/os_neutron/defaults/main.yml	2016-06-07 05:15:52.059288385 -0400
++++ b/etc/ansible/roles/os_neutron/defaults/main.yml	2016-06-07 05:14:35.419434178 -0400
+@@ -117,10 +117,10 @@
+     plugin_core: neutron.plugins.ml2.plugin.Ml2Plugin
+     plugin_ini: plugins/ml2/ml2_conf.ini
+     plugin_conf_ini_overrides: "{{ neutron_ml2_conf_ini_overrides }}"
+-  plumgrid:
+-    plugin_core: networking_plumgrid.neutron.plugins.plugin.NeutronPluginPLUMgridV2
+-    plugin_ini: plugins/plumgrid/plumgrid.ini
+-    plugin_conf_ini_overrides: "{{ neutron_plumgrid_conf_ini_overrides }}"
++#  plumgrid:
++#    plugin_core: networking_plumgrid.neutron.plugins.plugin.NeutronPluginPLUMgridV2
++#    plugin_ini: plugins/plumgrid/plumgrid.ini
++#    plugin_conf_ini_overrides: "{{ neutron_plumgrid_conf_ini_overrides }}"
+   nuage:
+     plugin_core: neutron.plugins.nuage.plugin.NuagePlugin
+     plugin_ini: plugins/nuage/nuage.ini
+@@ -434,8 +434,8 @@
+   - python-novaclient
+   - repoze.lru
+ 
+-neutron_optional_plumgrid_pip_packages:
+-  - networking-plumgrid==2015.2.1.1
++#neutron_optional_plumgrid_pip_packages:
++#  - networking-plumgrid==2015.2.1.1
+ 
+ neutron_proprietary_nuage_pip_packages:
+   - nuage-openstack-neutron
+diff -Naur '--exclude=.galaxy_install_info' a/etc/ansible/roles/os_neutron/meta/main.yml b/etc/ansible/roles/os_neutron/meta/main.yml
+--- a/etc/ansible/roles/os_neutron/meta/main.yml	2016-06-07 05:15:52.059288385 -0400
++++ b/etc/ansible/roles/os_neutron/meta/main.yml	2016-06-07 05:14:35.415434186 -0400
+@@ -37,5 +37,5 @@
+     when:
+       - neutron_developer_mode | bool
+   - apt_package_pinning
+-  - galera_client
++  - { role: 'galera_client', when: ansible_architecture != 'ppc64le' }
+   - openstack_openrc

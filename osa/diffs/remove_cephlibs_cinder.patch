@@ -1,0 +1,11 @@
+diff -Naur a/etc/ansible/roles/os_cinder/defaults/main.yml b/etc/ansible/roles/os_cinder/defaults/main.yml
+--- a/etc/ansible/roles/os_cinder/defaults/main.yml	2016-05-31 14:26:11.316148220 +0000
++++ b/etc/ansible/roles/os_cinder/defaults/main.yml	2016-05-31 14:27:16.037056758 +0000
+@@ -239,7 +239,6 @@
+   - pycrypto
+   - python-cinderclient
+   - python-keystoneclient
+-  - python-cephlibs
+ 
+ # Service Names
+ cinder_service_names:

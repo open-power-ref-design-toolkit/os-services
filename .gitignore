@@ -17,4 +17,5 @@
 .tox
 .idea
 .venv
-
+/ceph
+/opsmgr

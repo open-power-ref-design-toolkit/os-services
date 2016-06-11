@@ -1,44 +1,29 @@
 os-services
 =============
 
-This initial drop of code assumes the playbook is running on an ansible
-capable system besides the deployer node.  Later, we'll have a script that
-will setup the deployer node and it can be run from their directly.  But for
-now, run these playbooks remotely (which is easier for development anyway.)
+To deploy openstack on a single node or a cluster of nodes pre-configured by genesis::
+
+    >export DEPLOY_CEPH=yes
+    >export DEPLOY_OPSMGR=yes
+    >export DEPLOY_HARDENING=yes
+    >nohup ./scripts/bootstrap-cluster.sh &
+    >nohup ./scripts/create-cluster.sh &
+
+If the environment variables are omitted or set to "no", then the associated
+components are not installed.
 
 
-To deploy openstack on a set of nodes:
+To deploy openstack on multiple nodes that are not pre-configured by genesis::
 
-Ensure the nodes you'll use are setup with a networking configuration that is
-compatible with openstack-ansible.
+    >bootstrap-cluster.sh [ -i <controllernode1,...> -s <storagenode1,...> -c <computenode1,...> ]
+    >create-cluster.sh [ -i <controllernode1,...> -s <storagenode1,...> -c <computenode1,...> ]
 
-Write your ansible inventory file of the deployer, controller, compute, etc nodes.
-The sample inventory sample file can be used then just duplicate and edit.
 
-Run the site yml file
+Debugging hints::
 
->ansible-playbook -i my_inventory site.yml -kK -u ubuntu
+    > Use nohup to generate a log file.  You can logout and it will continue running
 
-This concludes the remote ansible commands.  The rest of the commands will be
-run on the deployer node.
+    > nohup ./scripts/create-cluster.sh &
+    > tail -f nohup.out
 
-Write your /etc/openstack_deploy/openstack_user_config.yml file.  Your
-knowledge of the networking setup of the nodes is key here.  Contruct the file
-based off of the samples in the /etc/openstack_deploy directory on the
-deployer node.
-
-Set desired passwords in /etc/openstack_deploy/user_secrets.yml
-
-Ensure ssh authorization key for root on the deployer node is set for root
-on all other nodes.  Do the setup manually.
-
-Syntax check all the user files:
-
->cd /opt/openstack-ansible/playbooks
->openstack-ansible setup-infrastructure.yml --syntax-check
-
-Run setup playbook on the deployer node:
-
->openstack-ansible setup-everything.yml
-
-Go have some coffee, maybe lunch, maybe go dancing.  It'll be back in a while.
+    > grep -e "^Failed" -e "^Rebuild" -e "^ValueError" nohup.out

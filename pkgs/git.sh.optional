@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+#
+# Copyright 2016 IBM Corp.
+#
+# All Rights Reserved.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
+# Builds git package due to problems repeatedly encountered in OSA playbook repo_build
+#
+# http://askubuntu.com/questions/186847/error-gnutls-handshake-failed-when-connecting-to-https-servers/187199#187199
+#
+# EXIT STATUS:
+#  0 - Success
+#  1 - Non-fatal error.  Calling program should continue
+#  2 - fatal error.  Calling program should halt
+
+if [[ $EUID -ne 0 ]]; then
+    echo "This script must be run as root."
+    exit 2
+fi
+
+# Already built and installed.  This directory is created below
+if [ -d git-openssl ]; then
+    exit 0
+fi
+DIR=`pwd`
+
+trap "rm -rf $DIR/git-openssl; exit 1" SIGINT SIGHUP SIGTERM
+
+echo "Updating apt source list for git build"
+
+base="deb-src http://us.archive.ubuntu.com/ubuntu/ trusty main universe"
+updates="deb-src http://us.archive.ubuntu.com/ubuntu/ trusty-updates main universe"
+grep -q "$base" /etc/apt/sources.list || echo "$base" >> /etc/apt/sources.list
+grep -q "$updates" /etc/apt/sources.list || echo "$updates" >> /etc/apt/sources.list
+apt-get -qq update >/dev/null 2>&1
+
+echo "Installing prerequisites for git"
+
+apt-get -qq -y install fakeroot dpkg-dev libcurl4-openssl-dev liberror-perl libopts25 >/dev/null 2>&1
+if [ $? != 0 ]; then
+    echo "apt-get install git failed, rc=$?"
+    exit 1
+fi
+apt-get -qq -y build-dep git >/dev/null 2>&1
+if [ $? != 0 ]; then
+    echo "dpkg-buildpackage git failed, rc=$?"
+    exit 1
+fi
+
+echo "Getting source code for git"
+
+mkdir git-openssl
+cd git-openssl
+apt-get -qq -y source git >/dev/null 2>&1
+dpkg-source -x git_1.9.1-1ubuntu0.3.dsc >/dev/null 2>&1
+if [ $? != 0 ]; then
+    echo "dpkg-source git failed, rc=$?"
+    rm -rf $DIR/git-openssl
+    exit 1
+fi
+
+echo "Building git... Please be patient.  This takes ~5 minutes"
+
+pushd git-1.9.1 >/dev/null 2>&1
+sed -i '/TEST =test/d' debian/rules       # Disable tests.  They all pass and they take 5 minutes
+dpkg-buildpackage -rfakeroot -b >/dev/null 2>&1
+if [ $? != 0 ]; then
+    echo "dpkg-buildpackage git failed, rc=$?"
+    rm -rf $DIR/git-openssl
+    exit 1
+fi
+popd >/dev/null 2>&1
+
+echo "Purging installed git"
+
+apt-get -qq -y purge git-core git-man git >/dev/null 2>&1
+if [ $? != 0 ]; then
+    echo "apt-get purge git failed, rc=$?"
+    rm -rf $DIR/git-openssl
+    exit 1
+fi
+
+echo "Installing git"
+
+dpkg -i git_1.9.1-1ubuntu0.3_amd64.deb git-man_1.9.1-1ubuntu0.3_all.deb git-core_1.9.1-1ubuntu0.3_all.deb >/dev/null 2>&1
+if [ $? != 0 ]; then
+    echo "dpkg -i git failed, rc=$?"
+    rm -rf $DIR/git-openssl
+    echo "Re-installing distro provided git"
+    apt-get install -qq -y git >/dev/null 2>&1
+    if [ $? != 0 ]; then
+        echo "apt-get install git failed, rc=$?"
+        exit 2
+    fi
+    exit 1
+fi
+
+exit 0

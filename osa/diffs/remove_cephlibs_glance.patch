@@ -1,0 +1,11 @@
+diff -Naur a/etc/ansible/roles/os_glance/defaults/main.yml b/etc/ansible/roles/os_glance/defaults/main.yml
+--- a/etc/ansible/roles/os_glance/defaults/main.yml	2016-05-31 14:39:53.637843036 +0000
++++ b/etc/ansible/roles/os_glance/defaults/main.yml	2016-05-31 14:40:48.058618715 +0000
+@@ -199,7 +199,6 @@
+   - python-cinderclient
+   - python-keystoneclient
+   - warlock
+-  - python-cephlibs
+ 
+ ## Service Names
+ glance_service_names:
