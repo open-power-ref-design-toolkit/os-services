@@ -1,0 +1,47 @@
+---
+# Configuration file for the mkdiffs tooling
+
+changes_loc: ../changes
+temp_diff_loc: ../.diffs
+
+changes:
+  - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-galera_client
+    branch: 13.1.0
+    target_location: /etc/ansible/roles/galera_client
+    src_location: galera_client
+  - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-lxc_hosts
+    branch: 13.1.0
+    target_location: /etc/ansible/roles/lxc_hosts
+    src_location: lxc_hosts
+  - project:
+    git: https://git.openstack.org/openstack/openstack-ansible
+    branch: 13.1.0
+    target_location: /opt/openstack-ansible
+    src_location: openstack-ansible
+  - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-os_cinder
+    branch: 13.1.0
+    target_location: /etc/ansible/roles/os_cinder
+    src_location: os_cinder
+  - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-os_glance
+    branch: 13.1.0
+    target_location: /etc/ansible/roles/os_glance
+    src_location: os_glance
+  - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-os_neutron
+    branch: 13.1.0
+    target_location: /etc/ansible/roles/os_neutron
+    src_location: os_neutron
+  - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-os_nova
+    branch: 13.1.0
+    target_location: /etc/ansible/roles/os_nova
+    src_location: os_nova
+  - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-repo_build
+    branch: 13.1.0
+    target_location: /etc/ansible/roles/repo_build
+    src_location: repo_build
