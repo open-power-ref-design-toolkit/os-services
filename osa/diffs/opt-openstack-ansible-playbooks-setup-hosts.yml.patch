@@ -1,0 +1,12 @@
+diff -Naur a/opt/openstack-ansible/playbooks/setup-hosts.yml b/opt/openstack-ansible/playbooks/setup-hosts.yml
+--- a/opt/openstack-ansible/playbooks/setup-hosts.yml	2016-06-14 15:14:40.000000000 -0500
++++ b/opt/openstack-ansible/playbooks/setup-hosts.yml	2016-06-14 16:46:07.000000000 -0500
+@@ -13,6 +13,8 @@
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+ 
++- include: setup-pkvm.yml
++  when: ansible_architecture == 'ppc64le'
+ - include: openstack-hosts-setup.yml
+ - include: security-hardening.yml
+ - include: lxc-hosts-setup.yml

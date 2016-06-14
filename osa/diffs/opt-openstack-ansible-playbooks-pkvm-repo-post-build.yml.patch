@@ -1,0 +1,54 @@
+diff -Naur a/opt/openstack-ansible/playbooks/pkvm-repo-post-build.yml b/opt/openstack-ansible/playbooks/pkvm-repo-post-build.yml
+--- a/opt/openstack-ansible/playbooks/pkvm-repo-post-build.yml	1969-12-31 18:00:00.000000000 -0600
++++ b/opt/openstack-ansible/playbooks/pkvm-repo-post-build.yml	2016-06-15 10:43:04.000000000 -0500
+@@ -0,0 +1,50 @@
++---
++# Copyright 2016 IBM Corp.
++#
++# All Rights Reserved.
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++
++- name: Copy ppc64le repo files from deployer node to the repo container
++  hosts: repo_all[0]
++  user: root
++  vars_files:
++    - vars/pkvm.yml
++
++  tasks:
++    - name: Copy nova and neutron files from the deployer node to the repo container
++      copy:
++        src: "/tmp/{{ item }}"
++        dest: "{{ repo_build_venv_dir }}/{{ repo_build_release_tag }}/{{ ansible_distribution | lower }}/{{ item }}"
++      failed_when: false
++      with_items:
++        - "nova-{{ repo_build_release_tag }}-ppc64le.tgz"
++        - "nova-{{ repo_build_release_tag }}-ppc64le.checksum"
++        - "neutron-{{ repo_build_release_tag }}-ppc64le.tgz"
++        - "neutron-{{ repo_build_release_tag }}-ppc64le.checksum"
++
++- name: Remove files from /tmp
++  hosts: localhost
++  connection: local
++  user: root
++  vars_files:
++    - vars/pkvm.yml
++
++  tasks:
++    - name: Remove files from /tmp
++      file: path="/tmp/{{ item }}" state=absent
++      with_items:
++        - "nova-{{ repo_build_release_tag }}-ppc64le.tgz"
++        - "nova-{{ repo_build_release_tag }}-ppc64le.checksum"
++        - "neutron-{{ repo_build_release_tag }}-ppc64le.tgz"
++        - "neutron-{{ repo_build_release_tag }}-ppc64le.checksum"

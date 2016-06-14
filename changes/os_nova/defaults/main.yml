@@ -402,3 +402,10 @@ nova_nova_conf_overrides: {}
 nova_rootwrap_conf_overrides: {}
 nova_api_paste_ini_overrides: {}
 nova_policy_overrides: {}
+
+# Ubuntu Cloud Archive variables
+nova_uca_enable: True
+uca_openstack_release: mitaka
+uca_apt_repo_url: "http://ubuntu-cloud.archive.canonical.com/ubuntu"
+uca_repo_dist: "{{ ansible_lsb.codename }}-updates/{{ uca_openstack_release }}"
+uca_repo: "deb {{ uca_apt_repo_url }} {{ uca_repo_dist }} main"

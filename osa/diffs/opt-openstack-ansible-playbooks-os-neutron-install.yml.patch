@@ -1,0 +1,33 @@
+diff -Naur a/opt/openstack-ansible/playbooks/os-neutron-install.yml b/opt/openstack-ansible/playbooks/os-neutron-install.yml
+--- a/opt/openstack-ansible/playbooks/os-neutron-install.yml	2016-06-14 15:14:40.000000000 -0500
++++ b/opt/openstack-ansible/playbooks/os-neutron-install.yml	2016-06-14 16:46:07.000000000 -0500
+@@ -152,14 +152,28 @@
+       when: not is_metal | bool
+       tags:
+         - neutron-config
++    - name: Set neutron venv download url for non-ppc64le
++      set_fact:
++        neutron_download_url: "{{ openstack_repo_url }}/venvs/{{ openstack_release }}/{{ ansible_distribution | lower }}/neutron-{{ openstack_release }}.tgz"
++      when:
++        - ansible_architecture != 'ppc64le'
++      tags:
++        - neutron-config
++    - name: Set neutron venv download url for ppc64le
++      set_fact:
++        neutron_download_url: "{{ openstack_repo_url }}/venvs/{{ openstack_release }}/{{ ansible_distribution | lower }}/neutron-{{ openstack_release }}-{{ ansible_architecture }}.tgz"
++      when:
++        - ansible_architecture == 'ppc64le'
++      tags:
++        - neutron-config
+   roles:
+     - role: "os_neutron"
+       neutron_venv_tag: "{{ openstack_release }}"
+-      neutron_venv_download_url: "{{ openstack_repo_url }}/venvs/{{ openstack_release }}/{{ ansible_distribution | lower }}/neutron-{{ openstack_release }}.tgz"
+       neutron_galera_address: "{{ galera_address }}"
+       neutron_local_ip: "{{ _local_ip }}"
+       neutron_overlay_network: "{{ _overlay_network }}"
+       neutron_provider_networks: "{{ _provider_networks }}"
++      neutron_venv_download_url: "{{ neutron_download_url }}"
+       tags:
+         - "os-neutron"
+     - { role: "openstack_openrc", tags: [ "openstack-openrc" ] }

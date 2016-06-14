@@ -1,17 +1,38 @@
-diff -Naur '--exclude=.galaxy_install_info' a/opt/openstack-ansible/etc/openstack_deploy/user_variables.yml b/opt/openstack-ansible/etc/openstack_deploy/user_variables.yml
---- a/opt/openstack-ansible/etc/openstack_deploy/user_variables.yml	2016-06-07 05:09:13.220040644 -0400
-+++ b/opt/openstack-ansible/etc/openstack_deploy/user_variables.yml	2016-06-07 05:08:59.980065608 -0400
+diff -Naur a/opt/openstack-ansible/etc/openstack_deploy/user_variables.yml b/opt/openstack-ansible/etc/openstack_deploy/user_variables.yml
+--- a/opt/openstack-ansible/etc/openstack_deploy/user_variables.yml	2016-06-10 02:08:40.416854461 -0500
++++ b/opt/openstack-ansible/etc/openstack_deploy/user_variables.yml	2016-06-10 02:06:16.897845982 -0500
 @@ -25,11 +25,11 @@
  
  ## Common Override to enable Ceilometer for each service.
  ## By default all service are *not* enabled.
--# swift_ceilometer_enabled: False
+-# swift_ceilometer_enabled: True
 +swift_ceilometer_enabled: False
  # heat_ceilometer_enabled: True
  # cinder_ceilometer_enabled: True
  # glance_ceilometer_enabled: True
--# nova_ceilometer_enabled: False
+-# nova_ceilometer_enabled: True
 +nova_ceilometer_enabled: False
  # neutron_ceilometer_enabled: True
  # keystone_ceilometer_enabled: True
  
+@@ -44,16 +44,17 @@
+ # installed on glance. If using a file store, a shared file store is
+ # recommended. See the OpenStack-Ansible install guide and the OpenStack
+ # documentation for more details.
+-# glance_default_store: file
++glance_default_store: rbd
+ 
+ ## Ceph pool name for Glance to use
+-# glance_rbd_store_pool: images
++glance_rbd_store_pool: images
+ # glance_rbd_store_chunk_size: 8
+ 
+ ## Common Nova Overrides
+ # When nova_libvirt_images_rbd_pool is defined, ceph will be installed on nova
+ # hosts.
+-# nova_libvirt_images_rbd_pool: vms
++nova_libvirt_images_rbd_pool: vms
++ceph_pkg_source: uca
+ 
+ # If you wish to change the dhcp_domain configured for both nova and neutron
+ # dhcp_domain: openstacklocal

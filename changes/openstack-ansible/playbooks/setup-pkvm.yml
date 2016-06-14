@@ -1,5 +1,7 @@
 ---
-# Copyright 2016, IBM US, Inc.
+# Copyright 2016 IBM Corp.
+#
+# All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,46 +16,10 @@
 # limitations under the License.
 
 - name: Configure the pre-req software on ppc64le compute host
-  # Run this on the first ppc64le compute host only
   hosts: compute_all
   user: root
 
   tasks:
-    - name: Install software properties
-      apt:
-        pkg: "{{ item }}"
-        state: present
-      register: install_packages
-      with_items:
-        - software-properties-common
-      tags:
-        - pkvm-install-pkgs
-
-    - name: Add ubuntu cloud archive key package
-      apt:
-        pkg: ubuntu-cloud-keyring
-      register: add_keys
-      tags:
-        - add-apt-keys
-
-    - name: Add an apt repository
-      apt_repository:
-        repo: 'deb http://ubuntu-cloud.archive.canonical.com/ubuntu trusty-updates/mitaka main'
-        state: present
-      register: add_repo
-      until: add_repo|success
-      retries: 5
-      delay: 2
-      tags:
-       - pkvm-add-repos
-
-    - name: Update apt repository
-      apt:
-        update_cache: yes
-      when: add_repo|changed
-      tags:
-       - pkvm-update-apt
-
     - name: Install QEMU/Libvirt packages
       apt:
         pkg: "{{ item }}"
