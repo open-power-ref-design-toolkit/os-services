@@ -68,18 +68,19 @@ if [ $? != 0 ]; then
     exit 1
 fi
 apt-get -qq update
-apt-get -qq -y install build-essential libssl-dev libffi-dev python-dev python3-dev \
-           bridge-utils debootstrap ifenslave ifenslave-2.6 lsof lvm2 ntp ntpdate tcpdump vlan
+apt-get -qq -y install build-essential libssl-dev libffi-dev python-dev \
+    python3-dev bridge-utils debootstrap ifenslave ifenslave-2.6 lsof lvm2 \
+    ntp ntpdate tcpdump vlan
 
 CODENAME=`lsb_release -c | awk '{print $2}'`
 if [ $? != 0 ] && [ "$CODENAME" != "trusty" ]; then
     echo "Unsupported Linux distribution.  Must be Ubuntu 14.04"
 else
     # XXX Does this need to be done on each controller node?
-    # Sequentially invoke build/install/wget scripts to replace non-openstack related pkgs
+    # Sequentially invoke build/install/wget scripts to replace non-openstack
+    # related pkgs
     pushd pkgs >/dev/null 2>&1
-    for script in *.sh
-    do
+    for script in *.sh; do
         command ./$script
         rc=$?
         if [ $rc != 0 ]; then
