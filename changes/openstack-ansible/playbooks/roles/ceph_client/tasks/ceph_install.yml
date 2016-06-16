@@ -1,7 +1,5 @@
 ---
-# Copyright 2016 IBM Corp.
-#
-# All Rights Reserved.
+# Copyright 2016 IBM Corp
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,9 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-repo_build_venv_dir: "/var/www/repo/venvs"
-repo_build_pool_dir: "/var/www/repo/pools"
-repo_build_global_links_path: "/var/www/repo/links"
-repo_build_release_path: "/var/www/repo/os-releases"
-repo_build_release_tag: "{{ openstack_release }}"
-pkvm_repo_build_output: "/tmp/ppc64le_wheels/"
+- include: ceph_install_apt.yml
+  when:
+    - ansible_pkg_mgr == 'apt'
+  tags:
+    - ceph-apt-packages

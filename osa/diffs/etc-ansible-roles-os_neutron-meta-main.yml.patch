@@ -1,0 +1,10 @@
+diff -Naur a/etc/ansible/roles/os_neutron/meta/main.yml b/etc/ansible/roles/os_neutron/meta/main.yml
+--- a/etc/ansible/roles/os_neutron/meta/main.yml	2016-06-14 15:14:43.000000000 -0500
++++ b/etc/ansible/roles/os_neutron/meta/main.yml	2016-06-14 16:46:07.000000000 -0500
+@@ -37,5 +37,5 @@
+     when:
+       - neutron_developer_mode | bool
+   - apt_package_pinning
+-  - galera_client
++  - { role: 'galera_client', when: ansible_architecture != 'ppc64le' }
+   - openstack_openrc

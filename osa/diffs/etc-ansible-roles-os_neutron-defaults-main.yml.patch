@@ -1,0 +1,29 @@
+diff -Naur a/etc/ansible/roles/os_neutron/defaults/main.yml b/etc/ansible/roles/os_neutron/defaults/main.yml
+--- a/etc/ansible/roles/os_neutron/defaults/main.yml	2016-06-14 15:14:43.000000000 -0500
++++ b/etc/ansible/roles/os_neutron/defaults/main.yml	2016-06-14 16:46:07.000000000 -0500
+@@ -117,10 +117,10 @@
+     plugin_core: neutron.plugins.ml2.plugin.Ml2Plugin
+     plugin_ini: plugins/ml2/ml2_conf.ini
+     plugin_conf_ini_overrides: "{{ neutron_ml2_conf_ini_overrides }}"
+-  plumgrid:
+-    plugin_core: networking_plumgrid.neutron.plugins.plugin.NeutronPluginPLUMgridV2
+-    plugin_ini: plugins/plumgrid/plumgrid.ini
+-    plugin_conf_ini_overrides: "{{ neutron_plumgrid_conf_ini_overrides }}"
++#  plumgrid:
++#    plugin_core: networking_plumgrid.neutron.plugins.plugin.NeutronPluginPLUMgridV2
++#    plugin_ini: plugins/plumgrid/plumgrid.ini
++#    plugin_conf_ini_overrides: "{{ neutron_plumgrid_conf_ini_overrides }}"
+   nuage:
+     plugin_core: neutron.plugins.nuage.plugin.NuagePlugin
+     plugin_ini: plugins/nuage/nuage.ini
+@@ -436,8 +436,8 @@
+   - python-novaclient
+   - repoze.lru
+ 
+-neutron_optional_plumgrid_pip_packages:
+-  - networking-plumgrid==2015.2.1.1
++#neutron_optional_plumgrid_pip_packages:
++#  - networking-plumgrid==2015.2.1.1
+ 
+ neutron_proprietary_nuage_pip_packages:
+   - nuage-openstack-neutron

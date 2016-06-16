@@ -1,0 +1,52 @@
+---
+# Copyright 2014, Rackspace US, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Check for the presence of a public key file on the host
+  stat:
+    path: /root/.ssh/id_rsa.pub
+  register: _ssh_key
+  when: lxc_container_ssh_key is undefined
+  tags:
+    - always
+
+- name: Fail if a ssh public key is not set in a var and not present on the host
+  fail:
+    msg: "Please set the lxc_container_ssh_key variable or ensure that the host has the file /root/.ssh/id_rsa.pub present."
+  when:
+    - lxc_container_ssh_key is undefined
+    - not _ssh_key.stat.exists
+  tags:
+    - always
+
+- name: Gather variables for each operating system
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution | lower }}-{{ ansible_distribution_version | lower }}.yml"
+    - "{{ ansible_distribution | lower }}.yml"
+    - "{{ ansible_os_family | lower }}.yml"
+  tags:
+    - always
+
+- include: lxc_pre_install.yml
+- include: lxc_install.yml
+- include: lxc_post_install.yml
+- include: lxc_kernel_tuning.yml
+- include: lxc_net.yml
+- include: lxc_dnsmasq_cleanup.yml
+- include: lxc_cache.yml
+- include: lxc_cache_preparation.yml
+  when: lxc_container_caches is defined and ansible_architecture != 'ppc64le'
+- name: Flush handlers
+  meta: flush_handlers

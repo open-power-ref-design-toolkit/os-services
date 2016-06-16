@@ -1,0 +1,39 @@
+diff -Naur a/opt/openstack-ansible/playbooks/os-nova-install.yml b/opt/openstack-ansible/playbooks/os-nova-install.yml
+--- a/opt/openstack-ansible/playbooks/os-nova-install.yml	2016-06-14 15:14:40.000000000 -0500
++++ b/opt/openstack-ansible/playbooks/os-nova-install.yml	2016-06-14 16:46:07.000000000 -0500
+@@ -186,6 +186,20 @@
+         - "management_address is undefined"
+       tags:
+         - nova-config
++    - name: Set nova venv download url for non-ppc64le
++      set_fact:
++        nova_download_url: "{{ openstack_repo_url }}/venvs/{{ openstack_release }}/{{ ansible_distribution | lower }}/nova-{{ openstack_release }}.tgz"
++      when:
++        - ansible_architecture != 'ppc64le'
++      tags:
++        - nova-config
++    - name: Set nova venv download url for ppc64le
++      set_fact:
++        nova_download_url: "{{ openstack_repo_url }}/venvs/{{ openstack_release }}/{{ ansible_distribution | lower }}/nova-{{ openstack_release }}-{{ ansible_architecture }}.tgz"
++      when:
++        - ansible_architecture == 'ppc64le'
++      tags:
++        - nova-config
+   roles:
+     - role: "os_nova"
+       nova_novncproxy_git_repo: "{{ openstack_repo_git_url }}/novnc"
+@@ -196,11 +210,13 @@
+       nova_api_galera_address: "{{ galera_address }}"
+       nova_management_address: "{{ management_address }}"
+       nova_venv_tag: "{{ openstack_release }}"
+-      nova_venv_download_url: "{{ openstack_repo_url }}/venvs/{{ openstack_release }}/{{ ansible_distribution | lower }}/nova-{{ openstack_release }}.tgz"
++      nova_venv_download_url: "{{ nova_download_url }}"
+       tags:
+         - "os-nova"
+     - role: "ceph_client"
++      nova_venv_bin: "/openstack/venvs/nova-{{ openstack_release }}/bin"
+       openstack_service_system_user: "{{ nova_system_user_name }}"
++      openstack_service_venv_bin: "{{ nova_venv_bin if nova_venv_enabled|default(True) else None }}"
+       tags:
+         - "nova-ceph-client"
+         - "ceph-client"

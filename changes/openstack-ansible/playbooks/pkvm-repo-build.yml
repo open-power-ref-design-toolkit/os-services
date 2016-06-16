@@ -1,5 +1,7 @@
 ---
-# Copyright 2016, IBM US, Inc.
+# Copyright 2016 IBM Corp.
+#
+# All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -64,16 +66,17 @@
         - "nova-{{ repo_build_release_tag }}-{{ ansible_architecture }}.checksum"
         - "neutron-{{ repo_build_release_tag }}-{{ ansible_architecture }}.tgz"
         - "neutron-{{ repo_build_release_tag }}-{{ ansible_architecture }}.checksum"
-    - name: Get msgpack wheel file name
-      shell: "ls -1 {{ repo_build_pool_dir }}/msgpack_python/msgpack_python*.whl"
-      register: wheel_filename
+    - name: Get ppc wheel files to copy
+      shell: find {{ repo_build_pool_dir }} -name "*ppc64*.whl"
+      register: files_to_copy
+
     - name: Fetch ppc64le repo wheel files from ppc64le machine to the deployer node
       fetch:
         src: "{{ item }}"
         dest: "/tmp/ppc64le_wheels/"
         flat: yes
         fail_on_missing: yes
-      with_items: wheel_filename.stdout_lines
+      with_items: files_to_copy.stdout_lines
 
   roles:
     - role: "repo_build"

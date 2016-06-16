@@ -28,7 +28,6 @@
     register: command_result
     failed_when: "'FAILED' in command_result.stderr"
 
-
 - include: repo-server.yml
 - include: repo-build.yml
 - include: pkvm-repo-post-build.yml

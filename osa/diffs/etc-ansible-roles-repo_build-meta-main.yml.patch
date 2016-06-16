@@ -1,0 +1,10 @@
+diff -Naur a/etc/ansible/roles/repo_build/meta/main.yml b/etc/ansible/roles/repo_build/meta/main.yml
+--- a/etc/ansible/roles/repo_build/meta/main.yml	2016-06-14 15:14:45.000000000 -0500
++++ b/etc/ansible/roles/repo_build/meta/main.yml	2016-06-14 16:46:07.000000000 -0500
+@@ -30,5 +30,5 @@
+     - openstack
+ dependencies:
+   - apt_package_pinning
+-  - galera_client
++  - { role: 'galera_client', when: ansible_architecture != 'ppc64le' }
+   - pip_install

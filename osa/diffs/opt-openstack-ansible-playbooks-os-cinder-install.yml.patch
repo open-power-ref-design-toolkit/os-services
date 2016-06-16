@@ -1,0 +1,13 @@
+diff -Naur a/opt/openstack-ansible/playbooks/os-cinder-install.yml b/opt/openstack-ansible/playbooks/os-cinder-install.yml
+--- a/opt/openstack-ansible/playbooks/os-cinder-install.yml	2016-06-14 15:14:40.000000000 -0500
++++ b/opt/openstack-ansible/playbooks/os-cinder-install.yml	2016-06-15 08:23:05.000000000 -0500
+@@ -194,7 +194,9 @@
+       tags:
+         - "os-cinder"
+     - role: "ceph_client"
++      cinder_venv_bin: "/openstack/venvs/cinder-{{ openstack_release }}/bin"
+       openstack_service_system_user: "{{ cinder_system_user_name }}"
++      openstack_service_venv_bin: "{{ cinder_venv_bin if cinder_venv_enabled|default(True) else None }}"
+       tags:
+         - "cinder-ceph-client"
+         - "ceph-client"
