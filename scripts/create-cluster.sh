@@ -16,21 +16,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
-set -e
-set -o pipefail
+# Note help text assumes the end user is invoking this script as Genesis is fully automated
+# Default value (yes) is reversed for Genesis
 
 if [ "$1" == "--help" ]; then
-    echo "Usage: create-cluster.sh [ -i <controllernode1,...> -s <storagenode1,...> -c <computenode1,...> ]"
+    echo "Usage: create-cluster.sh [-i <controllernode1,...>] [-s <storagenode1,...>] [-c <computenode1,...>]"
     echo ""
-    echo "export DEPLOY_CEPH=yes|no"
-    echo "export DEPLOY_OPSMGR=yes|no"
-    echo "export DEPLOY_HARDENING=yes|no"
-    exit 1
-fi
-
-if [[ $EUID -ne 0 ]]; then
-    echo "This script must be run as root."
+    echo "export DEPLOY_CEPH=yes|no                          Default is no"
+    echo "export DEPLOY_OPSMGR=yes|no                        Default is no"
+    echo "export DEPLOY_HARDENING=yes|no                     Default is no"
+    echo "export ADMIN_PASSWORD=                             Not applicable unless set"
     exit 1
 fi
 
@@ -40,7 +35,12 @@ if [ ! -e scripts/bootstrap-cluster.sh ]; then
 fi
 PCLD_DIR=`pwd`
 
-ulimit -n 100000
+# Save command arguments as source script parses command arguments using optind
+ARGS=$@
+source osa/scripts/process-args.sh
+
+echo DEPLOY_CEPH=$DEPLOY_CEPH
+echo DEPLOY_OPSMGR=$DEPLOY_OPSMGR
 
 # Configure ceph-ansible.  Inventory is created during the bootstrap-ceph phase, so user can customize
 if [ "$DEPLOY_CEPH" == "yes" ]; then
@@ -48,28 +48,30 @@ if [ "$DEPLOY_CEPH" == "yes" ]; then
         echo "Run ./scripts/bootstrap-cluster first!!!  Ceph code is missing"
         exit 2
     fi
-    pushd ceph
-    scripts/create-cluster-ceph.sh
+    pushd ceph >/dev/null 2>&1
+    echo "Invoking scripts/create-cluster-ceph.sh"
+    scripts/create-cluster-ceph.sh $ARGS
     rc=$?
     if [ $rc != 0 ]; then
         echo "Failed scripts/create-cluster-ceph.sh, rc=$rc"
         exit 3
     fi
-    popd
+    popd >/dev/null 2>&1
 fi
 
 # Apply user configuration files created by bootstrap-cluster.sh
 cp -r ${PCLD_DIR}/etc/openstack_deploy /etc
 
 # Configure openstack-ansible
-pushd osa
-scripts/create-cluster-osa.sh $@
+pushd osa >/dev/null 2>&1
+echo "Invoking scripts/create-cluster-osa.sh"
+scripts/create-cluster-osa.sh $ARGS
 rc=$?
 if [ $rc != 0 ]; then
     echo "Failed scripts/create-cluster-osa.sh, rc=$rc"
     exit 4
 fi
-popd
+popd >/dev/null 2>&1
 
 # Configure opsmgr - ELK, Nagios, and Horizon extensions
 if [ "$DEPLOY_OPSMGR" == "yes" ]; then
@@ -77,12 +79,13 @@ if [ "$DEPLOY_OPSMGR" == "yes" ]; then
         echo "Run ./scripts/bootstrap-cluster first!!!  Opsmgr code is missing"
         exit 5
     fi
-    pushd opsmgr
-    scripts/create-cluster-opsmgr.sh $@
+    pushd opsmgr >/dev/null 2>&1
+    echo "Invoking scripts/create-cluster-opsmgr.sh"
+    scripts/create-cluster-opsmgr.sh $ARGS
     rc=$?
     if [ $rc != 0 ]; then
         echo "Failed scripts/create-cluster-opsmgr.sh, rc=$rc"
         exit 6
     fi
-    popd
+    popd >/dev/null 2>&1
 fi
