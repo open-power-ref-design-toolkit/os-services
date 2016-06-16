@@ -11,6 +11,11 @@ changes:
     target_location: /etc/ansible/roles/galera_client
     src_location: galera_client
   - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-galera_server
+    branch: 13.1.0
+    target_location: /etc/ansible/roles/galera_server
+    src_location: galera_server
+  - project:
     git: https://git.openstack.org/openstack/openstack-ansible-lxc_hosts
     branch: 13.1.0
     target_location: /etc/ansible/roles/lxc_hosts
@@ -31,6 +36,11 @@ changes:
     target_location: /etc/ansible/roles/os_glance
     src_location: os_glance
   - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-os_horizon
+    branch: 13.1.0
+    target_location: /etc/ansible/roles/os_horizon
+    src_location: os_horizon
+  - project:
     git: https://git.openstack.org/openstack/openstack-ansible-os_neutron
     branch: 13.1.0
     target_location: /etc/ansible/roles/os_neutron
@@ -45,3 +55,8 @@ changes:
     branch: 13.1.0
     target_location: /etc/ansible/roles/repo_build
     src_location: repo_build
+  - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-rsyslog_client
+    branch: 13.1.0
+    target_location: /etc/ansible/roles/rsyslog_client
+    src_location: rsyslog_client
