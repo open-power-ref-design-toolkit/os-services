@@ -3,6 +3,7 @@
 
 changes_loc: ../changes
 temp_diff_loc: ../.diffs
+gitsrc_loc: ../.gitsrc
 
 changes:
   - project:

@@ -22,7 +22,6 @@ import yaml
 
 
 CONF_FILE = 'mkdiffs.yml'
-GIT_SRC_DIR = '.gitsrc/'
 EXEC_DIR, SCRIPT_NAME = os.path.split(sys.argv[0])
 
 
@@ -46,15 +45,17 @@ def rm_dir(directory):
 
 def clone_all(conf):
     print ('Cloning the git projects.')
+    git_dir = conf['gitsrc_loc']
     for project in conf['changes']:
         print ('  ' + project['git'])
         git_clone(project['git'], project['branch'],
-                  GIT_SRC_DIR + '/' + project['src_location'])
+                  git_dir + '/' + project['src_location'])
 
 
 def confirm_clones(conf):
+    git_dir = conf['gitsrc_loc']
     for project in conf['changes']:
-        if not os.path.isdir(GIT_SRC_DIR + os.sep + project['src_location']):
+        if not os.path.isdir(git_dir + os.sep + project['src_location']):
             print ('Clone not found for project: ' + project['git'])
             exit(1)
 
@@ -70,6 +71,7 @@ class CreateDiffs(object):
     def __init__(self, conf):
         super(CreateDiffs, self).__init__()
         self.conf = conf
+        self.git_dir = conf['gitsrc_loc']
         self.diffs_dir = os.path.normpath(
             os.path.join(EXEC_DIR, self.conf['temp_diff_loc']))
         self.changes_loc = os.path.join(EXEC_DIR, self.conf['changes_loc'])
@@ -114,7 +116,7 @@ class CreateDiffs(object):
                              os.path.dirname(prj_rel_path))
 
                 # Original File
-                orig_file_path = (GIT_SRC_DIR + project['src_location'] +
+                orig_file_path = (self.git_dir + project['src_location'] +
                                   os.sep + prj_rel_path)
                 # Ensure the original file exists.
                 if not os.path.isfile(orig_file_path):
