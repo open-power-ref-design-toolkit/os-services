@@ -145,13 +145,16 @@ def process_files(skip_git_cloning):
     crt_diffs = CreateDiffs(conf)
     crt_diffs.create_dir()
     crt_diffs.create_file_diffs()
+    print ('Generated patch files are available in <git top-level directory>/.diffs/.')
 
 
 def parse_command():
     """Parse the command arguments."""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=('A command to make the patch files.'))
+        description=("A command to make the patch files. Generated\n"
+                     "patch files will be available in the directory\n"
+                     "<git top-level directory>/.diffs/."))
     parser.add_argument('-s', '--skip-git-cloning', action='store_true',
                         help='Skip the git cloning.')
     parser.set_defaults(func=process_files)
