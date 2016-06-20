@@ -17,15 +17,48 @@
 #    under the License.
 
 # User can override the git urls
-GIT_OPSMGR_URL=${GIT_OPSMGR_URL:-"https://github.com/ibmsoe/ibm-openstack-opsmgr"}
-GIT_CEPH_URL=${GIT_CEPH_URL:-"https://github.com/ibmsoe/ibm-openstack-ceph"}
+GIT_OPSMGR_URL=${GIT_OPSMGR_URL:-"git://github.com/ibmsoe/ibm-openstack-opsmgr"}
+GIT_CEPH_URL=${GIT_CEPH_URL:-"git://github.com/ibmsoe/ibm-openstack-ceph"}
 
 # Get the current branch or tag for this repository, ie. os-services
 MASTER_TAG=`git symbolic-ref -q --short HEAD || git describe --tags --exact-match`
 
 # User can override the git tag or branch that is used to clone the repository
-CEPH_TAG=${CEPH_TAG:-MASTER_TAG}
-OPSMGR_TAG=${OPSMGR_TAG:-MASTER_TAG}
+CEPH_TAG=${CEPH_TAG:-${MASTER_TAG}}
+OPSMGR_TAG=${OPSMGR_TAG:-${MASTER_TAG}}
+
+function git-clone () {
+    GIT_URL=$1
+    DESIRED_TAG=$2
+    TARGET_DIR=$3
+    echo "GIT_URL=$GIT_URL"
+    echo "DESIRED_TAG=$DESIRED_TAG"
+    pushd . >/dev/null 2>&1
+    if [ -d $PCLD_DIR/$TARGET_DIR ]; then
+        cd $PCLD_DIR/$TARGET_DIR
+        TAG=`git symbolic-ref -q --short HEAD || git describe --tags --exact-match`
+        if [ "$TAG" == "$DESIRED_TAG" ]; then
+            git pull
+            rc=$?
+        else
+            git checkout $DESIRED_TAG
+            rc=$?
+        fi
+    else
+        git clone $GIT_URL
+        rc=$?
+        if [ $rc == 0 ]; then
+            cd $PCLD_DIR/$TARGET_DIR
+            git checkout $DESIRED_TAG
+            rc=$?
+        fi
+    fi
+    popd >/dev/null 2>&1
+    if [ $rc != 0 ]; then
+        echo "Failed git $TARGET_DIR, rc=$rc"
+        exit 3
+    fi
+}
 
 # Note help text assumes the end user is invoking this script as Genesis is fully automated
 # Default value (yes) is reversed for Genesis
@@ -109,29 +142,10 @@ if [ $rc != 0 ]; then
 fi
 popd >/dev/null 2>&1
 
-# Installs ceph-ansible
+# Installs ceph and ceph-ansible
 if [[ "$DEPLOY_CEPH" == "yes" ]]; then
-    pushd . >/dev/null 2>&1
-    if [ -d $PCLD_DIR/ceph ]; then
-        cd $PCLD_DIR/ceph
-        TAG=`git symbolic-ref -q --short HEAD || git describe --tags --exact-match`
-        if [ "$TAG" == "$CEPH_TAG" ]; then
-            git pull
-            rc=$?
-        else
-            git checkout $CEPH_TAG
-            rc=$?
-        fi
-    else
-        git clone $GIT_CEPH_URL
-        cd $PCLD_DIR/ceph
-        git checkout $CEPH_TAG
-        rc=$?
-    fi
-    if [ $rc != 0 ]; then
-        echo "Failed git ceph, rc=$rc"
-        exit 3
-    fi
+    git-clone $GIT_CEPH_URL $CEPH_TAG ceph
+    pushd ceph >/dev/null 2>&1
     echo "Invoking scripts/bootstrap-ceph.sh"
     scripts/bootstrap-ceph.sh $ARGS ${PCLD_DIR}/etc
     rc=$?
@@ -145,35 +159,15 @@ fi
 
 # Installs opsmgr
 if [[ "$DEPLOY_OPSMGR" == "yes" ]]; then
-    pushd . >/dev/null 2>&1
-    if [ -d $PLCD_DIR/opsmgr ]; then
-        cd $PCLD_DIR/opsmgr
-        TAG=`git symbolic-ref -q --short HEAD || git describe --tags --exact-match`
-        if [ "$TAG" == "$OPSMGR_TAG" ]; then
-            git pull
-            rc=$?
-        else
-            git checkout $OPSMGR_TAG
-            rc=$?
-        fi
-    else
-        # TODO: Update with external github.com
-        git clone $GIT_OPSMGR_URL opsmgr
-        cd $PCLD_DIR/opsmgr
-        git checkout $OPSMGR_TAG
-        rc=$?
-    fi
-    if [ $rc != 0 ]; then
-        echo "Failed git opsmgr, rc=$rc"
-        echo "You may want to continue manually.  cd opsmgr; ./scripts/bootstrap-opsmgr.sh"
-        exit 5
-    fi
+    git-clone $GIT_OPSMGR_URL $OPSMGR_TAG opsmgr
+    pushd opsmgr >/dev/null 2>&1
     echo "Invoking scripts/bootstrap-opsmgr.sh"
     scripts/bootstrap-opsmgr.sh $ARGS ${PCLD_DIR}/etc
     rc=$?
     if [ $rc != 0 ]; then
         echo "Failed scripts/bootstrap-opsmgr.sh, rc=$rc"
-        exit 6
+        echo "You may want to continue manually.  cd opsmgr; ./scripts/bootstrap-opsmgr.sh"
+        exit 5
     fi
     popd >/dev/null 2>&1
 fi
@@ -191,9 +185,14 @@ fi
 
 echo ""
 echo ""
-echo "At this point, it may be desirable to set passwords in /etc/openstack_deploy/user_secrets.yml"
-echo "for commonly used accounts before creating the openstack cluster.  For example,"
-echo "keystone_auth_admin_password if not using environment variable ADMIN_PASSWORD"
+echo "At this point, it may be desirable to customize some settings before"
+echo "starting the cluster.  For example, keystone_auth_admin_password in"
+echo "/etc/openstack_deploy/user_secrets.yml.  The setting of this user account"
+echo "may also be scripted using the environment variable ADMIN_PASSWORD."
+echo "Otherwise passwords will be dynamically generated.  Additional parameters"
+echo "of interest may be found in ./etc/openstack_deploy/*.yml.  There is no"
+echo "requirement to modify any parameter."
 echo ""
-echo "vi /etc/openstack_deploy/user_secrets.sh"
-echo "Run ./scripts/create-cluster.sh"
+echo "vi /etc/openstack_deploy/user_secrets.yml"
+echo "vi ./etc/openstack_deploy/*.yml"
+echo "./scripts/create-cluster.sh"
