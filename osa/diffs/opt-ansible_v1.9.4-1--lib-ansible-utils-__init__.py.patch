@@ -1,0 +1,60 @@
+diff -Naur a/opt/ansible_v1.9.4-1/lib/ansible/utils/__init__.py b/opt/ansible_v1.9.4-1/lib/ansible/utils/__init__.py
+--- a/opt/ansible_v1.9.4-1/lib/ansible/utils/__init__.py	2016-06-20 10:24:57.539351911 -0500
++++ b/opt/ansible_v1.9.4-1/lib/ansible/utils/__init__.py	2016-06-20 10:45:07.135335706 -0500
+@@ -183,9 +183,8 @@
+             vault_pass = stdout.strip('\r\n')
+         else:
+             try:
+-                f = open(this_path, "rb")
+-                vault_pass=f.read().strip()
+-                f.close()
++                with open(this_path, "rb") as f:
++                    vault_pass=f.read().strip()
+             except (OSError, IOError), e:
+                 raise errors.AnsibleError("Could not read %s: %s" % (this_path, e))
+ 
+@@ -230,8 +229,12 @@
+     # in which case, we'd want append mode.
+     path = os.path.join(tree, hostname)
+     buf = to_bytes(buf)
+-    with open(path, 'wb+') as fd:
+-        fd.write(buf)
++    try:
++        with open(path, 'wb+') as fd:
++            fd.write(buf)
++    except IOError:
++        raise errors.AnsibleError("file could not read: %s" % path)
++
+ 
+ def is_failed(result):
+     ''' is a given JSON result a failed result? '''
+@@ -760,7 +763,8 @@
+     show_content = True
+ 
+     try:
+-        data = open(path).read()
++        with open(path) as f:
++            data = f.read()
+     except IOError:
+         raise errors.AnsibleError("file could not read: %s" % path)
+ 
+@@ -841,12 +845,13 @@
+         # Check if the .git is a file. If it is a file, it means that we are in a submodule structure.
+         if os.path.isfile(repo_path):
+             try:
+-                gitdir = yaml.safe_load(open(repo_path)).get('gitdir')
+-                # There is a possibility the .git file to have an absolute path.
+-                if os.path.isabs(gitdir):
+-                    repo_path = gitdir
+-                else:
+-                    repo_path = os.path.join(repo_path[:-4], gitdir)
++                with open(repo_path) as f:
++                    gitdir = yaml.safe_load(f).get('gitdir')
++                    # There is a possibility the .git file to have an absolute path.
++                    if os.path.isabs(gitdir):
++                        repo_path = gitdir
++                    else:
++                        repo_path = os.path.join(repo_path[:-4], gitdir)
+             except (IOError, AttributeError):
+                 return ''
+         f = open(os.path.join(repo_path, "HEAD"))

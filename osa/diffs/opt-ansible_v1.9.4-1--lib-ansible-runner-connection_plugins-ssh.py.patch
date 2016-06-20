@@ -1,0 +1,130 @@
+diff -Naur a/opt/ansible_v1.9.4-1/lib/ansible/runner/connection_plugins/ssh.py b/opt/ansible_v1.9.4-1/lib/ansible/runner/connection_plugins/ssh.py
+--- a/opt/ansible_v1.9.4-1/lib/ansible/runner/connection_plugins/ssh.py	2016-06-17 16:15:29.560030217 -0500
++++ b/opt/ansible_v1.9.4-1/lib/ansible/runner/connection_plugins/ssh.py	2016-06-17 09:15:09.071223159 -0500
+@@ -147,60 +147,78 @@
+     def _communicate(self, p, stdin, indata, sudoable=False, prompt=None):
+         fcntl.fcntl(p.stdout, fcntl.F_SETFL, fcntl.fcntl(p.stdout, fcntl.F_GETFL) & ~os.O_NONBLOCK)
+         fcntl.fcntl(p.stderr, fcntl.F_SETFL, fcntl.fcntl(p.stderr, fcntl.F_GETFL) & ~os.O_NONBLOCK)
++
+         # We can't use p.communicate here because the ControlMaster may have stdout open as well
+         stdout = ''
+         stderr = ''
+         rpipes = [p.stdout, p.stderr]
+-        if indata:
+-            try:
+-                stdin.write(indata)
+-                stdin.close()
+-            except:
+-                raise errors.AnsibleError('SSH Error: data could not be sent to the remote host. Make sure this host can be reached over ssh')
+-        # Read stdout/stderr from process
+-        while True:
+-            rfd, wfd, efd = select.select(rpipes, [], rpipes, 1)
+-
+-            # fail early if the become password is wrong
+-            if self.runner.become and sudoable:
+-                incorrect_password = gettext.dgettext(self.runner.become_method, C.BECOME_ERROR_STRINGS[self.runner.become_method])
+-
+-                if prompt:
+-                    if self.runner.become_pass:
+-                        if stdout.endswith("%s\r\n%s" % (incorrect_password, prompt)):
++
++        stdinClosed = False
++
++        try:
++            if indata:
++                try:
++                    stdin.write(indata)
++                except:
++                    raise errors.AnsibleError('SSH Error: data could not be sent to the remote host. Make sure this host can be reached over ssh')
++                finally:
++                    stdin.close()
++                    stdinClosed = True
++
++            # Read stdout/stderr from process
++            while True:
++                rfd, wfd, efd = select.select(rpipes, [], rpipes, 1)
++
++                # fail early if the become password is wrong
++                if self.runner.become and sudoable:
++                    incorrect_password = gettext.dgettext(self.runner.become_method, C.BECOME_ERROR_STRINGS[self.runner.become_method])
++
++                    if prompt:
++                        if self.runner.become_pass:
++                            if stdout.endswith("%s\r\n%s" % (incorrect_password, prompt)):
++                                raise errors.AnsibleError('Incorrect become password')
++
++                        if stdout.endswith(prompt):
++                            raise errors.AnsibleError('Missing become password')
++                        elif stdout.endswith("%s\r\n%s" % (incorrect_password, prompt)):
+                             raise errors.AnsibleError('Incorrect become password')
+ 
+-                    if stdout.endswith(prompt):
+-                        raise errors.AnsibleError('Missing become password')
+-                    elif stdout.endswith("%s\r\n%s" % (incorrect_password, prompt)):
+-                        raise errors.AnsibleError('Incorrect become password')
+-
+-            if p.stdout in rfd:
+-                dat = os.read(p.stdout.fileno(), 9000)
+-                stdout += dat
+-                if dat == '':
+-                    rpipes.remove(p.stdout)
+-            if p.stderr in rfd:
+-                dat = os.read(p.stderr.fileno(), 9000)
+-                stderr += dat
+-                if dat == '':
+-                    rpipes.remove(p.stderr)
+-            # only break out if no pipes are left to read or
+-            # the pipes are completely read and
+-            # the process is terminated
+-            if (not rpipes or not rfd) and p.poll() is not None:
+-                break
+-            # No pipes are left to read but process is not yet terminated
+-            # Only then it is safe to wait for the process to be finished
+-            # NOTE: Actually p.poll() is always None here if rpipes is empty
+-            elif not rpipes and p.poll() == None:
+-                p.wait()
+-                # The process is terminated. Since no pipes to read from are
+-                # left, there is no need to call select() again.
+-                break
+-        # close stdin after process is terminated and stdout/stderr are read
+-        # completely (see also issue #848)
+-        stdin.close()
++                if p.stdout in rfd:
++                    dat = os.read(p.stdout.fileno(), 9000)
++                    stdout += dat
++                    if dat == '':
++                        rpipes.remove(p.stdout)
++                if p.stderr in rfd:
++                    dat = os.read(p.stderr.fileno(), 9000)
++                    stderr += dat
++                    if dat == '':
++                        rpipes.remove(p.stderr)
++
++                # only break out if no pipes are left to read or
++                # the pipes are completely read and
++                # the process is terminated
++                if (not rpipes or not rfd) and p.poll() is not None:
++                    break
++
++                # No pipes are left to read but process is not yet terminated
++                # Only then it is safe to wait for the process to be finished
++                # NOTE: Actually p.poll() is always None here if rpipes is empty
++                elif not rpipes and p.poll() == None:
++                    p.wait()
++                    # The process is terminated. Since no pipes to read from are
++                    # left, there is no need to call select() again.
++                    break
++        except Exception as e:
++            raise errors.AnsibleError('SSH Communicate Error: %s' % str(e))
++
++        finally:
++            # close stdin after process is terminated and stdout/stderr are read
++            # completely (see also issue #848)
++            if not stdinClosed:
++                stdin.close()
++            p.stdout.close()
++            p.stderr.close()
++
+         return (p.returncode, stdout, stderr)
+ 
+     def not_in_host_file(self, host):

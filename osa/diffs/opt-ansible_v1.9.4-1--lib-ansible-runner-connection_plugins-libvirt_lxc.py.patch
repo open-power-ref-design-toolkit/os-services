@@ -1,0 +1,13 @@
+diff -Naur a/opt/ansible_v1.9.4-1/lib/ansible/runner/connection_plugins/libvirt_lxc.py b/opt/ansible_v1.9.4-1/lib/ansible/runner/connection_plugins/libvirt_lxc.py
+--- a/opt/ansible_v1.9.4-1/lib/ansible/runner/connection_plugins/libvirt_lxc.py	2016-06-17 16:15:29.548030217 -0500
++++ b/opt/ansible_v1.9.4-1/lib/ansible/runner/connection_plugins/libvirt_lxc.py	2016-06-17 09:15:09.075223159 -0500
+@@ -106,7 +106,8 @@
+         p = subprocess.Popen(local_cmd, cwd=self.runner.basedir,
+                              stdin=subprocess.PIPE,
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE) 
+-        stdout, stderr = p.communicate(open(in_path,'rb').read())
++        with open(in_path,'rb') as f:
++            stdout, stderr = p.communicate(f.read())
+  
+     def fetch_file(self, in_path, out_path):
+         ''' fetch a file from lxc to local '''
