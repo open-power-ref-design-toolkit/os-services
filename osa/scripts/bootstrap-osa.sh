@@ -33,7 +33,7 @@ function generate_inventory {
     if [ -r $GENESIS_INVENTORY ]; then
         echo "Inventory provided by genesis"
         pushd etc/openstack_deploy >/dev/null 2>&1
-        $SCRIPTS_DIR/../../scripts/generate_user_config.py -i $GENESIS_INVENTORY
+        $SCRIPTS_DIR/scripts/generate_user_config.py -i $GENESIS_INVENTORY
         rc=$?
         if [ $rc -ne 0 ]; then
             echo "Error generating config files from genesis file."
@@ -75,6 +75,7 @@ if [ ! -e scripts/bootstrap-osa.sh ]; then
     exit 1
 fi
 PCLD_DIR=`pwd`
+
 generate_inventory
 
 # Checkout the openstack-ansible repository
