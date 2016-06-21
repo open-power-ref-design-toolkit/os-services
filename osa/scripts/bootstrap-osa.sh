@@ -16,6 +16,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 SCRIPTS_DIR=$(dirname $0)
+# Get the full path to the scripts directory
+SCRIPTS_DIR=$(readlink -ne $SCRIPTS_DIR)
 source $SCRIPTS_DIR/process-args.sh
 
 echo "DEPLOY_AIO=$DEPLOY_AIO"
@@ -30,7 +32,14 @@ function generate_inventory {
 
     if [ -r $GENESIS_INVENTORY ]; then
         echo "Inventory provided by genesis"
-        # TODO(luke): Generate openstack_user_config.xml from genesis
+        pushd etc/openstack_deploy >/dev/null 2>&1
+        $SCRIPTS_DIR/../../scripts/generate_user_config.py -i $GENESIS_INVENTORY
+        rc=$?
+        if [ $rc -ne 0 ]; then
+            echo "Error generating config files from genesis file."
+            exit 1
+        fi
+        popd >/dev/null 2>&1
     else
         if [ ! -z "$allNodes" ]; then
             # Validate ssh connectivity
@@ -66,7 +75,6 @@ if [ ! -e scripts/bootstrap-osa.sh ]; then
     exit 1
 fi
 PCLD_DIR=`pwd`
-
 generate_inventory
 
 # Checkout the openstack-ansible repository

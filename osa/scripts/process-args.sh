@@ -47,7 +47,7 @@ function run_ansible {
 }
 
 # This inventory is tied to manufacturing
-GENESIS_INVENTORY="/var/oprc/inventory"
+GENESIS_INVENTORY="/var/oprc/inventory.yml"
 
 # Reduce list to unique items
 function mkListsUnique() {
