@@ -41,7 +41,7 @@ echo "DEPLOY_HARDENING=$DEPLOY_HARDENING"
 echo "InfraNodes=$infraNodes"
 echo "allNodes=$allNodes"
 
-function rebuild_container() {
+function rebuild_container {
     failingContainer=$1
     failingNode=${1%%_*}         # Get the part of arg1 before '_'. ie aio1_galera_container-3ac6d84 --> aio1
 
@@ -263,31 +263,30 @@ while [ "$done" == "False" ] && [ $i -lt 4 ]; do
     echo "Failed setup-openstack.yml rc=$rc, rebuild failing container(s) $failingContainer ..."
 
     failedAgain=""
-    for container in $failingContainer
-    do
-       # For node errors, we run setup-openstack.yml at the top of the while loop above
-       if [ "$container" == "aio1" ] || [ "$container" == "$HOSTNAME" ]; then
-           echo "Rebuild skip $container on node $failingNode"
-           failedAgain="$failedAgain $container"
-           continue;
-       fi
+    for container in $failingContainer; do
+        # For node errors, we run setup-openstack.yml at the top of the while loop above
+        if [ "$container" == "aio1" ] || [ "$container" == "$HOSTNAME" ]; then
+            echo "Rebuild skip $container on node $failingNode"
+            failedAgain="$failedAgain $container"
+            continue;
+        fi
 
-       # This destroys container and re-builds it
-       rebuild_container $container
-       rc=$?
-       if [ $rc != 0 ]; then
-           echo "Failed rebuild_container rc=$rc container=${container}"
-           exit 7
-       fi
+        # This destroys container and re-builds it
+        rebuild_container $container
+        rc=$?
+        if [ $rc != 0 ]; then
+            echo "Failed rebuild_container rc=$rc container=${container}"
+            exit 7
+        fi
 
-       run_ansible setup-openstack.yml -l $failingNode -l $container
-       rc=$?
-       if [ $rc != 0 ]; then
-           echo "Failed setup-openstack.yml -l $failingNode -l $container rc=$rc, continueing ..."
-           failedAgain="$failedAgain $container"
-           continue
-       fi
-       echo "Rebuild setup-openstack.yml successful for container $container on node $failingNode"
+        run_ansible setup-openstack.yml -l $failingNode -l $container
+        rc=$?
+        if [ $rc != 0 ]; then
+            echo "Failed setup-openstack.yml -l $failingNode -l $container rc=$rc, continueing ..."
+            failedAgain="$failedAgain $container"
+            continue
+        fi
+        echo "Rebuild setup-openstack.yml successful for container $container on node $failingNode"
     done
 
     prevFailingContainer=$failedAgain
