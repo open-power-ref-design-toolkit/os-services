@@ -147,7 +147,11 @@ def process_files(skip_git_cloning):
     crt_diffs = CreateDiffs(conf)
     crt_diffs.create_dir()
     crt_diffs.create_file_diffs()
-    print ('Generated patch files are available in <git top-level directory>/.diffs/.')
+
+    print ('\nGenerated patch files are available in directory: %s' %
+           os.path.normpath(os.path.join(EXEC_DIR, conf['temp_diff_loc'])))
+    print ('The project source is in directory: %s' %
+           os.path.normpath(os.path.join(EXEC_DIR, conf['gitsrc_loc'])))
 
 
 def parse_command():

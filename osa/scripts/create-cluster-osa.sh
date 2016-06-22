@@ -41,8 +41,7 @@ echo "DEPLOY_HARDENING=$DEPLOY_HARDENING"
 echo "InfraNodes=$infraNodes"
 echo "allNodes=$allNodes"
 
-function rebuild_container()
-{
+function rebuild_container() {
     failingContainer=$1
     failingNode=${1%%_*}         # Get the part of arg1 before '_'. ie aio1_galera_container-3ac6d84 --> aio1
 
@@ -92,7 +91,7 @@ function rebuild_container()
         # Check if the container still exists
         ansible $failingNode -a "lxc-info -n $failingContainer"
         rc=$?
-        if [ $rc == 1 ]; then
+        if [ $rc == 2 ]; then
             # Remove root file system of failing container
             ansible $failingNode -a "rm -rf /openstack/${failingContainer}/*"
             # Remove log file of failing container
@@ -151,8 +150,7 @@ fi
 
 # Apply host security hardening with openstack-ansible-security
 # The is applied as part of setup-hosts.yml
-if [[ "$DEPLOY_HARDENING" == "yes" ]]
-then
+if [[ "$DEPLOY_HARDENING" == "yes" ]]; then
     echo "Security hardening enabled"
     if grep -q '^apply_security_hardening:' /etc/openstack_deploy/user_variables.yml
     then
@@ -234,9 +232,9 @@ fi
 # This is necessary because in an AIO environment there are no physical interfaces involved in
 # instance -> metadata requests, and this results in the checksums being incorrect.
 ansible neutron_agent -m command \
-                      -a '/sbin/iptables -t mangle -A POSTROUTING -p tcp --sport 80 -j CHECKSUM --checksum-fill'
+    -a '/sbin/iptables -t mangle -A POSTROUTING -p tcp --sport 80 -j CHECKSUM --checksum-fill'
 ansible neutron_agent -m shell \
-                      -a 'DEBIAN_FRONTEND=noninteractive apt-get install iptables-persistent'
+    -a 'DEBIAN_FRONTEND=noninteractive apt-get install iptables-persistent'
 
 # Setup openstack
 i=0

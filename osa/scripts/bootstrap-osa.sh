@@ -32,19 +32,18 @@ function generate_inventory {
 
     if [ -r $GENESIS_INVENTORY ]; then
         echo "Inventory provided by genesis"
-        pushd etc/openstack_deploy >/dev/null 2>&1
-        $SCRIPTS_DIR/scripts/generate_user_config.py -i $GENESIS_INVENTORY
+        $SCRIPTS_DIR/generate_user_config.py \
+            -i $GENESIS_INVENTORY \
+            -d etc/openstack_deploy
         rc=$?
         if [ $rc -ne 0 ]; then
             echo "Error generating config files from genesis file."
             exit 1
         fi
-        popd >/dev/null 2>&1
     else
         if [ ! -z "$allNodes" ]; then
             # Validate ssh connectivity
-            for node in $allNodes
-            do
+            for node in $allNodes; do
                 ARCH=`ssh -i ~/.ssh/id_rsa root@$node uname -m`
                 rc=$?
                 if [ $rc != 0 ]; then
