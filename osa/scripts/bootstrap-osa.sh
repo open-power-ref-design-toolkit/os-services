@@ -104,7 +104,7 @@ ANSIBLE_PATCH=False
 for f in ${PCLD_DIR}/diffs/*.patch; do
     patch -N -p1 < $f
     rc=$?
-    if [[ "$f" == "opt-ansible"* ]] && [ $rc == 0 ]; then
+    if [[ "$f" == *"/opt-ansible"* ]] && [ $rc == 0 ]; then
         ANSIBLE_PATCH=True
     fi
 done
