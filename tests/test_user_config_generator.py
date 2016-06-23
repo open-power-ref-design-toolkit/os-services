@@ -23,7 +23,7 @@ import unittest
 import yaml
 
 TOP_DIR = path.join(os.getcwd(), path.dirname(__file__), '..')
-SCRIPT_DIR = 'scripts'
+SCRIPT_DIR = 'osa/scripts'
 sys.path.append(path.join(TOP_DIR, SCRIPT_DIR))
 
 import generate_user_config as guc
