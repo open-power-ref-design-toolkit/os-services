@@ -169,7 +169,7 @@ else
 fi
 
 # Set password in file for named secret if it is not set in file and environment variable is set
-set_passwd /etc/openstack_deploy/user_secrets.yml keystone_auth_admin_password $ADMIN_PASSWD
+set_passwd /etc/openstack_deploy/user_secrets.yml keystone_auth_admin_password $ADMIN_PASSWORD
 
 echo "Generating passwords"
 
