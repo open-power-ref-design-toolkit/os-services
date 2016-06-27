@@ -55,6 +55,16 @@ function generate_inventory {
         if [ $DEPLOY_AIO == "no" ]; then
             echo "Inventory generated from command arguments"
             # TODO(luke): Generate openstack_user_config.xml from command line args
+        elif [ ! -d /openstack ]; then
+            # bootstrap-aio creates /openstack, the mount point for containers
+            pushd $OSA_DIR >/dev/null 2>&1
+            ./scripts/bootstrap-aio.sh
+            rc=$?
+            if [ $rc != 0 ]; then
+                echo "bootstrap-aio.sh failed, rc=$rc"
+                exit 1
+            fi
+            popd >/dev/null 2>&1
         fi
     fi
 }
@@ -75,8 +85,6 @@ if [ ! -e scripts/bootstrap-osa.sh ]; then
 fi
 PCLD_DIR=`pwd`
 
-generate_inventory
-
 # Checkout the openstack-ansible repository
 if [ ! -d /opt/openstack-ansible ]; then
     echo "Installing openstack-ansible..."
@@ -94,6 +102,10 @@ if [ ! -d /etc/ansible ]; then
     BOOTSTRAP_OPTS="${BOOTSTRAP_OPTS} bootstrap_host_ubuntu_security_repo=http://security.ubuntu.com/ubuntu/"
     scripts/bootstrap-ansible.sh
 fi
+
+echo "Bootstrap inventory"
+
+generate_inventory
 
 echo "Applying patches"
 

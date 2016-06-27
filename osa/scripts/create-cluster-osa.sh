@@ -139,15 +139,6 @@ function rebuild_container {
 
 cd ${OSA_DIR}
 
-if [ "$DEPLOY_AIO" == "yes" ] && [ ! -d /openstack ]; then
-    # Amongst other things bootstrap-aio creates /openstack, the mount point for containers
-    ./scripts/bootstrap-aio.sh
-    rc=$?
-    if [ $rc != 0 ]; then
-        exit 1
-    fi
-fi
-
 # Apply host security hardening with openstack-ansible-security
 # The is applied as part of setup-hosts.yml
 if [[ "$DEPLOY_HARDENING" == "yes" ]]; then
