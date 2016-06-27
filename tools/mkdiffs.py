@@ -116,7 +116,8 @@ class CreateDiffs(object):
                              os.path.dirname(prj_rel_path))
 
                 # Original File
-                orig_file_path = (self.git_dir + os.sep + project['src_location'] +
+                orig_file_path = (self.git_dir + os.sep +
+                                  project['src_location'] +
                                   os.sep + prj_rel_path)
                 # Ensure the original file exists.
                 if not os.path.isfile(orig_file_path):

@@ -103,6 +103,9 @@ if [ ! -d /etc/ansible ]; then
     scripts/bootstrap-ansible.sh
 fi
 
+# Load the python requirements
+pip install -r $SCRIPTS_DIR/../../requirements.txt >/dev/null
+
 echo "Bootstrap inventory"
 
 generate_inventory

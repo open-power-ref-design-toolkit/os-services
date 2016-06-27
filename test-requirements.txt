@@ -5,3 +5,4 @@ flake8==2.2.4
 mock>=1.2
 testrepository>=0.0.18  # Apache-2.0/BSD
 gitpython>=2.0.5
+PyYAML>=3.11
