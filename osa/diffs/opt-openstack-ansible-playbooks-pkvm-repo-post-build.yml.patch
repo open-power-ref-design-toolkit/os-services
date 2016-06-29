@@ -1,7 +1,7 @@
 diff -Naur a/opt/openstack-ansible/playbooks/pkvm-repo-post-build.yml b/opt/openstack-ansible/playbooks/pkvm-repo-post-build.yml
---- a/opt/openstack-ansible/playbooks/pkvm-repo-post-build.yml	1969-12-31 18:00:00.000000000 -0600
-+++ b/opt/openstack-ansible/playbooks/pkvm-repo-post-build.yml	2016-06-15 10:43:04.000000000 -0500
-@@ -0,0 +1,50 @@
+--- a/opt/openstack-ansible/playbooks/pkvm-repo-post-build.yml	1969-12-31 19:00:00.000000000 -0500
++++ b/opt/openstack-ansible/playbooks/pkvm-repo-post-build.yml	2016-06-29 15:40:14.086426019 -0400
+@@ -0,0 +1,52 @@
 +---
 +# Copyright 2016 IBM Corp.
 +#
@@ -36,6 +36,7 @@ diff -Naur a/opt/openstack-ansible/playbooks/pkvm-repo-post-build.yml b/opt/open
 +        - "nova-{{ repo_build_release_tag }}-ppc64le.checksum"
 +        - "neutron-{{ repo_build_release_tag }}-ppc64le.tgz"
 +        - "neutron-{{ repo_build_release_tag }}-ppc64le.checksum"
++      when: hostvars[groups['compute_all'][0]]['ansible_architecture'] == 'ppc64le'
 +
 +- name: Remove files from /tmp
 +  hosts: localhost
@@ -52,3 +53,4 @@ diff -Naur a/opt/openstack-ansible/playbooks/pkvm-repo-post-build.yml b/opt/open
 +        - "nova-{{ repo_build_release_tag }}-ppc64le.checksum"
 +        - "neutron-{{ repo_build_release_tag }}-ppc64le.tgz"
 +        - "neutron-{{ repo_build_release_tag }}-ppc64le.checksum"
++      when: hostvars[groups['compute_all'][0]]['ansible_architecture'] == 'ppc64le'

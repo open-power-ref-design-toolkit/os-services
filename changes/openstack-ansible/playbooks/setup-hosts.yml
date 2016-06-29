@@ -14,7 +14,6 @@
 # limitations under the License.
 
 - include: setup-pkvm.yml
-  when: ansible_architecture == 'ppc64le'
 - include: openstack-hosts-setup.yml
 - include: security-hardening.yml
 - include: lxc-hosts-setup.yml

@@ -1,7 +1,7 @@
 diff -Naur a/opt/openstack-ansible/playbooks/setup-pkvm.yml b/opt/openstack-ansible/playbooks/setup-pkvm.yml
---- a/opt/openstack-ansible/playbooks/setup-pkvm.yml	1969-12-31 18:00:00.000000000 -0600
-+++ b/opt/openstack-ansible/playbooks/setup-pkvm.yml	2016-06-15 10:32:27.000000000 -0500
-@@ -0,0 +1,43 @@
+--- a/opt/openstack-ansible/playbooks/setup-pkvm.yml	1969-12-31 19:00:00.000000000 -0500
++++ b/opt/openstack-ansible/playbooks/setup-pkvm.yml	2016-06-29 15:44:24.546435173 -0400
+@@ -0,0 +1,48 @@
 +---
 +# Copyright 2016 IBM Corp.
 +#
@@ -33,11 +33,13 @@ diff -Naur a/opt/openstack-ansible/playbooks/setup-pkvm.yml b/opt/openstack-ansi
 +      with_items:
 +        - qemu-system-ppc
 +        - libvirt-bin
++      when: ansible_architecture == 'ppc64le'
 +      tags:
 +       - pkvm-install-libvirt
 +
 +    - name: Disable SMT
 +      command: /usr/sbin/ppc64_cpu --smt=off
++      when: ansible_architecture == 'ppc64le'
 +      tags:
 +       - pkvm-disable-smt
 +
@@ -45,3 +47,6 @@ diff -Naur a/opt/openstack-ansible/playbooks/setup-pkvm.yml b/opt/openstack-ansi
 +      copy:
 +        src: "files/smt.conf"
 +        dest: "/etc/init/smt.conf"
++      when: ansible_architecture == 'ppc64le'
++      tags:
++       - pkvm-disable-smt

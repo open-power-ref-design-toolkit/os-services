@@ -1,7 +1,7 @@
 diff -Naur a/opt/openstack-ansible/playbooks/repo-install.yml b/opt/openstack-ansible/playbooks/repo-install.yml
---- a/opt/openstack-ansible/playbooks/repo-install.yml	2016-06-16 07:24:37.970584481 -0400
-+++ b/opt/openstack-ansible/playbooks/repo-install.yml	2016-06-16 07:25:48.450456216 -0400
-@@ -13,5 +13,18 @@
+--- a/opt/openstack-ansible/playbooks/repo-install.yml	2016-06-29 15:46:05.646438868 -0400
++++ b/opt/openstack-ansible/playbooks/repo-install.yml	2016-06-29 15:39:14.570423844 -0400
+@@ -13,5 +13,17 @@
  # See the License for the specific language governing permissions and
  # limitations under the License.
  
@@ -19,4 +19,3 @@ diff -Naur a/opt/openstack-ansible/playbooks/repo-install.yml b/opt/openstack-an
  - include: repo-server.yml
  - include: repo-build.yml
 +- include: pkvm-repo-post-build.yml
-+  when: hostvars[groups['compute_all'][0]]['ansible_architecture'] == 'ppc64le'
