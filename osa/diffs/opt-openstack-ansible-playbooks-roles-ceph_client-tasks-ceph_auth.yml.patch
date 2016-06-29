@@ -1,0 +1,23 @@
+diff -Naur a/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_auth.yml b/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_auth.yml
+--- a/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_auth.yml	2016-06-28 13:22:43.978889126 -0500
++++ b/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_auth.yml	2016-06-28 13:20:36.844884058 -0500
+@@ -98,6 +98,19 @@
+   tags:
+   - ceph-auth-nova-libvirt-secret
+ 
++- name: Check if nova secret exist for ceph
++  shell: virsh secret-list | grep 'ceph'  | awk '{print $1}'
++  when: libvirt_nova_defined.rc != 0
++  register: libvirt_nova_stale_uuid
++  tags:
++  - ceph-auth-nova-libvirt-secret
++
++- name: Undefine the stale nova secret
++  shell: virsh secret-undefine {{ libvirt_nova_stale_uuid.stdout }}
++  when: libvirt_nova_stale_uuid.rc == 0
++  tags:
++  - ceph-auth-nova-libvirt-secret
++
+ - name: Provide xml file to create the secret
+   template:
+     src: secret.xml.j2
