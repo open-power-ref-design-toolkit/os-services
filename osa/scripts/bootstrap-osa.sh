@@ -28,6 +28,8 @@ OSA_TAG="13.1.0"
 OSA_DIR="/opt/openstack-ansible"
 OSA_PLAYS="${OSA_DIR}/playbooks"
 
+EXPECTED_ANSIBLE_VERSION="v1.9.4-1"
+
 function generate_inventory {
 
     if [ -r $GENESIS_INVENTORY ]; then
@@ -89,9 +91,22 @@ PCLD_DIR=`pwd`
 if [ ! -d /opt/openstack-ansible ]; then
     echo "Installing openstack-ansible..."
     git clone https://github.com/openstack/openstack-ansible ${OSA_DIR}
+    if [ $? != 0 ]; then
+        echo "Manual retry procedure:"
+        echo "1) fix root cause of error if known"
+        echo "2) rm -rf /opt/openstack-ansible"
+        echo "3) re-run command"
+        exit 1
+    fi
     cd ${OSA_DIR}
     git checkout stable/mitaka
+    if [ $? != 0 ]; then
+        exit 1
+    fi
     git checkout ${OSA_TAG}
+    if [ $? != 0 ]; then
+        exit 1
+    fi
 fi
 
 # Install ansible
@@ -101,10 +116,24 @@ if [ ! -d /etc/ansible ]; then
     BOOTSTRAP_OPTS="${BOOTSTRAP_OPTS} bootstrap_host_ubuntu_repo=http://us.archive.ubuntu.com/ubuntu/"
     BOOTSTRAP_OPTS="${BOOTSTRAP_OPTS} bootstrap_host_ubuntu_security_repo=http://security.ubuntu.com/ubuntu/"
     scripts/bootstrap-ansible.sh
+    rc=$?
+    if [ $rc != 0 ]; then
+        echo "scripts/bootstrap-ansible.sh failed, rc=$rc"
+        echo "Manual retry procedure:"
+        echo "1) fix root cause of error if known"
+        echo "2) rm -rf /etc/ansible; rm -rf /opt/ansible_$EXPECTED_ANSIBLE_VERSION"
+        echo "3) re-run command"
+        exit 1
+    fi
 fi
 
 # Load the python requirements
 pip install -r $SCRIPTS_DIR/../../requirements.txt >/dev/null
+rc=$?
+if [ $rc != 0 ]; then
+    echo "pip install requirements.txt failed, rc=$rc"
+    exit 1
+fi
 
 echo "Bootstrap inventory"
 

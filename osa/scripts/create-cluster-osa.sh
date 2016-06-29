@@ -167,7 +167,7 @@ echo "Generating passwords"
 # Ensure all needed passwords and tokens are generated
 ./scripts/pw-token-gen.py --file /etc/openstack_deploy/user_secrets.yml
 
-echo "Running osa playbooks"
+echo "Running OSA playbooks"
 
 cd ${OSA_DIR}/playbooks/
 
@@ -178,6 +178,7 @@ if [ $rc != 0 ]; then
     echo "Failed setup-hosts.yml"
     exit 2
 fi
+echo "OSA playbook setup-hosts.yml successful"
 
 # Setup the infrastructure
 i=0
@@ -188,6 +189,7 @@ while [ "$done" == "False" ] && [ $i -lt 4 ]; do
     run_ansible setup-infrastructure.yml
     rc=$?
     if [ $rc == 0 ]; then
+        echo "OSA playbook setup-infrastructure.yml successful"
         done="True"
         break
     fi
@@ -241,6 +243,7 @@ while [ "$done" == "False" ] && [ $i -lt 4 ]; do
     run_ansible setup-openstack.yml
     rc=$?
     if [ $rc == 0 ]; then
+        echo "OSA playbook setup-openstack.yml successful"
         done="True"
         break
     fi
