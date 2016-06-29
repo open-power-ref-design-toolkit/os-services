@@ -286,8 +286,8 @@ class OSAFileGenerator(object):
             'rbd_store_chunk_size': 4,
             'rados_connect_timeout': -1,
             'volume_backend_name': 'ceph',
-            'rdb_user': '{{ cinder_ceph_client }}',
-            'rdb_secret_uuid': '{{ cinder_ceph_client_uuid }}',
+            'rbd_user': '{{ cinder_ceph_client }}',
+            'rbd_secret_uuid': '{{ cinder_ceph_client_uuid }}',
         }
 
         # Storage Hosts
