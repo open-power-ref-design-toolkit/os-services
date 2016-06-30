@@ -1,11 +1,8 @@
 diff -Naur a/opt/openstack-ansible/playbooks/setup-hosts.yml b/opt/openstack-ansible/playbooks/setup-hosts.yml
---- a/opt/openstack-ansible/playbooks/setup-hosts.yml	2016-06-29 15:46:05.646438868 -0400
-+++ b/opt/openstack-ansible/playbooks/setup-hosts.yml	2016-06-29 15:38:14.202421637 -0400
-@@ -13,6 +13,7 @@
- # See the License for the specific language governing permissions and
- # limitations under the License.
- 
-+- include: setup-pkvm.yml
- - include: openstack-hosts-setup.yml
+--- a/opt/openstack-ansible/playbooks/setup-hosts.yml	2016-06-30 08:05:45.643477132 -0500
++++ b/opt/openstack-ansible/playbooks/setup-hosts.yml	2016-06-30 07:38:01.635797890 -0500
+@@ -17,3 +17,4 @@
  - include: security-hardening.yml
  - include: lxc-hosts-setup.yml
+ - include: lxc-containers-create.yml
++- include: setup-pkvm.yml
