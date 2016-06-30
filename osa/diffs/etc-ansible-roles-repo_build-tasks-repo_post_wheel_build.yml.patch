@@ -1,9 +1,11 @@
 diff -Naur a/etc/ansible/roles/repo_build/tasks/repo_post_wheel_build.yml b/etc/ansible/roles/repo_build/tasks/repo_post_wheel_build.yml
---- a/etc/ansible/roles/repo_build/tasks/repo_post_wheel_build.yml	1969-12-31 18:00:00.000000000 -0600
-+++ b/etc/ansible/roles/repo_build/tasks/repo_post_wheel_build.yml	2016-06-14 16:46:07.000000000 -0500
-@@ -0,0 +1,24 @@
+--- a/etc/ansible/roles/repo_build/tasks/repo_post_wheel_build.yml	1969-12-31 19:00:00.000000000 -0500
++++ b/etc/ansible/roles/repo_build/tasks/repo_post_wheel_build.yml	2016-06-30 14:50:49.277475508 -0400
+@@ -0,0 +1,26 @@
 +---
-+# Copyright 2016, IBM US, Inc.
++# Copyright 2016 IBM Corp.
++#
++# All Rights Reserved.
 +#
 +# Licensed under the Apache License, Version 2.0 (the "License");
 +# you may not use this file except in compliance with the License.
@@ -17,12 +19,12 @@ diff -Naur a/etc/ansible/roles/repo_build/tasks/repo_post_wheel_build.yml b/etc/
 +# See the License for the specific language governing permissions and
 +# limitations under the License.
 +
-+
 +- name: Copy ppc64le repo files from deployer node to the repo container
 +  copy:
 +    src: "/tmp/ppc64le_wheels/"
 +    dest: "{{ repo_build_output }}"
 +    force: yes
 +  register: copy_wheel
++  when: hostvars[groups['compute_all'][0]]['ansible_architecture'] == 'ppc64le'
 +  tags:
 +    - copy_ppc64_wheels
