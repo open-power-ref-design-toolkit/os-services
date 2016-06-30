@@ -29,11 +29,13 @@
       with_items:
         - qemu-system-ppc
         - libvirt-bin
+      when: ansible_architecture == 'ppc64le'
       tags:
        - pkvm-install-libvirt
 
     - name: Disable SMT
       command: /usr/sbin/ppc64_cpu --smt=off
+      when: ansible_architecture == 'ppc64le'
       tags:
        - pkvm-disable-smt
 
@@ -41,3 +43,6 @@
       copy:
         src: "files/smt.conf"
         dest: "/etc/init/smt.conf"
+      when: ansible_architecture == 'ppc64le'
+      tags:
+       - pkvm-disable-smt

@@ -32,6 +32,7 @@
         - "nova-{{ repo_build_release_tag }}-ppc64le.checksum"
         - "neutron-{{ repo_build_release_tag }}-ppc64le.tgz"
         - "neutron-{{ repo_build_release_tag }}-ppc64le.checksum"
+      when: hostvars[groups['compute_all'][0]]['ansible_architecture'] == 'ppc64le'
 
 - name: Remove files from /tmp
   hosts: localhost
@@ -48,3 +49,4 @@
         - "nova-{{ repo_build_release_tag }}-ppc64le.checksum"
         - "neutron-{{ repo_build_release_tag }}-ppc64le.tgz"
         - "neutron-{{ repo_build_release_tag }}-ppc64le.checksum"
+      when: hostvars[groups['compute_all'][0]]['ansible_architecture'] == 'ppc64le'
