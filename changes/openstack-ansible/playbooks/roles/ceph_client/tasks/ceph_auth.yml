@@ -107,7 +107,7 @@
 
 - name: Undefine the stale nova secret
   shell: virsh secret-undefine {{ libvirt_nova_stale_uuid.stdout }}
-  when: libvirt_nova_stale_uuid.rc == 0
+  when: libvirt_nova_stale_uuid.stdout != ""
   tags:
   - ceph-auth-nova-libvirt-secret
 

@@ -1,6 +1,6 @@
 diff -Naur a/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_auth.yml b/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_auth.yml
---- a/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_auth.yml	2016-06-28 13:22:43.978889126 -0500
-+++ b/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_auth.yml	2016-06-28 13:20:36.844884058 -0500
+--- a/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_auth.yml	2016-06-30 09:23:11.572382424 -0500
++++ b/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_auth.yml	2016-06-30 09:22:45.012842884 -0500
 @@ -98,6 +98,19 @@
    tags:
    - ceph-auth-nova-libvirt-secret
@@ -14,7 +14,7 @@ diff -Naur a/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_auth.y
 +
 +- name: Undefine the stale nova secret
 +  shell: virsh secret-undefine {{ libvirt_nova_stale_uuid.stdout }}
-+  when: libvirt_nova_stale_uuid.rc == 0
++  when: libvirt_nova_stale_uuid.stdout != ""
 +  tags:
 +  - ceph-auth-nova-libvirt-secret
 +
