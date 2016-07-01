@@ -100,14 +100,14 @@
 
 - name: Check if nova secret exist for ceph
   shell: virsh secret-list | grep 'ceph'  | awk '{print $1}'
-  when: libvirt_nova_defined.rc != 0
+  when: libvirt_nova_defined is defined and libvirt_nova_defined.rc != 0
   register: libvirt_nova_stale_uuid
   tags:
   - ceph-auth-nova-libvirt-secret
 
 - name: Undefine the stale nova secret
   shell: virsh secret-undefine {{ libvirt_nova_stale_uuid.stdout }}
-  when: libvirt_nova_stale_uuid.stdout != ""
+  when: libvirt_nova_stale_uuid is defined and libvirt_nova_stale_uuid.stdout != ""
   tags:
   - ceph-auth-nova-libvirt-secret
 
