@@ -1,6 +1,6 @@
 diff -Naur a/opt/openstack-ansible/playbooks/pkvm-repo-post-build.yml b/opt/openstack-ansible/playbooks/pkvm-repo-post-build.yml
 --- a/opt/openstack-ansible/playbooks/pkvm-repo-post-build.yml	1969-12-31 19:00:00.000000000 -0500
-+++ b/opt/openstack-ansible/playbooks/pkvm-repo-post-build.yml	2016-06-29 15:40:14.086426019 -0400
++++ b/opt/openstack-ansible/playbooks/pkvm-repo-post-build.yml	2016-08-19 07:38:52.292468140 -0400
 @@ -0,0 +1,52 @@
 +---
 +# Copyright 2016 IBM Corp.
@@ -23,7 +23,7 @@ diff -Naur a/opt/openstack-ansible/playbooks/pkvm-repo-post-build.yml b/opt/open
 +  hosts: repo_all[0]
 +  user: root
 +  vars_files:
-+    - vars/pkvm.yml
++    - vars/pkvm/pkvm.yml
 +
 +  tasks:
 +    - name: Copy nova and neutron files from the deployer node to the repo container
@@ -43,7 +43,7 @@ diff -Naur a/opt/openstack-ansible/playbooks/pkvm-repo-post-build.yml b/opt/open
 +  connection: local
 +  user: root
 +  vars_files:
-+    - vars/pkvm.yml
++    - vars/pkvm/pkvm.yml
 +
 +  tasks:
 +    - name: Remove files from /tmp

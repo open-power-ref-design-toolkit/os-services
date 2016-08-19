@@ -21,7 +21,7 @@
   gather_facts: true
   user: root
   vars_files:
-    - vars/pkvm.yml
+    - vars/pkvm/pkvm.yml
 
   pre_tasks:
     - name: Check for .pip directory
@@ -89,5 +89,6 @@
   vars:
     pkg_locations:
       - ../ppc_req
+      - ./vars/pkvm
       - /etc/ansible/roles/os_nova
       - /etc/ansible/roles/os_neutron

@@ -1,7 +1,7 @@
 diff -Naur a/opt/openstack-ansible/playbooks/pkvm-repo-build.yml b/opt/openstack-ansible/playbooks/pkvm-repo-build.yml
---- a/opt/openstack-ansible/playbooks/pkvm-repo-build.yml	1969-12-31 18:00:00.000000000 -0600
-+++ b/opt/openstack-ansible/playbooks/pkvm-repo-build.yml	2016-06-15 10:31:25.000000000 -0500
-@@ -0,0 +1,93 @@
+--- a/opt/openstack-ansible/playbooks/pkvm-repo-build.yml	1969-12-31 19:00:00.000000000 -0500
++++ b/opt/openstack-ansible/playbooks/pkvm-repo-build.yml	2016-08-19 07:36:29.632465589 -0400
+@@ -0,0 +1,94 @@
 +---
 +# Copyright 2016 IBM Corp.
 +#
@@ -25,7 +25,7 @@ diff -Naur a/opt/openstack-ansible/playbooks/pkvm-repo-build.yml b/opt/openstack
 +  gather_facts: true
 +  user: root
 +  vars_files:
-+    - vars/pkvm.yml
++    - vars/pkvm/pkvm.yml
 +
 +  pre_tasks:
 +    - name: Check for .pip directory
@@ -93,5 +93,6 @@ diff -Naur a/opt/openstack-ansible/playbooks/pkvm-repo-build.yml b/opt/openstack
 +  vars:
 +    pkg_locations:
 +      - ../ppc_req
++      - ./vars/pkvm
 +      - /etc/ansible/roles/os_nova
 +      - /etc/ansible/roles/os_neutron
