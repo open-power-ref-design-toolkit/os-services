@@ -160,6 +160,19 @@ if [ "$ANSIBLE_PATCH" == "True" ]; then
     pip install -q /opt/ansible_*
 fi
 
+# Override nova, neutron roles' git projects versions because OSA_TAG could be a later version than the branch
+VAR_FILE=${OSA_PLAYS}/defaults/repo_packages/openstack_services.yml
+PVAR_FILE=${OSA_PLAYS}/vars/pkvm/pkvm.yml
+KEYS=$(grep -e "^neutron_.*:" -e "^nova_.*:" $VAR_FILE | awk '{print $1}')
+
+for k in $KEYS
+do
+  # Remove any existing lines with this key
+  sed -i "/^$k.*$/d" $PVAR_FILE
+  # Put in new lines
+  grep -e "^$k" $VAR_FILE >>$PVAR_FILE
+done
+
 # Update the file /opt/openstack-ansible/playbooks/ansible.cfg
 grep -q callback_plugins ${OSA_PLAYS}/ansible.cfg || sed -i '/\[defaults\]/a callback_plugins = plugins/callbacks' ${OSA_PLAYS}/ansible.cfg
 

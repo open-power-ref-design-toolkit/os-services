@@ -1,6 +1,6 @@
-diff -Naur a/opt/openstack-ansible/playbooks/vars/pkvm.yml b/opt/openstack-ansible/playbooks/vars/pkvm.yml
---- a/opt/openstack-ansible/playbooks/vars/pkvm.yml	1969-12-31 18:00:00.000000000 -0600
-+++ b/opt/openstack-ansible/playbooks/vars/pkvm.yml	2016-06-15 10:33:27.000000000 -0500
+diff -Naur a/opt/openstack-ansible/playbooks/vars/pkvm/pkvm.yml b/opt/openstack-ansible/playbooks/vars/pkvm/pkvm.yml
+--- a/opt/openstack-ansible/playbooks/vars/pkvm/pkvm.yml	1969-12-31 19:00:00.000000000 -0500
++++ b/opt/openstack-ansible/playbooks/vars/pkvm/pkvm.yml	2016-08-19 07:08:17.192435326 -0400
 @@ -0,0 +1,23 @@
 +---
 +# Copyright 2016 IBM Corp.

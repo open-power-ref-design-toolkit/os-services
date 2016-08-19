@@ -19,7 +19,7 @@
   hosts: repo_all[0]
   user: root
   vars_files:
-    - vars/pkvm.yml
+    - vars/pkvm/pkvm.yml
 
   tasks:
     - name: Copy nova and neutron files from the deployer node to the repo container
@@ -39,7 +39,7 @@
   connection: local
   user: root
   vars_files:
-    - vars/pkvm.yml
+    - vars/pkvm/pkvm.yml
 
   tasks:
     - name: Remove files from /tmp
