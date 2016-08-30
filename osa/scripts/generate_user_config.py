@@ -194,13 +194,10 @@ class OSAFileGenerator(object):
             ],
         }
 
-        tunnel_intf = 'N/A'
-        if net_tunnel:
-            tunnel_intf = net_tunnel.get('eth-port', 'N/A')
         vxlan_network = {
             'container_bridge': br_tunnel,
             'container_type': 'veth',
-            'container_interface': tunnel_intf,
+            'container_interface': 'eth10',
             'ip_from_q': 'tunnel',
             'type': 'vxlan',
             'range': '1:1000',
@@ -210,13 +207,13 @@ class OSAFileGenerator(object):
             ]
         }
 
-        vlan_intf = 'N/A'
-        if net_vlan:
-            vlan_intf = net_vlan.get('eth-port', 'N/A')
+        # Genesis doesn't create the veth pair yet, but we still need it.
+        # Hardcode veth12 for now which will make our manual setup easier.
+        host_vlan_intf = 'veth12'
         vlan_vlan_network = {
             'container_bridge': br_vlan,
             'container_type': 'veth',
-            'container_interface': vlan_intf,
+            'container_interface': 'eth11',
             'type': 'vlan',
             'range': '1:1',
             'net_name': 'vlan',
@@ -228,10 +225,10 @@ class OSAFileGenerator(object):
         vlan_flat_network = {
             'container_bridge': br_vlan,
             'container_type': 'veth',
-            'container_interface': vlan_intf,
-            'host_bind_override': vlan_intf,
+            'container_interface': 'eth12',
+            'host_bind_override': host_vlan_intf,
             'type': 'flat',
-            'net_name': 'flat',
+            'net_name': 'external',
             'group_binds': [
                 'neutron_linuxbridge_agent',
             ],
