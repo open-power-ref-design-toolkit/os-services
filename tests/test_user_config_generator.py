@@ -490,10 +490,10 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
             'network': {
                 'container_bridge': 'br-vlan',
                 'container_type': 'veth',
-                'container_interface': 'eth11',
-                'host_bind_override': 'eth11',
+                'container_interface': 'eth12',
+                'host_bind_override': 'veth12',
                 'type': 'flat',
-                'net_name': 'flat',
+                'net_name': 'external',
                 'group_binds': [
                     'neutron_linuxbridge_agent',
                 ],
@@ -647,7 +647,7 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
             'network': {
                 'container_bridge': 'br-tunnel',
                 'container_type': 'veth',
-                'container_interface': 'N/A',
+                'container_interface': 'eth10',
                 'ip_from_q': 'tunnel',
                 'type': 'vxlan',
                 'range': '1:1000',
@@ -664,7 +664,7 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
             'network': {
                 'container_bridge': 'br-vlan',
                 'container_type': 'veth',
-                'container_interface': 'N/A',
+                'container_interface': 'eth11',
                 'type': 'vlan',
                 'range': '1:1',
                 'net_name': 'vlan',
@@ -680,10 +680,10 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
             'network': {
                 'container_bridge': 'br-vlan',
                 'container_type': 'veth',
-                'container_interface': 'N/A',
-                'host_bind_override': 'N/A',
+                'container_interface': 'eth12',
+                'host_bind_override': 'veth12',
                 'type': 'flat',
-                'net_name': 'flat',
+                'net_name': 'external',
                 'group_binds': [
                     'neutron_linuxbridge_agent',
                 ],
@@ -808,10 +808,10 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
             'network': {
                 'container_bridge': 'N/A',
                 'container_type': 'veth',
-                'container_interface': 'eth11',
-                'host_bind_override': 'eth11',
+                'container_interface': 'eth12',
+                'host_bind_override': 'veth12',
                 'type': 'flat',
-                'net_name': 'flat',
+                'net_name': 'external',
                 'group_binds': [
                     'neutron_linuxbridge_agent',
                 ],
