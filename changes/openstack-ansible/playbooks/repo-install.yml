@@ -1,5 +1,8 @@
 ---
 # Copyright 2014, Rackspace US, Inc.
+# Copyright 2016 IBM Corp.
+#
+# All Rights Reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,13 +19,26 @@
 - name: Build KVM on Power repo
   hosts: localhost
   connection: local
-
+  vars_files:
+    - vars/pkvm/pkvm.yml
   tasks:
-  - name: Build repo
-    command: /usr/local/bin/openstack-ansible -vvvv pkvm-repo-build.yml chdir=/opt/openstack-ansible/playbooks
-    register: command_result
-    failed_when: "'FAILED' in command_result.stderr"
-    when: hostvars[groups['compute_all'][0]]['ansible_architecture'] == 'ppc64le'
+    - name: Find pkvm repo host from compute nodes
+      set_fact:
+        pkvm_repo_host: "{{ groups['compute_all'][0] }}"
+      when:
+        - groups['compute_all'] is defined and hostvars[groups['compute_all'][0]]['ansible_architecture'] == 'ppc64le'
+
+    - name: Find pkvm repo host from swift nodes
+      set_fact:
+        pkvm_repo_host: "{{ groups['swift_hosts'][0] }}"
+      when:
+        - pkvm_repo_host is not defined and groups['swift_hosts'] is defined and hostvars[groups['swift_hosts'][0]]['ansible_architecture'] == 'ppc64le'
+
+    - name: Build pkvm repo
+      command: /usr/local/bin/openstack-ansible -vvvv pkvm-repo-build.yml chdir=/opt/openstack-ansible/playbooks -e 'pkvm_repo_host={{ pkvm_repo_host }}'
+      register: command_result
+      failed_when: "'FAILED' in command_result.stderr"
+      when:  pkvm_repo_host is defined
 
 - include: repo-server.yml
 - include: repo-build.yml

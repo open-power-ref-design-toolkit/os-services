@@ -16,8 +16,7 @@
 # limitations under the License.
 
 - name: Build new repo packages for a given release
-  # Run this on the first ppc64le compute host only
-  hosts: compute_all[0]
+  hosts: "{{ pkvm_repo_host }}"
   gather_facts: true
   user: root
   vars_files:
@@ -50,6 +49,18 @@
         - repo-build-venvs
         - repo-create-venv-checksum
 
+    - name: Add packages for Compute to the build list
+      set_fact:
+         pkvm_build_pkgs: '{{ pkvm_build_pkgs | union(compute_pkgs_ppc64le) }}'
+      when:
+        - groups['compute_all'] is defined and hostvars[groups['compute_all'][0]]['ansible_architecture'] == 'ppc64le'
+
+    - name: Add packages for Swift to the build list
+      set_fact:
+         pkvm_build_pkgs: '{{ pkvm_build_pkgs | union(swift_pkgs_ppc64le) }}'
+      when:
+        - groups['swift_hosts'] is defined and hostvars[groups['swift_hosts'][0]]['ansible_architecture'] == 'ppc64le'
+
   post_tasks:
     - name: Replace pip directory
       command: mv /root/backup_.pip /root/.pip
@@ -62,10 +73,8 @@
         flat: yes
         fail_on_missing: yes
       with_items:
-        - "nova-{{ repo_build_release_tag }}-{{ ansible_architecture }}.tgz"
-        - "nova-{{ repo_build_release_tag }}-{{ ansible_architecture }}.checksum"
-        - "neutron-{{ repo_build_release_tag }}-{{ ansible_architecture }}.tgz"
-        - "neutron-{{ repo_build_release_tag }}-{{ ansible_architecture }}.checksum"
+         - "{{ pkvm_build_pkgs}}"
+
     - name: Get ppc wheel files to copy
       shell: find {{ repo_build_pool_dir }} -name "*ppc64*.whl"
       register: files_to_copy
@@ -92,3 +101,5 @@
       - ./vars/pkvm
       - /etc/ansible/roles/os_nova
       - /etc/ansible/roles/os_neutron
+      - /etc/ansible/roles/os_swift
+    pkvm_build_pkgs: []
