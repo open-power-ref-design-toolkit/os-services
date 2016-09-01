@@ -20,9 +20,16 @@ SCRIPTS_DIR=$(dirname $0)
 SCRIPTS_DIR=$(readlink -ne $SCRIPTS_DIR)
 source $SCRIPTS_DIR/process-args.sh
 
+FILES_WITH_GIT_URLS="/opt/openstack-ansible/ansible-role-requirements.yml \
+    /opt/openstack-ansible/playbooks/defaults/repo_packages/openstack_services.yml \
+    /opt/openstack-ansible/playbooks/defaults/repo_packages/openstack_other.yml \
+    /opt/openstack-ansible/playbooks/vars/pkvm/pkvm.yml"
+
 echo "DEPLOY_AIO=$DEPLOY_AIO"
 echo "infraNodes=$infraNodes"
 echo "allNodes=$allNodes"
+echo "GIT_MIRROR=$GIT_MIRROR"
+echo "FILES_WITH_GIT_URLS=$FILES_WITH_GIT_URLS"
 
 OSA_TAG="13.1.0"
 OSA_DIR="/opt/openstack-ansible"
@@ -107,6 +114,12 @@ if [ ! -d /opt/openstack-ansible ]; then
     if [ $? != 0 ]; then
         exit 1
     fi
+fi
+
+# Use git mirror, if configured to use
+if [ ! -z $GIT_MIRROR ]; then
+    # TODO: Replacing string can be taken as an input
+    sed -i "s/git\.openstack\.org/$GIT_MIRROR/g" $FILES_WITH_GIT_URLS
 fi
 
 # Install ansible
