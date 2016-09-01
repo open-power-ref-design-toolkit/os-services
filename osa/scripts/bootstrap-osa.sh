@@ -29,9 +29,8 @@ echo "DEPLOY_AIO=$DEPLOY_AIO"
 echo "infraNodes=$infraNodes"
 echo "allNodes=$allNodes"
 echo "GIT_MIRROR=$GIT_MIRROR"
-echo "FILES_WITH_GIT_URLS=$FILES_WITH_GIT_URLS"
 
-OSA_TAG="13.1.0"
+OSA_TAG=${OSA_TAG:-"13.1.0"}
 OSA_DIR="/opt/openstack-ansible"
 OSA_PLAYS="${OSA_DIR}/playbooks"
 
@@ -95,6 +94,7 @@ fi
 PCLD_DIR=`pwd`
 
 # Checkout the openstack-ansible repository
+INSTALL=False
 if [ ! -d /opt/openstack-ansible ]; then
     echo "Installing openstack-ansible..."
     git clone https://github.com/openstack/openstack-ansible ${OSA_DIR}
@@ -114,6 +114,7 @@ if [ ! -d /opt/openstack-ansible ]; then
     if [ $? != 0 ]; then
         exit 1
     fi
+    INSTALL=True
 fi
 
 # Use git mirror, if configured to use
@@ -138,6 +139,7 @@ if [ ! -d /etc/ansible ]; then
         echo "3) re-run command"
         exit 1
     fi
+    INSTALL=True
 fi
 
 # Load the python requirements
@@ -152,25 +154,35 @@ echo "Bootstrap inventory"
 
 generate_inventory
 
-echo "Applying patches"
-
 # TODO(luke): Need to apply patches to all controller nodes for opsmgr resiliency
 
-cd /
-ANSIBLE_PATCH=False
-for f in ${PCLD_DIR}/diffs/*.patch; do
-    patch -N -p1 < $f
-    rc=$?
-    if [[ "$f" == *"/opt-ansible"* ]] && [ $rc == 0 ]; then
-        ANSIBLE_PATCH=True
-    fi
-done
+# Apply patches iff osa is installed above.  Code is intended to be reentrant
+if [ "$INSTALL" == "True" ] && [ -d $PCLD_DIR/diffs ]; then
+    echo "Applying patches"
+    cd /
+    ANSIBLE_PATCH=False
+    for f in ${PCLD_DIR}/diffs/*.patch; do
+        patch -N -p1 < $f
+        rc=$?
+        if [ $rc != 0 ]; then
+            echo "scripts/bootstrap-ansible.sh failed, rc=$rc"
+            echo "Patch $f could not be applied"
+            echo "Manual retry procedure:"
+            echo "1) fix patch $f"
+            echo "2) rm -rf /etc/ansible; rm -rf /opt/ansible_$EXPECTED_ANSIBLE_VERSION"
+            echo "3) re-run command"
+            exit 1
+        elif [[ "$f" == *"/opt-ansible"* ]]; then
+            ANSIBLE_PATCH=True
+        fi
+    done
 
-if [ "$ANSIBLE_PATCH" == "True" ]; then
-    echo "pip uninstall ansible"
-    pip uninstall -y ansible
-    echo "pip install patched ansible"
-    pip install -q /opt/ansible_*
+    if [ "$ANSIBLE_PATCH" == "True" ]; then
+        echo "pip uninstall ansible"
+        pip uninstall -y ansible
+        echo "pip install patched ansible"
+        pip install -q /opt/ansible_*
+    fi
 fi
 
 # Override nova, neutron roles' git projects versions because OSA_TAG could be a later version than the branch
