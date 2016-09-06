@@ -954,11 +954,11 @@ class TestConfigureStorageHosts(unittest.TestCase):
                 'controllers': [
                     {
                         'hostname': 'host1',
-                        'openstack-stg-addr': '11.22.33.44',
+                        'openstack-mgmt-addr': '11.22.33.44',
                     },
                     {
                         'hostname': 'host2',
-                        'openstack-stg-addr': '55.66.77.88',
+                        'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
             }
