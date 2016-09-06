@@ -248,6 +248,11 @@ while [ "$done" == "False" ] && [ $i -lt 4 ]; do
         break
     fi
 
+    # Check for last iteration
+    if [ $i -eq 3 ]; do
+        break
+    fi
+
     failingContainer=`cat ~/setup-openstack.retry`
     if [ "$failingContainer" == "$prevFailingContainer" ]; then
         echo "Failed setup-openstack.yml again rc=$rc container=$failingContainer"
