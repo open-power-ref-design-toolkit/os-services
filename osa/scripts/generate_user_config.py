@@ -293,7 +293,7 @@ class OSAFileGenerator(object):
             hostname = controller.get('hostname', None)
             if hostname:
                 ceph_data = {
-                    'ip': controller.get('openstack-stg-addr', 'N/A'),
+                    'ip': controller.get('openstack-mgmt-addr', 'N/A'),
                     'container_vars': {
                         'cinder_backends': {
                             'limit_container_types': 'cinder_volume',
