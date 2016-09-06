@@ -1,6 +1,6 @@
 diff -Naur a/opt/openstack-ansible/playbooks/repo-install.yml b/opt/openstack-ansible/playbooks/repo-install.yml
---- a/opt/openstack-ansible/playbooks/repo-install.yml	2016-09-02 06:17:17.435057506 -0400
-+++ b/opt/openstack-ansible/playbooks/repo-install.yml	2016-09-02 06:15:02.867055099 -0400
+--- a/opt/openstack-ansible/playbooks/repo-install.yml	2016-09-02 08:14:55.255805500 -0500
++++ b/opt/openstack-ansible/playbooks/repo-install.yml	2016-09-06 09:20:02.542561542 -0500
 @@ -1,5 +1,8 @@
  ---
  # Copyright 2014, Rackspace US, Inc.
@@ -35,7 +35,7 @@ diff -Naur a/opt/openstack-ansible/playbooks/repo-install.yml b/opt/openstack-an
 +    - name: Build pkvm repo
 +      command: /usr/local/bin/openstack-ansible -vvvv pkvm-repo-build.yml chdir=/opt/openstack-ansible/playbooks -e 'pkvm_repo_host={{ pkvm_repo_host }}'
 +      register: command_result
-+      failed_when: "'FAILED' in command_result.stderr"
++      failed_when: command_result.rc != 0
 +      when:  pkvm_repo_host is defined
 +
  - include: repo-server.yml

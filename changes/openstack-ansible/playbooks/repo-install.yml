@@ -37,7 +37,7 @@
     - name: Build pkvm repo
       command: /usr/local/bin/openstack-ansible -vvvv pkvm-repo-build.yml chdir=/opt/openstack-ansible/playbooks -e 'pkvm_repo_host={{ pkvm_repo_host }}'
       register: command_result
-      failed_when: "'FAILED' in command_result.stderr"
+      failed_when: command_result.rc != 0
       when:  pkvm_repo_host is defined
 
 - include: repo-server.yml
