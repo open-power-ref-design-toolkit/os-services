@@ -215,7 +215,7 @@ class OSAFileGenerator(object):
             'container_type': 'veth',
             'container_interface': 'eth11',
             'type': 'vlan',
-            'range': '1:1',
+            'range': '1:4094',
             'net_name': 'vlan',
             'group_binds': [
                 'neutron_linuxbridge_agent',
