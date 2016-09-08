@@ -36,6 +36,8 @@ COMMON_HOST_SERVICES = (
     'identity_hosts',
     'storage-infra_hosts',
     'network_hosts',
+    'haproxy_hosts',
+    'log_hosts'
 )
 
 
