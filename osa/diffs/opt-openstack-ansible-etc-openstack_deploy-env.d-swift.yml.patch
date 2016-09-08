@@ -1,0 +1,20 @@
+diff -Naur a/opt/openstack-ansible/etc/openstack_deploy/env.d/swift.yml b/opt/openstack-ansible/etc/openstack_deploy/env.d/swift.yml
+--- a/opt/openstack-ansible/etc/openstack_deploy/env.d/swift.yml	2016-09-08 05:15:25.432260844 -0400
++++ b/opt/openstack-ansible/etc/openstack_deploy/env.d/swift.yml	2016-09-08 05:14:52.268260251 -0400
+@@ -1,5 +1,8 @@
+ ---
+ # Copyright 2014, Rackspace US, Inc.
++# Copyright 2016 IBM Corp.
++#
++# All Rights Reserved
+ #
+ # Licensed under the Apache License, Version 2.0 (the "License");
+ # you may not use this file except in compliance with the License.
+@@ -35,6 +38,7 @@
+     contains:
+       - swift_proxy
+     properties:
++      is_metal: true
+       service_name: swift
+       container_release: trusty
+   swift_acc_container:

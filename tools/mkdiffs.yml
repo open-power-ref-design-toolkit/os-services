@@ -62,6 +62,11 @@ changes:
     target_location: /etc/ansible/roles/rsyslog_client
     src_location: rsyslog_client
   - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-os_swift
+    branch: 13.1.0
+    target_location: /etc/ansible/roles/os_swift
+    src_location: os_swift
+  - project:
     git: https://github.com/ansible/ansible
     branch: v1.9.4-1
     target_location: /opt/ansible_v1.9.4-1/
