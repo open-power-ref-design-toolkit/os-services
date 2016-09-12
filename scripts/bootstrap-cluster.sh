@@ -112,7 +112,9 @@ popd >/dev/null 2>&1
 
 # Installs ceph and ceph-ansible
 if [[ "$DEPLOY_CEPH" == "yes" ]]; then
-    git-clone $GIT_CEPH_URL $CEPH_TAG $PCLD_DIR/ceph
+    if [ ! -d $PCLD_DIR/ceph ]; then
+        git-clone $GIT_CEPH_URL $CEPH_TAG $PCLD_DIR/ceph
+    fi
     pushd ceph >/dev/null 2>&1
     echo "Invoking scripts/bootstrap-ceph.sh"
     scripts/bootstrap-ceph.sh $ARGS $PCLD_DIR/etc
@@ -127,7 +129,9 @@ fi
 
 # Installs opsmgr
 if [[ "$DEPLOY_OPSMGR" == "yes" ]]; then
-    git-clone $GIT_OPSMGR_URL $OPSMGR_TAG $PCLD_DIR/opsmgr
+    if [ ! -d $PCLD_DIR/opsmgr ]; then
+        git-clone $GIT_OPSMGR_URL $OPSMGR_TAG $PCLD_DIR/opsmgr
+    fi
     pushd opsmgr >/dev/null 2>&1
     echo "Invoking scripts/bootstrap-opsmgr.sh"
     scripts/bootstrap-opsmgr.sh $ARGS $PCLD_DIR/etc
@@ -151,7 +155,6 @@ fi
 #       Set retries: 25 and delay: 10 in both "Get Modern PIP" and "Get Modern PIP using fallback URL"
 #       Reason: circumvent poor network performance
 
-echo ""
 echo ""
 echo "At this point, it may be desirable to customize some settings before"
 echo "starting the cluster.  For example, keystone_auth_admin_password in"
