@@ -249,7 +249,7 @@ while [ "$done" == "False" ] && [ $i -lt 4 ]; do
     fi
 
     # Check for last iteration
-    if [ $i -eq 3 ]; do
+    if [ $i -eq 3 ]; then
         break
     fi
 
