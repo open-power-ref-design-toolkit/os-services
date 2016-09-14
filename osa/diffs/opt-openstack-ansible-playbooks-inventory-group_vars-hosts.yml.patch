@@ -1,0 +1,11 @@
+diff -Naur a/opt/openstack-ansible/playbooks/inventory/group_vars/hosts.yml b/opt/openstack-ansible/playbooks/inventory/group_vars/hosts.yml
+--- a/opt/openstack-ansible/playbooks/inventory/group_vars/hosts.yml	2016-09-14 10:39:08.620791981 -0400
++++ b/opt/openstack-ansible/playbooks/inventory/group_vars/hosts.yml	2016-09-14 10:30:37.488782392 -0400
+@@ -182,6 +182,7 @@
+ glance_api_servers: "{{ internal_lb_vip_address }}:{{ glance_service_port }}"
+ glance_rabbitmq_userid: glance
+ glance_rabbitmq_vhost: /glance
++glance_default_store: "file"
+ 
+ 
+ ## Keystone
