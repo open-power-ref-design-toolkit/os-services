@@ -308,6 +308,245 @@ class OSAFileGenerator(object):
 
         return
 
+    def _configure_swift_general(self):
+        """Configure general user variables for swift."""
+
+        # Find the storage network bridge name.
+        networks = self.gen_dict.get('networks', None)
+        if not networks:
+            return
+
+        stg_network = networks.get('openstack-stg', None)
+        if not stg_network:
+            return
+
+        bridge_name = stg_network.get('bridge', None)
+        if not bridge_name:
+            return
+
+        # General swift vars
+        swift = {}
+        swift['storage_network'] = bridge_name
+        swift['part_power'] = 8
+        swift['mount_point'] = '/srv/node'
+
+        self.user_config['global_overrides']['swift'] = swift
+
+        return
+
+    def _configure_swift_common_drives(self):
+        """Configure common drives list for swift.
+
+        For cases where the same drives list applies to all swift_hosts.
+        """
+
+        # For most cases the reference architecture needs to have
+        # the drives listed per host, and there is no common drives list.
+        # It may be possible to make use of this if the refarch is
+        # swift_standalone_minimum_hardware but there is no provision
+        # in master_inventory.yml for specifying a common drives list.
+        # This means that even for that particular refarch, this section
+        # will be blank and drives will be specified on a per node basis.
+
+        return
+
+    def _configure_swift_policies(self):
+        """Configure storage_policies for swift."""
+
+        storage_policies = []
+        policy = {
+            'name': 'default',
+            'index': 0,
+            'default': 'True',
+        }
+        storage_policies.append({'policy': policy})
+
+        self.user_config['global_overrides']['swift']['storage_policies'] = (
+            storage_policies)
+
+        return
+
+    def _configure_swift_proxy_hosts(self):
+        """Configure list of swift proxy hosts."""
+
+        nodes = self.gen_dict.get('nodes', None)
+        if not nodes:
+            return
+
+        swift_proxy = nodes.get('swift-proxy', None)
+        if not swift_proxy:
+            return
+
+        # Swift Proxy Hosts.
+        proxy_hosts = {}
+        for proxy in swift_proxy:
+            hostname = proxy.get('hostname', None)
+            if hostname:
+                proxy_hosts[hostname] = {
+                    'ip': proxy.get('openstack-mgmt-addr', 'N/A')
+                }
+
+        self.user_config['swift-proxy_hosts'] = proxy_hosts
+
+        return
+
+    def _configure_swift_template(self, host_type, template_vars):
+        """Grab values from the node-template for the given host_type."""
+
+        # Find the node-templates section.
+        node_templates = self.gen_dict.get('node-templates', None)
+        if not node_templates:
+            return
+
+        # The host_type is either swift-metadata or swift-object.
+        template = node_templates.get(host_type, None)
+        if not template:
+            return
+
+        # Find the domain-settings section.
+        domain_settings = template.get('domain-settings', None)
+        if not domain_settings:
+            return
+
+        # Override the default zone_count if necessary.
+        zcount = domain_settings.get('zone-count', None)
+        if zcount:
+            template_vars['zone_count'] = zcount
+
+        # Override the default mount_point if necessary.
+        mpoint = domain_settings.get('mount-point', None)
+        if mpoint:
+            template_vars['mount_point'] = mpoint
+
+        return
+
+    def _configure_swift_host(self, host, zone, mount_point, swift_vars):
+        """Configure a single swift_host.
+
+        This typically includes a list of drives specific to this host.
+        """
+
+        domain_settings = host.get('domain-settings', None)
+        if not domain_settings:
+            return
+
+        # This list of drives for this host will be inserted into swift_vars.
+        drives = []
+
+        # There are three different disk lists we need to check.
+        drive_types = (
+            'account-ring-disks',
+            'container-ring-disks',
+            'object-ring-disks')
+
+        for drive_type in drive_types:
+            if drive_type == 'object-ring-disks':
+                group_value = ['default']
+            else:
+                group_value = ['account', 'container']
+
+            ring_disks = domain_settings.get(drive_type, None)
+            if not ring_disks:
+                continue
+
+            for disk in ring_disks:
+                drive = {
+                    'name': disk,
+                    'groups': copy.deepcopy(group_value),
+                }
+                drives.append(drive)
+
+        swift_vars['zone'] = zone
+        swift_vars['drives'] = drives
+
+        # If the mount_point value was specified in the node-template,
+        # use it here.  Otherwise, don't specify a node specific mount_point
+        # here.  That way we default to the mount point generated by
+        # _configure_swift_general.
+        if mount_point:
+            swift_vars['mount_point'] = mount_point
+
+        return
+
+    def _configure_swift_hosts(self):
+        """Configure list of swift_hosts.
+
+        This typically includes a list of drives specific to this host.
+        """
+
+        nodes = self.gen_dict.get('nodes', None)
+        if not nodes:
+            return
+
+        # Swift Metadata and Object Hosts.
+        #
+        # We have a single unified list of swift_hosts.  The key
+        # difference is that a swift_metadata host will only have
+        # drives in the account and container rings, whereas a
+        # swift_object host could have drives in the account,
+        # container, and object rings.
+        swift_hosts = {}
+
+        host_types = ('swift-metadata', 'swift-object')
+        for host_type in host_types:
+            host_list = nodes.get(host_type, None)
+            if not host_list:
+                continue
+
+            # We automatically set the zone index for each host.  This
+            # assumes the default 3x swift replication, so the zone
+            # values cycle between 0-2.  We come back to the starting
+            # value 0 each time the host_type changes (since we want
+            # the first swift_metadata host to be zone 0 and the first
+            # swift_object host to be zone 0).
+            zone = 0
+
+            # See if there are values for zone_count and mount_point
+            # specified in the node-templates.
+            template_vars = {}
+            self._configure_swift_template(host_type, template_vars)
+
+            zone_count = template_vars.get('zone_count', 3)
+            mount_point = template_vars.get('mount_point', None)
+
+            for host in host_list:
+                hostname = host.get('hostname', None)
+                if hostname:
+                    # Fill out the dictionary of swift_vars for
+                    # this host (including the zone and drives list).
+                    swift_vars = {}
+                    self._configure_swift_host(host, zone, mount_point,
+                                               swift_vars)
+
+                    swift_hosts[hostname] = {
+                        'ip': host.get('openstack-mgmt-addr', 'N/A'),
+                        'container_vars': {'swift_vars': swift_vars},
+                    }
+
+                    zone += 1
+                    if zone % zone_count == 0:
+                        zone = 0
+
+        # Avoid adding an empty value for the key 'swift_hosts' in the
+        # case where no swift_metadata or swift_object entries exist
+        # in the inventory.
+        if swift_hosts:
+            self.user_config['swift_hosts'] = swift_hosts
+
+        return
+
+    def _configure_swift(self):
+        """Configure user variables for swift."""
+
+        if 'swift' not in self.gen_dict.get('reference-architecture', []):
+            return
+
+        self._configure_swift_general()
+        self._configure_swift_common_drives()
+        self._configure_swift_policies()
+        self._configure_swift_proxy_hosts()
+        self._configure_swift_hosts()
+
     def create_user_config(self):
         """Process the inventory input and generate the OSA user config."""
         self._load_yml()
@@ -316,6 +555,7 @@ class OSAFileGenerator(object):
         self._configure_global_overrides()
         self._configure_compute_hosts()
         self._configure_storage_hosts()
+        self._configure_swift()
 
         self._dump_yml(self.user_config, OSA_USER_CFG_FILE)
 
