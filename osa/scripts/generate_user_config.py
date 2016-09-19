@@ -25,6 +25,7 @@ OSA_USER_CFG_FILE = 'openstack_user_config.yml'
 OSA_USER_VAR_HAPROXY = 'user_var_haproxy.yml'
 OSA_USER_VAR_CEILOMETER = 'user_var_ceilometer.yml'
 OSA_USER_VAR_CEPH = 'user_var_ceph.yml'
+PRIVATE_COMPUTE_CLOUD = 'private-compute-cloud'
 
 
 class OSAFileGenerator(object):
@@ -101,14 +102,16 @@ class OSAFileGenerator(object):
                 hosts[hostname] = {
                     'ip': controller.get('openstack-mgmt-addr', 'N/A')
                 }
-
         # Set all the common services across all the controllers
         self.user_config['shared-infra_hosts'] = hosts
         self.user_config['os-infra_hosts'] = copy.deepcopy(hosts)
         self.user_config['repo-infra_hosts'] = copy.deepcopy(hosts)
         self.user_config['identity_hosts'] = copy.deepcopy(hosts)
-        self.user_config['storage-infra_hosts'] = copy.deepcopy(hosts)
-        self.user_config['network_hosts'] = copy.deepcopy(hosts)
+
+        if PRIVATE_COMPUTE_CLOUD in self.get_ref_arch():
+            self.user_config['storage-infra_hosts'] = copy.deepcopy(hosts)
+            self.user_config['network_hosts'] = copy.deepcopy(hosts)
+
         self.user_config['haproxy_hosts'] = copy.deepcopy(hosts)
         self.user_config['log_hosts'] = copy.deepcopy(hosts)
 
@@ -147,9 +150,9 @@ class OSAFileGenerator(object):
         if net_stg:
             br_stg = net_stg.get('bridge', 'N/A')
 
-        net_tunnel = networks.get('openstack-tenant-vxlan', None)
-        if net_tunnel:
-            br_tunnel = net_tunnel.get('bridge', 'N/A')
+        ref_arch_list = self.get_ref_arch()
+        if PRIVATE_COMPUTE_CLOUD in ref_arch_list:
+            net_tunnel = networks.get('openstack-tenant-vxlan', None)
 
         net_vlan = networks.get('openstack-tenant-vlan', None)
         if net_vlan:
@@ -164,9 +167,12 @@ class OSAFileGenerator(object):
             'external_lb_vip_address':
                 self._get_address(self.gen_dict.get('external-floating-ipaddr',
                                                     'N/A')),
-            'tunnel_bridge': br_tunnel,
             'management_bridge': br_mgmt,
         }
+
+        if net_tunnel:
+            br_tunnel = net_tunnel.get('bridge', 'N/A')
+            self.user_config['global_overrides']['tunnel_bridge'] = br_tunnel
 
         # provider networks
         networks = []
@@ -198,57 +204,60 @@ class OSAFileGenerator(object):
                 'swift_proxy',
             ],
         }
-
-        vxlan_network = {
-            'container_bridge': br_tunnel,
-            'container_type': 'veth',
-            'container_interface': 'eth10',
-            'ip_from_q': 'tunnel',
-            'type': 'vxlan',
-            'range': '1:1000',
-            'net_name': 'vxlan',
-            'group_binds': [
-                'neutron_linuxbridge_agent',
-            ]
-        }
-
-        # Genesis doesn't create the veth pair yet, but we still need it.
-        # Hardcode veth12 for now which will make our manual setup easier.
-        host_vlan_intf = 'veth12'
-        vlan_vlan_network = {
-            'container_bridge': br_vlan,
-            'container_type': 'veth',
-            'container_interface': 'eth11',
-            'type': 'vlan',
-            'range': '1:4094',
-            'net_name': 'vlan',
-            'group_binds': [
-                'neutron_linuxbridge_agent',
-            ],
-        }
-
-        vlan_flat_network = {
-            'container_bridge': br_vlan,
-            'container_type': 'veth',
-            'container_interface': 'eth12',
-            'host_bind_override': host_vlan_intf,
-            'type': 'flat',
-            'net_name': 'external',
-            'group_binds': [
-                'neutron_linuxbridge_agent',
-            ],
-        }
-
         networks.append({'network': mgmt_network})
         networks.append({'network': storage_network})
-        networks.append({'network': vxlan_network})
-        networks.append({'network': vlan_vlan_network})
-        networks.append({'network': vlan_flat_network})
+
+        if PRIVATE_COMPUTE_CLOUD in ref_arch_list:
+            vxlan_network = {
+                'container_bridge': br_tunnel,
+                'container_type': 'veth',
+                'container_interface': 'eth10',
+                'ip_from_q': 'tunnel',
+                'type': 'vxlan',
+                'range': '1:1000',
+                'net_name': 'vxlan',
+                'group_binds': [
+                    'neutron_linuxbridge_agent',
+                ]
+             }
+
+            # Genesis doesn't create the veth pair yet, but we still need it.
+            # Hardcode veth12 for now which will make our manual setup easier.
+            host_vlan_intf = 'veth12'
+            vlan_vlan_network = {
+                'container_bridge': br_vlan,
+                'container_type': 'veth',
+                'container_interface': 'eth11',
+                'type': 'vlan',
+                'range': '1:4094',
+                'net_name': 'vlan',
+                'group_binds': [
+                    'neutron_linuxbridge_agent',
+                ],
+            }
+
+            vlan_flat_network = {
+                'container_bridge': br_vlan,
+                'container_type': 'veth',
+                'container_interface': 'eth12',
+                'host_bind_override': host_vlan_intf,
+                'type': 'flat',
+                'net_name': 'external',
+                'group_binds': [
+                    'neutron_linuxbridge_agent',
+                ],
+            }
+            networks.append({'network': vxlan_network})
+            networks.append({'network': vlan_vlan_network})
+            networks.append({'network': vlan_flat_network})
 
         self.user_config['global_overrides']['provider_networks'] = networks
 
     def _configure_compute_hosts(self):
         """Configure the compute hosts."""
+        if PRIVATE_COMPUTE_CLOUD not in self.get_ref_arch():
+            return
+
         nodes = self.gen_dict.get('nodes', None)
         if not nodes:
             return
@@ -270,6 +279,9 @@ class OSAFileGenerator(object):
 
     def _configure_storage_hosts(self):
         """Configure the storage hosts."""
+        if PRIVATE_COMPUTE_CLOUD not in self.get_ref_arch():
+            return
+
         nodes = self.gen_dict.get('nodes', None)
         if not nodes:
             return
@@ -556,7 +568,7 @@ class OSAFileGenerator(object):
     def _configure_swift(self):
         """Configure user variables for swift."""
 
-        if 'swift' not in self.gen_dict.get('reference-architecture', []):
+        if 'swift' not in self.get_ref_arch():
             return
 
         self._configure_swift_general()
@@ -564,6 +576,9 @@ class OSAFileGenerator(object):
         self._configure_swift_policies()
         self._configure_swift_proxy_hosts()
         self._configure_swift_hosts()
+
+    def get_ref_arch(self):
+        return self.gen_dict.get('reference-architecture', [])
 
     def create_user_config(self):
         """Process the inventory input and generate the OSA user config."""
@@ -603,6 +618,9 @@ class OSAFileGenerator(object):
 
     def generate_ceph(self):
         """Generate user variable file for ceph."""
+        if PRIVATE_COMPUTE_CLOUD not in self.get_ref_arch():
+            return
+
         nodes = self.gen_dict.get('nodes', None)
         if not nodes:
             return
@@ -633,6 +651,10 @@ def process_inventory(inv_name, output_dir):
     :param output_dir: The name of path for the generated files.
     """
     generator = OSAFileGenerator(inv_name, output_dir)
+    generator._load_yml()
+    if 'reference-architecture' not in generator.gen_dict:
+        print "The inventory file is missing the reference-architecture."
+        sys.exit(1)
 
     generator.create_user_config()
     generator.generate_haproxy()
