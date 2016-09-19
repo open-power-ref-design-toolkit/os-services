@@ -1,27 +1,40 @@
 os-services
 =============
 
-To deploy openstack on a single node or a cluster of nodes pre-configured by genesis::
+This project uses the OpenStack Ansible (OSA) project as a base for deploying an
+OpenStack cluster on Ubuntu 14.04.  It is assumed the cluster controllers are x86
+nodes and the compute nodes are ppc64le.  All nodes are pre-conditioned by the
+cluster-genesis project which orchestrates the overall install and configuration
+process for the cluster.
 
-    >export DEPLOY_CEPH=yes
-    >export DEPLOY_OPSMGR=yes
-    >export DEPLOY_HARDENING=yes
-    >./scripts/bootstrap-cluster.sh
-    >./scripts/create-cluster.sh
+To deploy openstack on a cluster of nodes pre-configured by cluster-genesis::
 
-If the environment variables are omitted or set to "no", then the associated
-components are not installed, however if the genesis inventory file exists at
-/var/oprc/inventory.yml then DEPLOY_CEPH and DEPLOY_OPSMGR default to "yes".
+    > export DEPLOY_CEPH=yes
+    > export DEPLOY_OPSMGR=yes
+    > export DEPLOY_HARDENING=yes
+    > export ANSIBLE_HOST_KEY_CHECKING=False
+    > export ADMIN_PASSWORD=passw0rd
 
+    > ./scripts/bootstrap-cluster.sh
+    > ./scripts/create-cluster.sh
 
-To deploy openstack on multiple nodes that are not pre-configured by genesis::
-
-    >bootstrap-cluster.sh [ -i <controllernode1,...> -s <storagenode1,...> -c <computenode1,...> ]
-    >create-cluster.sh [ -i <controllernode1,...> -s <storagenode1,...> -c <computenode1,...> ]
-
+If the DEPLOY_XXX environment variables are omitted or set to "no", then the
+associated open source projects are not installed, unless the inventory file
+produced by the cluster-genesis project is present at /var/oprc/inventory.yml.
+In this case, the variables DEPLOY_CEPH and DEPLOY_OPSMGR default to "yes".
 
 Debugging hints
 ---------------
+
+The os-services project clones the projects associated with the DEPLOY_XXX environment
+variables.  The location of these projects can be externally specified as shown below.
+
+    > export GIT_CEPH_URL=git@gitlabhost.rtp.raleigh.ibm.com:Ulysses/ceph.git
+    > export GIT_OPSMGR_URL=git@gitlabhost.rtp.raleigh.ibm.com:Ulysses/opsmgr.git
+
+The following variable may be used to specify the location of an alternate git mirror.
+
+    > export GIT_MIRROR=github.com
 
 Use the 'screen' command to run the scripts in.  The screen can then be
 detached and it will continue running::
@@ -30,8 +43,20 @@ detached and it will continue running::
     > ./scripts/create-cluster.sh 2>&1 | tee /tmp/create-cluster.out
 
 In another terminal you can examine the output or grep for errors::
+
     > tail -f /tmp/create-cluster.out
     > grep -e "^Failed" -e "^Rebuild" -ie "fatal:" /tmp/create-cluster.out
 
 .. warning::  It is not recommended to use the 'nohup' command.  It is known to
   cause errors while deploying.
+
+Related projects
+----------------
+
+    > cluster-genesis
+    > ceph
+    > opsmgr
+
+For additional information, see::
+
+    >
