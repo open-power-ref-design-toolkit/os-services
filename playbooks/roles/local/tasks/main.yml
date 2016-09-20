@@ -15,10 +15,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- name: Hello world
-  debug:
-    msg: "Hello world from local role"
-
-# This role is used to modify items on the local host for OSA deployment.
-# This will typically include adding, removing, or changing files in the
-# OSA tree depending one which reference architectures are being deployed.
+- include: configure_swift_proxy.yml

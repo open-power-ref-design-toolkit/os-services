@@ -38,7 +38,7 @@ container_skel:
     contains:
       - swift_proxy
     properties:
-      is_metal: true
+      is_metal: SWIFT_PROXY_IS_METAL_VALUE
       service_name: swift
       container_release: trusty
   swift_acc_container:
