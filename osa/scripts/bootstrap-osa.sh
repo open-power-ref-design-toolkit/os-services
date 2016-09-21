@@ -150,10 +150,6 @@ if [ $rc != 0 ]; then
     exit 1
 fi
 
-echo "Bootstrap inventory"
-
-generate_inventory
-
 # TODO(luke): Need to apply patches to all controller nodes for opsmgr resiliency
 
 # Apply patches iff osa is installed above.  Code is intended to be reentrant
@@ -203,6 +199,17 @@ grep -q callback_plugins ${OSA_PLAYS}/ansible.cfg || sed -i '/\[defaults\]/a cal
 
 # Initial default files for updates below: user_variables.yml, user_secrets.yml, openstack_user_config.yml.example
 cp -R /opt/openstack-ansible/etc/openstack_deploy /etc
+
+# TODO, clone yggdrasil or just pull the dynamic inventory module.
+
+# Call the playbook to do additional pre-OSA prep
+# pushd $OSA_DIR/playbook >/dev/null 2>&1
+# ansible-playbook -i /path/to/inventory.py site.yml
+# popd >/dev/null 2>&1
+
+echo "Bootstrap inventory"
+
+generate_inventory
 
 # These are user config files for openstack-ansible.  Any unique file name may be used.  We choose our sub-project name
 OSA_SECRETS="${PCLD_DIR}/etc/openstack_deploy/user_secrets_osa.yml"
