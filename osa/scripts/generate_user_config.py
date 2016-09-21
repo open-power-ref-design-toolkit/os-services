@@ -441,31 +441,38 @@ class OSAFileGenerator(object):
         if not domain_settings:
             return
 
-        # This list of drives for this host will be inserted into swift_vars.
-        drives = []
-
         # There are three different disk lists we need to check.
         drive_types = (
             'account-ring-disks',
             'container-ring-disks',
             'object-ring-disks')
 
+        name_to_drive = {}
         for drive_type in drive_types:
-            if drive_type == 'object-ring-disks':
-                group_value = ['default']
-            else:
-                group_value = ['account', 'container']
 
             ring_disks = domain_settings.get(drive_type, None)
             if not ring_disks:
                 continue
 
             for disk in ring_disks:
-                drive = {
-                    'name': disk,
-                    'groups': copy.deepcopy(group_value),
-                }
-                drives.append(drive)
+                drive = name_to_drive.get(disk)
+                if not drive:
+                    drive = {
+                        'name': disk,
+                        'groups': [],
+                    }
+                    name_to_drive[disk] = drive
+
+                if drive_type == 'object-ring-disks':
+                    drive['groups'].append('default')
+                elif drive_type == 'account-ring-disks':
+                    drive['groups'].append('account')
+                elif drive_type == 'container-ring-disks':
+                    drive['groups'].append('container')
+        # This list of drives for this host will be inserted into swift_vars.
+        drives = []
+        for drive in sorted(name_to_drive.keys()):
+            drives.append(name_to_drive[drive])
 
         swift_vars['zone'] = zone
         swift_vars['drives'] = drives

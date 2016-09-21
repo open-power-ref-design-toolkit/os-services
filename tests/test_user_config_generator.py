@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import os
 from os import path
 import sys
@@ -69,9 +70,9 @@ SWIFT_NORMAL_INPUT_DICT = {
                         'meta3',
                     ],
                     'container-ring-disks': [
-                        'meta4',
-                        'meta5',
-                        'meta6',
+                        'meta1',
+                        'meta2',
+                        'meta3',
                     ],
                 },
             },
@@ -126,13 +127,7 @@ E_SWIFT_HOSTS = {
                     {'name': 'meta2',
                      'groups': ['account', 'container']},
                     {'name': 'meta3',
-                     'groups': ['account', 'container']},
-                    {'name': 'meta4',
-                     'groups': ['account', 'container']},
-                    {'name': 'meta5',
-                     'groups': ['account', 'container']},
-                    {'name': 'meta6',
-                     'groups': ['account', 'container']},
+                     'groups': ['account', 'container']}
                 ],
             },
         },
@@ -1516,9 +1511,10 @@ class TestConfigureSwift(unittest.TestCase):
     def setUp(self):
         super(TestConfigureSwift, self).setUp()
         self.ofg = guc.OSAFileGenerator('input-file', 'output-dir')
+        self.maxDiff = None
 
     def test_normal(self):
-        self.ofg.gen_dict = SWIFT_NORMAL_INPUT_DICT
+        self.ofg.gen_dict = copy.deepcopy(SWIFT_NORMAL_INPUT_DICT)
 
         # Expected global_overrides.swift dict.
         e_go_swift = {
@@ -1545,7 +1541,7 @@ class TestConfigureSwift(unittest.TestCase):
         }
 
         # Expected swift_hosts dict.
-        e_swift_hosts = E_SWIFT_HOSTS
+        e_swift_hosts = copy.deepcopy(E_SWIFT_HOSTS)
 
         self.ofg.user_config['global_overrides'] = {}
         self.ofg.user_config['global_overrides']['swift'] = {}
@@ -1626,7 +1622,7 @@ class TestConfigureSwift(unittest.TestCase):
         self.assertNotIn('swift', result['global_overrides'])
 
     def test_template_vars(self):
-        self.ofg.gen_dict = SWIFT_NORMAL_INPUT_DICT
+        self.ofg.gen_dict = copy.deepcopy(SWIFT_NORMAL_INPUT_DICT)
 
         self.ofg.gen_dict['node-templates'] = {}
         self.ofg.gen_dict['node-templates']['swift-object'] = {}
@@ -1648,7 +1644,7 @@ class TestConfigureSwift(unittest.TestCase):
         # Because of the node-templates section we added to the
         # input dictionary, we expect to see the following
         # modifications in the output dictionary.
-        e_swift_hosts = E_SWIFT_HOSTS
+        e_swift_hosts = copy.deepcopy(E_SWIFT_HOSTS)
 
         # Mount point for swiftobjectX hosts will be alternate value.
         # Note that swiftmetadata1 is not impacted because it is not
@@ -1664,14 +1660,14 @@ class TestConfigureSwift(unittest.TestCase):
         self.assertDictEqual(swift_hosts, e_swift_hosts)
 
     def test_converged_metadata(self):
-        self.ofg.gen_dict = SWIFT_NORMAL_INPUT_DICT
+        self.ofg.gen_dict = copy.deepcopy(SWIFT_NORMAL_INPUT_DICT)
 
         # Remove swift metadata nodes.
         del self.ofg.gen_dict['nodes']['swift-metadata']
 
         # Add metadata rings to object nodes.
         a_disks = ['meta1', 'meta2', 'meta3']  # account-ring-disks
-        c_disks = ['meta4', 'meta5', 'meta6']  # container-ring-disks
+        c_disks = ['meta1', 'meta2', 'meta3']  # container-ring-disks
 
         swift_object = self.ofg.gen_dict['nodes']['swift-object']
         for host in swift_object:
@@ -1688,31 +1684,25 @@ class TestConfigureSwift(unittest.TestCase):
 
         # Because of the changes to the input dictionary we expect
         # to see the following modifications in the output dictionary.
-        e_swift_hosts = E_SWIFT_HOSTS
+        e_swift_hosts = copy.deepcopy(E_SWIFT_HOSTS)
 
         # Expect swift-metadata to be removed.
         del e_swift_hosts['swiftmetadata1']
 
         # Expect metadata rings on swift object nodes.
         e_drives = [
-            {'name': 'meta1',
-             'groups': ['account', 'container']},
-            {'name': 'meta2',
-             'groups': ['account', 'container']},
-            {'name': 'meta3',
-             'groups': ['account', 'container']},
-            {'name': 'meta4',
-             'groups': ['account', 'container']},
-            {'name': 'meta5',
-             'groups': ['account', 'container']},
-            {'name': 'meta6',
-             'groups': ['account', 'container']},
             {'name': 'disk1',
              'groups': ['default']},
             {'name': 'disk2',
              'groups': ['default']},
             {'name': 'disk3',
              'groups': ['default']},
+            {'name': 'meta1',
+             'groups': ['account', 'container']},
+            {'name': 'meta2',
+             'groups': ['account', 'container']},
+            {'name': 'meta3',
+             'groups': ['account', 'container']},
         ]
 
         for hostname in ('swiftobject1', 'swiftobject2', 'swiftobject3'):
@@ -1721,6 +1711,65 @@ class TestConfigureSwift(unittest.TestCase):
 
         self.assertDictEqual(swift_hosts, e_swift_hosts)
 
+    def test_account_container_on_separate_disks(self):
+        host = {'domain-settings': {'account-ring-disks': ['a', 'b', 'c'],
+                                    'container-ring-disks': ['d', 'e', 'f'],
+                                    'object-ring-disks': ['g', 'h', 'i']}}
+        swift_vars = {}
+        self.ofg._configure_swift_host(host, 0, None, swift_vars)
+        expected_disks = [{'name': 'a',
+                           'groups': ['account']},
+                          {'name': 'b',
+                           'groups': ['account']},
+                          {'name': 'c',
+                           'groups': ['account']},
+                          {'name': 'd',
+                           'groups': ['container']},
+                          {'name': 'e',
+                           'groups': ['container']},
+                          {'name': 'f',
+                           'groups': ['container']},
+                          {'name': 'g',
+                           'groups': ['default']},
+                          {'name': 'h',
+                           'groups': ['default']},
+                          {'name': 'i',
+                           'groups': ['default']}]
+        self.assertEqual(swift_vars['drives'], expected_disks)
+
+    def test_all_rings_on_same_disks(self):
+        host = {'domain-settings': {'account-ring-disks': ['a', 'b', 'c'],
+                                    'container-ring-disks': ['a', 'b', 'c'],
+                                    'object-ring-disks': ['a', 'b', 'c']}}
+        swift_vars = {}
+        self.ofg._configure_swift_host(host, 0, None, swift_vars)
+        expected_disks = [{'name': 'a',
+                           'groups': ['account', 'container', 'default']},
+                          {'name': 'b',
+                           'groups': ['account', 'container', 'default']},
+                          {'name': 'c',
+                           'groups': ['account', 'container', 'default']}]
+        self.assertEqual(swift_vars['drives'], expected_disks)
+
+    def test_container_account_on_same_disks(self):
+        host = {'domain-settings': {'account-ring-disks': ['a', 'b', 'c'],
+                                    'container-ring-disks': ['a', 'b', 'c'],
+                                    'object-ring-disks': ['d', 'e', 'f']}}
+        swift_vars = {}
+        self.ofg._configure_swift_host(host, 0, None, swift_vars)
+        expected_disks = [{'name': 'a',
+                           'groups': ['account', 'container']},
+                          {'name': 'b',
+                           'groups': ['account', 'container']},
+                          {'name': 'c',
+                           'groups': ['account', 'container']},
+                          {'name': 'd',
+                           'groups': ['default']},
+                          {'name': 'e',
+                           'groups': ['default']},
+                          {'name': 'f',
+                           'groups': ['default']}]
+        self.assertEqual(swift_vars['drives'], expected_disks)
 
 if __name__ == '__main__':
     unittest.main()
