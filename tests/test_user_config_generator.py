@@ -22,7 +22,6 @@ import sys
 import mock
 import unittest
 import yaml
-import copy
 
 TOP_DIR = path.join(os.getcwd(), path.dirname(__file__), '..')
 SCRIPT_DIR = 'osa/scripts'
@@ -49,7 +48,7 @@ SWIFT_NORMAL_INPUT_DICT = {
             'bridge': 'br-storage',
         },
         'swift-replication': {
-            'bridge' : 'br-swift-repl',
+            'bridge': 'br-swift-repl',
         },
     },
     'nodes': {
@@ -269,7 +268,7 @@ class TestCIDRNetworks(unittest.TestCase):
         self.assertIn('container', networks)
         self.assertIn('storage', networks)
         self.assertIn('tunnel', networks)
-        self.assertIn('swift_repl',networks)
+        self.assertIn('swift_repl', networks)
         self.assertEqual('1.2.3.4/20', networks['container'])
         self.assertEqual('2.3.4.5/20', networks['storage'])
         self.assertEqual('3.4.5.6/20', networks['tunnel'])
@@ -322,7 +321,7 @@ class TestCIDRNetworks(unittest.TestCase):
         self.assertNotIn('container', networks)
         self.assertIn('storage', networks)
         self.assertIn('tunnel', networks)
-        self.assertIn('swift_repl',networks)
+        self.assertIn('swift_repl', networks)
 
     def test_get_missing_storage_network(self):
         self.ofg.gen_dict = {
@@ -350,7 +349,7 @@ class TestCIDRNetworks(unittest.TestCase):
         self.assertIn('container', networks)
         self.assertNotIn('storage', networks)
         self.assertIn('tunnel', networks)
-        self.assertIn('swift_repl',networks)
+        self.assertIn('swift_repl', networks)
 
     def test_get_missing_tunnel_network(self):
         self.ofg.gen_dict = {
@@ -378,7 +377,7 @@ class TestCIDRNetworks(unittest.TestCase):
         self.assertIn('container', networks)
         self.assertIn('storage', networks)
         self.assertNotIn('tunnel', networks)
-        self.assertIn('swift_repl',networks)
+        self.assertIn('swift_repl', networks)
 
     def test_get_missing_swift_network(self):
         self.ofg.gen_dict = {
@@ -406,7 +405,7 @@ class TestCIDRNetworks(unittest.TestCase):
         self.assertIn('container', networks)
         self.assertIn('storage', networks)
         self.assertIn('tunnel', networks)
-        self.assertNotIn('swift_repl',networks)
+        self.assertNotIn('swift_repl', networks)
 
     def test_get_not_valid_network(self):
         self.ofg.gen_dict = {
@@ -1562,7 +1561,7 @@ class TestConfigureSwift(unittest.TestCase):
         self.ofg.gen_dict = copy.deepcopy(SWIFT_NORMAL_INPUT_DICT)
         networks = self.ofg.gen_dict.get('networks')
         if networks:
-            networks.pop('swift-replication',None)
+            networks.pop('swift-replication', None)
 
         # Expected global_overrides.swift dict.
         e_go_swift = {
@@ -1603,7 +1602,6 @@ class TestConfigureSwift(unittest.TestCase):
         self.assertDictEqual(go_swift, e_go_swift)
         self.assertDictEqual(proxy_hosts, e_proxy_hosts)
         self.assertDictEqual(swift_hosts, e_swift_hosts)
-
 
     def test_non_swift_refarch(self):
         self.ofg.gen_dict = {
