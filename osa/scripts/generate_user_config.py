@@ -77,6 +77,10 @@ class OSAFileGenerator(object):
         if tenant_network:
             cidr['tunnel'] = tenant_network.get('addr', 'N/A')
 
+        swift_repl_network = networks.get('swift-replication', None)
+        if swift_repl_network:
+            cidr['swift_repl'] = swift_repl_network.get('addr', 'N/A')
+
         self.user_config['cidr_networks'] = cidr
 
     def _configure_infra_hosts(self):
@@ -324,11 +328,18 @@ class OSAFileGenerator(object):
         if not bridge_name:
             return
 
+        swift_rep_network = networks.get('swift-replication', None)
+        br_swift_repl = None
+        if swift_rep_network:
+            br_swift_repl = swift_rep_network.get('bridge', None)
+
         # General swift vars
         swift = {}
         swift['storage_network'] = bridge_name
         swift['part_power'] = 8
         swift['mount_point'] = '/srv/node'
+        if br_swift_repl:
+            swift['repl_network'] = br_swift_repl
 
         self.user_config['global_overrides']['swift'] = swift
 
