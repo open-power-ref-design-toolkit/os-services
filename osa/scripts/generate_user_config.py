@@ -25,6 +25,9 @@ OSA_USER_CFG_FILE = 'openstack_user_config.yml'
 OSA_USER_VAR_HAPROXY = 'user_var_haproxy.yml'
 OSA_USER_VAR_CEILOMETER = 'user_var_ceilometer.yml'
 OSA_USER_VAR_CEPH = 'user_var_ceph.yml'
+
+SWIFT_MINIMUM_HARDWARE = 'swift-minimum-hardware'
+SWIFT = 'swift'
 PRIVATE_COMPUTE_CLOUD = 'private-compute-cloud'
 
 
@@ -392,25 +395,31 @@ class OSAFileGenerator(object):
     def _configure_swift_proxy_hosts(self):
         """Configure list of swift proxy hosts."""
 
+        proxy_hosts = {}
         nodes = self.gen_dict.get('nodes', None)
         if not nodes:
             return
 
-        swift_proxy = nodes.get('swift-proxy', None)
-        if not swift_proxy:
-            return
+        ref_arch_list = self.get_ref_arch()
 
-        # Swift Proxy Hosts.
-        proxy_hosts = {}
-        for proxy in swift_proxy:
-            hostname = proxy.get('hostname', None)
-            if hostname:
-                proxy_hosts[hostname] = {
-                    'ip': proxy.get('openstack-mgmt-addr', 'N/A')
-                }
+        if SWIFT in ref_arch_list:
+            proxy_list = ('controllers'
+                          if SWIFT_MINIMUM_HARDWARE in ref_arch_list
+                          else 'swift-proxy')
+
+            swift_proxy_hosts = nodes.get(proxy_list, None)
+            if not swift_proxy_hosts:
+                return
+
+            # Swift Proxy Hosts.
+            for proxy in swift_proxy_hosts:
+                hostname = proxy.get('hostname', None)
+                if hostname:
+                    proxy_hosts[hostname] = {
+                        'ip': proxy.get('openstack-mgmt-addr', 'N/A')
+                    }
 
         self.user_config['swift-proxy_hosts'] = proxy_hosts
-
         return
 
     def _configure_swift_template(self, host_type, template_vars):
@@ -567,8 +576,9 @@ class OSAFileGenerator(object):
 
     def _configure_swift(self):
         """Configure user variables for swift."""
+        ref_arch_list = self.get_ref_arch()
 
-        if 'swift' not in self.get_ref_arch():
+        if SWIFT not in ref_arch_list:
             return
 
         self._configure_swift_general()

@@ -58,6 +58,12 @@ SWIFT_NORMAL_INPUT_DICT = {
                 'openstack-mgmt-addr': '1.2.3.4',
             },
         ],
+        'controllers': [
+            {
+                'hostname': 'controller1',
+                'openstack-mgmt-addr': '1.2.3.9',
+            },
+        ],
         'swift-metadata': [
             {
                 'hostname': 'swiftmetadata1',
@@ -1781,6 +1787,64 @@ class TestConfigureSwift(unittest.TestCase):
         # Refarch specified no swift, so we should not see
         # swift in the output.
         self.assertNotIn('swift', result['global_overrides'])
+
+    def test_valid_swift_minimum_harware_refarch(self):
+        self.ofg.gen_dict = copy.deepcopy(SWIFT_NORMAL_INPUT_DICT)
+
+        self.ofg.gen_dict['reference-architecture'] = [
+            'swift',
+            'swift-minimum-hardware',
+        ]
+
+        nodes = self.ofg.gen_dict.get('nodes')
+        if nodes:
+            nodes.pop('swift-proxy', None)
+
+        # Expected swift-proxy_hosts dict.
+        e_proxy_hosts = {
+            'controller1': {
+                'ip': '1.2.3.9'
+            },
+        }
+
+        self.ofg._configure_swift_proxy_hosts()
+        result = self.ofg.user_config
+
+        proxy_hosts = result['swift-proxy_hosts']
+        self.assertDictEqual(proxy_hosts, e_proxy_hosts)
+
+    def test_valid_swift_refarch(self):
+        self.ofg.gen_dict = copy.deepcopy(SWIFT_NORMAL_INPUT_DICT)
+
+        self.ofg.gen_dict['reference-architecture'] = [
+            'swift',
+        ]
+
+        # Expected swift-proxy_hosts dict.
+        e_proxy_hosts = {
+            'swiftproxy1': {
+                'ip': '1.2.3.4'
+            },
+        }
+
+        self.ofg._configure_swift_proxy_hosts()
+        result = self.ofg.user_config
+
+        proxy_hosts = result['swift-proxy_hosts']
+        self.assertDictEqual(proxy_hosts, e_proxy_hosts)
+
+    def test_invalid_swift_minimum_harware_refarch(self):
+        self.ofg.gen_dict = copy.deepcopy(SWIFT_NORMAL_INPUT_DICT)
+
+        self.ofg.gen_dict['reference-architecture'] = [
+            'swift-minimum-hardware',  # swift not in list
+        ]
+
+        self.ofg._configure_swift_proxy_hosts()
+        result = self.ofg.user_config
+
+        proxy_hosts = result['swift-proxy_hosts']
+        self.assertDictEqual({}, proxy_hosts)
 
     def test_template_vars(self):
         self.ofg.gen_dict = copy.deepcopy(SWIFT_NORMAL_INPUT_DICT)
