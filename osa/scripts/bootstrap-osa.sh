@@ -105,7 +105,7 @@ if [ ! -d /opt/openstack-ansible ]; then
         echo "3) re-run command"
         exit 1
     fi
-    cd ${OSA_DIR}
+    pushd ${OSA_DIR} >/dev/null 2>&1
     git checkout stable/mitaka
     if [ $? != 0 ]; then
         exit 1
@@ -114,19 +114,14 @@ if [ ! -d /opt/openstack-ansible ]; then
     if [ $? != 0 ]; then
         exit 1
     fi
+    popd >/dev/null 2>&1
     INSTALL=True
-fi
-
-# Use git mirror, if configured to use
-if [ ! -z $GIT_MIRROR ]; then
-    # TODO: Replacing string can be taken as an input
-    sed -i "s/git\.openstack\.org/$GIT_MIRROR/g" $FILES_WITH_GIT_URLS
 fi
 
 # Install ansible
 if [ ! -d /etc/ansible ]; then
     echo "Installing ansible..."
-    cd ${OSA_DIR}
+    pushd ${OSA_DIR} >/dev/null 2>&1
     BOOTSTRAP_OPTS="${BOOTSTRAP_OPTS} bootstrap_host_ubuntu_repo=http://us.archive.ubuntu.com/ubuntu/"
     BOOTSTRAP_OPTS="${BOOTSTRAP_OPTS} bootstrap_host_ubuntu_security_repo=http://security.ubuntu.com/ubuntu/"
     scripts/bootstrap-ansible.sh
@@ -139,6 +134,7 @@ if [ ! -d /etc/ansible ]; then
         echo "3) re-run command"
         exit 1
     fi
+    popd >/dev/null 2>&1
     INSTALL=True
 fi
 
@@ -150,9 +146,8 @@ if [ $rc != 0 ]; then
     exit 1
 fi
 
-echo "Bootstrap inventory"
-
-generate_inventory
+# Copy configuration files before patches are applied, so that patches may be provided for configuration files
+cp -R /opt/openstack-ansible/etc/openstack_deploy /etc
 
 # TODO(luke): Need to apply patches to all controller nodes for opsmgr resiliency
 
@@ -185,37 +180,32 @@ if [ "$INSTALL" == "True" ] && [ -d $PCLD_DIR/diffs ]; then
     fi
 fi
 
+# Patch ansible if a git mirror is specified.  At least one of the target files is created by patch above
+if [ ! -z $GIT_MIRROR ]; then
+    # TODO: Replacing string can be taken as an input
+    sed -i "s/git\.openstack\.org/$GIT_MIRROR/g" $FILES_WITH_GIT_URLS
+fi
+
 # Override nova, neutron roles' git projects versions because OSA_TAG could be a later version than the branch
 VAR_FILE=${OSA_PLAYS}/defaults/repo_packages/openstack_services.yml
 PVAR_FILE=${OSA_PLAYS}/vars/pkvm/pkvm.yml
 KEYS=$(grep -e "^neutron_.*:" -e "^nova_.*:" $VAR_FILE | awk '{print $1}')
 
-for k in $KEYS
-do
-  # Remove any existing lines with this key
-  sed -i "/^$k.*$/d" $PVAR_FILE
-  # Put in new lines
-  grep -e "^$k" $VAR_FILE >>$PVAR_FILE
+for k in $KEYS; do
+    # Remove any existing lines with this key
+    sed -i "/^$k.*$/d" $PVAR_FILE
+    # Put in new lines
+    grep -e "^$k" $VAR_FILE >>$PVAR_FILE
 done
 
 # Update the file /opt/openstack-ansible/playbooks/ansible.cfg
 grep -q callback_plugins ${OSA_PLAYS}/ansible.cfg || sed -i '/\[defaults\]/a callback_plugins = plugins/callbacks' ${OSA_PLAYS}/ansible.cfg
 
-# Initial default files for updates below: user_variables.yml, user_secrets.yml, openstack_user_config.yml.example
-cp -R /opt/openstack-ansible/etc/openstack_deploy /etc
-
-# These are user config files for openstack-ansible.  Any unique file name may be used.  We choose our sub-project name
-OSA_SECRETS="${PCLD_DIR}/etc/openstack_deploy/user_secrets_osa.yml"
-OSA_VARS="${PCLD_DIR}/etc/openstack_deploy/user_variables_osa.yml"
-
-# Initialize passwords in ${OSA_SECRETS}
-# cd ${OSA_DIR}
-# ./scripts/pw-token-gen.py --file ${OSA_SECRETS}
-
-echo "Copying user variables and secrets to ${TARGET_OSA_DEPLOY}/openstack_deploy"
-cp -R ${PCLD_DIR}/etc/openstack_deploy ${TARGET_OSA_DEPLOY}
+echo "Bootstrap inventory"
+generate_inventory
 
 if [[ "${DEPLOY_TEMPEST}" == "yes" ]]; then
-    cd ${OSA_PLAYS}
+    pushd ${OSA_PLAYS} >/dev/null 2>&1
     run_ansible os-tempest-install.yml
+    popd >/dev/null 2>&1
 fi

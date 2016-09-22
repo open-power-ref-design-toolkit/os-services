@@ -102,7 +102,7 @@ fi
 # Installs ansible and openstack-ansible
 pushd osa >/dev/null 2>&1
 echo "Invoking scripts/bootstrap-osa.sh"
-scripts/bootstrap-osa.sh $ARGS ${PCLD_DIR}/etc
+scripts/bootstrap-osa.sh $ARGS
 rc=$?
 if [ $rc != 0 ]; then
     echo "Failed scripts/bootstrap-osa.sh, rc=$rc"
@@ -117,7 +117,7 @@ if [[ "$DEPLOY_CEPH" == "yes" ]]; then
     fi
     pushd ceph >/dev/null 2>&1
     echo "Invoking scripts/bootstrap-ceph.sh"
-    scripts/bootstrap-ceph.sh $ARGS $PCLD_DIR/etc
+    scripts/bootstrap-ceph.sh $ARGS
     rc=$?
     if [ $rc != 0 ]; then
         echo "Failed scripts/bootstrap-ceph.sh, rc=$rc"
@@ -134,7 +134,7 @@ if [[ "$DEPLOY_OPSMGR" == "yes" ]]; then
     fi
     pushd opsmgr >/dev/null 2>&1
     echo "Invoking scripts/bootstrap-opsmgr.sh"
-    scripts/bootstrap-opsmgr.sh $ARGS $PCLD_DIR/etc
+    scripts/bootstrap-opsmgr.sh $ARGS
     rc=$?
     if [ $rc != 0 ]; then
         echo "Failed scripts/bootstrap-opsmgr.sh, rc=$rc"
@@ -162,14 +162,10 @@ echo "/etc/openstack_deploy/user_secrets.yml.  The setting of this user account"
 echo "may also be scripted using the environment variable ADMIN_PASSWORD."
 echo "Otherwise passwords will be dynamically generated."
 echo ""
-echo "Passwords may be edited by utilizing the following command:"
+echo "The following files contain Openstack configuration parameters."
 echo ""
-echo "vi /etc/openstack_deploy/user_secrets.yml"
-echo ""
-echo "Additional parameters may be found in $PCLD_DIR/etc/*.  For example,"
-echo ""
-echo "vi $PCLD_DIR/etc/openstack_deploy/*.yml"
-echo "vi $PCLD_DIR/etc/ceph_inventory/*.yml"
+echo "vi /etc/openstack_deploy/user_secrets*.yml"
+echo "vi /etc/openstack_deploy/user_variables*.yml"
 echo ""
 echo "Note there is no requirement to modify any parameter."
 echo ""
