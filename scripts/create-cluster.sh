@@ -59,9 +59,6 @@ if [ "$DEPLOY_CEPH" == "yes" ]; then
     popd >/dev/null 2>&1
 fi
 
-# Apply user configuration files created by bootstrap-cluster.sh
-cp -r ${PCLD_DIR}/etc/openstack_deploy /etc
-
 # Configure openstack-ansible
 pushd osa >/dev/null 2>&1
 echo "Invoking scripts/create-cluster-osa.sh"
