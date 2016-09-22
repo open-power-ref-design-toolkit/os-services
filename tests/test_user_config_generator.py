@@ -257,7 +257,8 @@ class TestCIDRNetworks(unittest.TestCase):
                 'swift-replication': {
                     'addr': '4.5.6.7/20'
                 }
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_cidr_networks()
@@ -289,7 +290,8 @@ class TestCIDRNetworks(unittest.TestCase):
                 'swift-replication': {
                     'addr': '4.5.6.7/20'
                 }
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_cidr_networks()
@@ -310,7 +312,8 @@ class TestCIDRNetworks(unittest.TestCase):
                 'swift-replication': {
                     'addr': '4.5.6.7/20'
                 }
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_cidr_networks()
@@ -338,7 +341,8 @@ class TestCIDRNetworks(unittest.TestCase):
                 'swift-replication': {
                     'addr': '4.5.6.7/20'
                 }
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_cidr_networks()
@@ -366,7 +370,8 @@ class TestCIDRNetworks(unittest.TestCase):
                 'swift-replication': {
                     'addr': '4.5.6.7/20'
                 }
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_cidr_networks()
@@ -434,7 +439,8 @@ class TestConfigureInfraHosts(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_infra_hosts()
@@ -453,6 +459,28 @@ class TestConfigureInfraHosts(unittest.TestCase):
             self.assertIn(svc, result)
             self.assertEqual(expected, result[svc])
 
+    def test_ref_arch_not_found(self):
+        self.ofg.gen_dict = {
+            'nodes': {
+                'controllers': [
+                    {
+                        'hostname': 'host1',
+                        'openstack-mgmt-addr': '11.22.33.44',
+                    },
+                    {
+                        'hostname': 'host2',
+                        'openstack-mgmt-addr': '55.66.77.88',
+                    }
+                ]
+            },
+            'reference-architecture': ['swift']
+        }
+        self.ofg._configure_infra_hosts()
+        result = self.ofg.user_config
+
+        self.assertNotIn('storage-infra_hosts',result)
+        self.assertNotIn('network_hosts',result)
+
     def test_nodes_not_found(self):
         self.ofg.gen_dict = {
             'hosts': {  # mistakenly used 'hosts'
@@ -466,7 +494,8 @@ class TestConfigureInfraHosts(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_infra_hosts()
@@ -485,7 +514,8 @@ class TestConfigureInfraHosts(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_infra_hosts()
@@ -505,7 +535,8 @@ class TestConfigureInfraHosts(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_infra_hosts()
@@ -533,7 +564,8 @@ class TestConfigureInfraHosts(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_infra_hosts()
@@ -592,7 +624,8 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                         'openstack-mgmt-addr': 'ignored',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_global_overrides()
@@ -692,6 +725,69 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
         }
         self.assertEqual(vlan_flat_network, provider_networks[4])
 
+
+    def test_ref_arch_not_found(self):
+        self.ofg.gen_dict = {
+            'internal-floating-ipaddr': '11.22.33.44/22',
+            'external-floating-ipaddr': '22.33.44.55/22',
+            'networks': {
+                'openstack-mgmt': {
+                    'bridge': 'br-mgmt',
+                    'eth-port': 'eth0',
+                },
+                'openstack-stg': {
+                    'bridge': 'br-stg',
+                    'eth-port': 'eth1',
+                },
+                'openstack-tenant-vxlan': {
+                    'bridge': 'br-vxlan',
+                    'eth-port': 'eth10',
+                },
+                'openstack-tenant-vlan': {
+                    'bridge': 'br-vlan',
+                    'eth-port': 'eth11',
+                }
+            },
+            'nodes': {
+                'controllers': [
+                    {
+                        'hostname': 'host1',
+                        'openstack-mgmt-addr': '11.22.33.44',
+                        'external1-addr': '55.66.77.88',
+                    },
+                    {
+                        'hostname': 'ignored',
+                        'openstack-mgmt-addr': 'ignored',
+                    }
+                ]
+            },
+            'reference-architecture': ['swift']
+        }
+
+        self.ofg._configure_global_overrides()
+        result = self.ofg.user_config
+
+        overrides = result['global_overrides']
+        self.assertEqual('11.22.33.44', overrides['internal_lb_vip_address'])
+        self.assertEqual('22.33.44.55', overrides['external_lb_vip_address'])
+        self.assertNotIn('tunnel_bridge', overrides)
+        self.assertEqual('br-mgmt', overrides['management_bridge'])
+
+        provider_networks = overrides['provider_networks']
+
+        def _contains_network(provider_networks, bridge_name):
+            for network in provider_networks:
+                for n in network.values():
+                   bridge = n.get('container_bridge')
+                   if bridge == bridge_name:
+                       return True
+            return False
+
+        self.assertTrue(_contains_network(provider_networks,'br-mgmt'))
+        self.assertTrue(_contains_network(provider_networks, 'br-stg'))
+        self.assertFalse(_contains_network(provider_networks, 'br-vxlan'))
+        self.assertFalse(_contains_network(provider_networks, 'br-vlan'))
+
     def test_nodes_not_found(self):
         self.ofg.gen_dict = {
             'hosts': {  # mistakenly used 'hosts'
@@ -705,7 +801,8 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_global_overrides()
@@ -724,7 +821,8 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_global_overrides()
@@ -748,7 +846,8 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_global_overrides()
@@ -782,7 +881,8 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                         'openstack-mgmt-addr': 'ignored',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_global_overrides()
@@ -910,7 +1010,8 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                         'openstack-mgmt-addr': 'ignored',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_global_overrides()
@@ -1025,7 +1126,8 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                         'mgmt-addr': '11.22.33.44',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_global_overrides()
@@ -1055,7 +1157,8 @@ class TestConfigureComputeHosts(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_compute_hosts()
@@ -1067,6 +1170,25 @@ class TestConfigureComputeHosts(unittest.TestCase):
         self.assertEqual({'ip': '11.22.33.44'}, compute_hosts['host1'])
         self.assertIn('host2', compute_hosts)
         self.assertEqual({'ip': '55.66.77.88'}, compute_hosts['host2'])
+
+    def test_ref_arch_not_found(self):
+        self.ofg.gen_dict = {
+            'nodes': {
+                'compute': [
+                    {
+                        'hostname': 'host1',
+                        'openstack-mgmt-addr': '11.22.33.44',
+                    },
+                    {
+                        'hostname': 'host2',
+                        'openstack-mgmt-addr': '55.66.77.88',
+                    }
+                ]
+            },
+            'reference-architecture': ['swift']
+        }
+        self.ofg._configure_compute_hosts()
+        self.assertEqual({}, self.ofg.user_config)
 
     def test_nodes_not_found(self):
         self.ofg.gen_dict = {
@@ -1081,7 +1203,8 @@ class TestConfigureComputeHosts(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_compute_hosts()
@@ -1100,7 +1223,8 @@ class TestConfigureComputeHosts(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_compute_hosts()
@@ -1119,7 +1243,8 @@ class TestConfigureComputeHosts(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_compute_hosts()
@@ -1152,7 +1277,8 @@ class TestConfigureStorageHosts(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_storage_hosts()
@@ -1200,7 +1326,28 @@ class TestConfigureStorageHosts(unittest.TestCase):
                         'openstack-stg-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
+        }
+
+        self.ofg._configure_storage_hosts()
+        self.assertEqual({}, self.ofg.user_config)
+
+    def test_ref_arch_not_found(self):
+        self.ofg.gen_dict = {
+        'nodes': {
+                'controllers': [
+                    {
+                        'hostname': 'host1',
+                        'openstack-mgmt-addr': '11.22.33.44',
+                    },
+                    {
+                        'hostname': 'host2',
+                        'openstack-mgmt-addr': '55.66.77.88',
+                    }
+                ]
+            },
+            'reference-architecture': ['swift']
         }
 
         self.ofg._configure_storage_hosts()
@@ -1219,7 +1366,8 @@ class TestConfigureStorageHosts(unittest.TestCase):
                         'openstack-stg-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_storage_hosts()
@@ -1238,7 +1386,8 @@ class TestConfigureStorageHosts(unittest.TestCase):
                         'openstack-stg': '55.66.77.88',  # ignored key
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_storage_hosts()
@@ -1257,7 +1406,8 @@ class TestConfigureStorageHosts(unittest.TestCase):
                         'openstack-stg-addr': '11.22.33.44',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_storage_hosts()
@@ -1430,7 +1580,8 @@ class TestGenerateCeph(unittest.TestCase):
                         'openstack-stg-addr': '5.6.7.8'
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         ofg.generate_ceph()
@@ -1450,9 +1601,20 @@ class TestGenerateCeph(unittest.TestCase):
     def test_generate_no_nodes(self, mock_dump):
         ofg = guc.OSAFileGenerator('input-file', 'output-dir')
         # ofg.gen_dict is empty
+        ofg.gen_dict = {
+            'reference-architecture': ['private-compute-cloud']
+        }
 
         ofg.generate_ceph()
+        self.assertEqual(0, mock_dump.call_count)
 
+    def test_generate_no_arch(self, mock_dump):
+        ofg = guc.OSAFileGenerator('input-file', 'output-dir')
+        ofg.gen_dict = {
+            'reference-architecture': ['swift']
+        }
+
+        ofg.generate_ceph()
         self.assertEqual(0, mock_dump.call_count)
 
     def test_generate_no_controllers(self, mock_dump):
@@ -1468,7 +1630,8 @@ class TestGenerateCeph(unittest.TestCase):
                         'openstack-stg-addr': '5.6.7.8'
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         ofg.generate_ceph()
@@ -1488,7 +1651,8 @@ class TestGenerateCeph(unittest.TestCase):
                         'openstack-mgmt-addr': '5.6.7.8'
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         ofg.generate_ceph()
