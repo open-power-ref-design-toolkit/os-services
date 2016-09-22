@@ -5,7 +5,20 @@ changes_loc: ../changes
 temp_diff_loc: ../.diffs
 gitsrc_loc: ../.gitsrc
 
-changes:
+# Individual files that changes will reference
+#
+# example:
+#   The changed file should go into 'changes/files/<path>/<changed_file>', then
+# create an entry in the 'files' section as below:
+#
+# files:
+#   - file:
+#     source: .gitsrc/openstack-ansible/etc/openstack_deploy/env.d/swift.yml
+#     target: /etc/openstack_deploy/env.d/swift.yml
+#
+
+# Projects to clone
+projects:
   - project:
     git: https://git.openstack.org/openstack/openstack-ansible-galera_client
     branch: 13.1.0
