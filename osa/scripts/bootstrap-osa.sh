@@ -186,10 +186,14 @@ if [ ! -z $GIT_MIRROR ]; then
     sed -i "s/git\.openstack\.org/$GIT_MIRROR/g" $FILES_WITH_GIT_URLS
 fi
 
-# Override nova, neutron roles' git projects versions because OSA_TAG could be a later version than the branch
+# Copy repo keys from openstack_services.yml for the services
+# we build ppc64le virtual environments for.  This ensures the
+# branch and commit hash that corresponds to the OSA tag is used
+# during the Power virtual environment build.
+
 VAR_FILE=${OSA_PLAYS}/defaults/repo_packages/openstack_services.yml
 PVAR_FILE=${OSA_PLAYS}/vars/pkvm/pkvm.yml
-KEYS=$(grep -e "^neutron_.*:" -e "^nova_.*:" $VAR_FILE | awk '{print $1}')
+KEYS=$(grep -e "^neutron_.*:" -e "^nova_.*:" -e "^swift_.*:" $VAR_FILE | awk '{print $1}')
 
 for k in $KEYS; do
     # Remove any existing lines with this key
