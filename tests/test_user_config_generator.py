@@ -478,8 +478,8 @@ class TestConfigureInfraHosts(unittest.TestCase):
         self.ofg._configure_infra_hosts()
         result = self.ofg.user_config
 
-        self.assertNotIn('storage-infra_hosts',result)
-        self.assertNotIn('network_hosts',result)
+        self.assertNotIn('storage-infra_hosts', result)
+        self.assertNotIn('network_hosts', result)
 
     def test_nodes_not_found(self):
         self.ofg.gen_dict = {
@@ -725,7 +725,6 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
         }
         self.assertEqual(vlan_flat_network, provider_networks[4])
 
-
     def test_ref_arch_not_found(self):
         self.ofg.gen_dict = {
             'internal-floating-ipaddr': '11.22.33.44/22',
@@ -778,12 +777,12 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
         def _contains_network(provider_networks, bridge_name):
             for network in provider_networks:
                 for n in network.values():
-                   bridge = n.get('container_bridge')
-                   if bridge == bridge_name:
-                       return True
+                    bridge = n.get('container_bridge')
+                    if bridge == bridge_name:
+                        return True
             return False
 
-        self.assertTrue(_contains_network(provider_networks,'br-mgmt'))
+        self.assertTrue(_contains_network(provider_networks, 'br-mgmt'))
         self.assertTrue(_contains_network(provider_networks, 'br-stg'))
         self.assertFalse(_contains_network(provider_networks, 'br-vxlan'))
         self.assertFalse(_contains_network(provider_networks, 'br-vlan'))
@@ -1335,7 +1334,7 @@ class TestConfigureStorageHosts(unittest.TestCase):
 
     def test_ref_arch_not_found(self):
         self.ofg.gen_dict = {
-        'nodes': {
+            'nodes': {
                 'controllers': [
                     {
                         'hostname': 'host1',

@@ -219,7 +219,7 @@ class OSAFileGenerator(object):
                 'group_binds': [
                     'neutron_linuxbridge_agent',
                 ]
-             }
+            }
 
             # Genesis doesn't create the veth pair yet, but we still need it.
             # Hardcode veth12 for now which will make our manual setup easier.
