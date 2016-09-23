@@ -16,6 +16,13 @@ gitsrc_loc: ../.gitsrc
 #     source: .gitsrc/openstack-ansible/etc/openstack_deploy/env.d/swift.yml
 #     target: /etc/openstack_deploy/env.d/swift.yml
 #
+files:
+  - file:
+    source: .gitsrc/openstack-ansible/etc/openstack_deploy/env.d/swift.yml
+    target: /etc/openstack_deploy/env.d/swift.yml
+  - file:
+    source: .gitsrc/openstack-ansible/etc/openstack_deploy/env.d/cinder.yml
+    target: /etc/openstack_deploy/env.d/cinder.yml
 
 # Projects to clone
 projects:

@@ -1,6 +1,6 @@
-diff -Naur a/opt/openstack-ansible/etc/openstack_deploy/env.d/swift.yml b/opt/openstack-ansible/etc/openstack_deploy/env.d/swift.yml
---- a/opt/openstack-ansible/etc/openstack_deploy/env.d/swift.yml	2016-09-08 05:15:25.432260844 -0400
-+++ b/opt/openstack-ansible/etc/openstack_deploy/env.d/swift.yml	2016-09-08 05:14:52.268260251 -0400
+diff -Naur a/etc/openstack_deploy/env.d/swift.yml b/etc/openstack_deploy/env.d/swift.yml
+--- a/etc/openstack_deploy/env.d/swift.yml	2016-09-23 09:08:36.069025615 -0500
++++ b/etc/openstack_deploy/env.d/swift.yml	2016-09-22 10:11:35.776255556 -0500
 @@ -1,5 +1,8 @@
  ---
  # Copyright 2014, Rackspace US, Inc.
