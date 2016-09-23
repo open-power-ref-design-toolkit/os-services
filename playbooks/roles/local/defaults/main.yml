@@ -15,5 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- include: configure_swift_proxy.yml
-- include: remove-services-swift.yml
+# These services need to be excluded while installing with
+# 'swift-minimum-hardware' reference architecture
+swift_minimum_exclude_services:
+   - aodh.yml
+   - ceilometer.yml
+   - cinder.yml
+   - glance.yml
+   - heat.yml
+   - ironic.yml
+   - neutron.yml
+   - nova.yml
