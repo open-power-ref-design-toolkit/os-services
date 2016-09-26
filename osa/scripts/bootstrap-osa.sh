@@ -42,7 +42,7 @@ function generate_inventory {
         echo "Inventory provided by genesis"
         $SCRIPTS_DIR/generate_user_config.py \
             -i $GENESIS_INVENTORY \
-            -d etc/openstack_deploy
+            -d /etc/openstack_deploy
         rc=$?
         if [ $rc -ne 0 ]; then
             echo "Error generating config files from genesis file."
