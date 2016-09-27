@@ -1,6 +1,0 @@
----
-- name: Configure Swift proxy is_metal value
-  replace:
-    dest: '/etc/openstack_deploy/env.d/swift.yml'
-    regexp: 'SWIFT_PROXY_IS_METAL_VALUE'
-    replace: "{{ 'swift-minimum-hardware' not in reference_architecture }}"

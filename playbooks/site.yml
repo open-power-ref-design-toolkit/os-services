@@ -16,6 +16,7 @@
 # limitations under the License.
 
 - hosts: localhost
+  connection: local
   roles:
     - local
 

@@ -1,5 +1,0 @@
----
-- name: Remove files from /etc/openstack_deploy/env.d
-  file: path="/etc/openstack_deploy/env.d/{{ item }}" state=absent
-  with_items: swift_minimum_exclude_services
-  when: "'swift' in {{ reference_architecture }} and 'private-compute-cloud' not in {{ reference_architecture }}"
