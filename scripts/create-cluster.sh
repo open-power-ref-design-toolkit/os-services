@@ -25,6 +25,7 @@ if [ "$1" == "--help" ]; then
     echo "export DEPLOY_CEPH=yes|no                          Default is no"
     echo "export DEPLOY_OPSMGR=yes|no                        Default is no"
     echo "export DEPLOY_HARDENING=yes|no                     Default is no"
+    echo "export DEPLOY_TEMPEST=yes|no                       Default is no"
     echo "export ADMIN_PASSWORD=                             Not applicable unless set"
     exit 1
 fi

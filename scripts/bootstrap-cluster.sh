@@ -17,8 +17,8 @@
 #    under the License.
 
 # User can override the git urls
-GIT_OPSMGR_URL=${GIT_OPSMGR_URL:-"git://github.com/ibmsoe/ibm-openstack-opsmgr"}
-GIT_CEPH_URL=${GIT_CEPH_URL:-"git://github.com/ibmsoe/ibm-openstack-ceph"}
+GIT_OPSMGR_URL=${GIT_OPSMGR_URL:-"git://github.com/open-power/opsmgr"}
+GIT_CEPH_URL=${GIT_CEPH_URL:-"git://github.com/open-power/ceph"}
 
 # Get the current branch or tag for this repository, ie. os-services
 MASTER_TAG=`git symbolic-ref -q --short HEAD || git describe --tags --exact-match`
@@ -36,6 +36,7 @@ if [ "$1" == "--help" ]; then
     echo "export DEPLOY_CEPH=yes|no                          Default is no"
     echo "export DEPLOY_OPSMGR=yes|no                        Default is no"
     echo "export DEPLOY_HARDENING=yes|no                     Default is no"
+    echo "export DEPLOY_TEMPEST=yes|no                       Default is no"
     echo "export ADMIN_PASSWORD=                             Not applicable unless set"
     echo ""
     exit 1
