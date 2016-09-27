@@ -38,6 +38,7 @@ source $SCRIPTS_DIR/process-args.sh
 
 echo "DEPLOY_AIO=$DEPLOY_AIO"
 echo "DEPLOY_HARDENING=$DEPLOY_HARDENING"
+echo "DEPLOY_TEMPEST=$DEPLOY_TEMPEST"
 echo "InfraNodes=$infraNodes"
 echo "allNodes=$allNodes"
 
@@ -296,4 +297,13 @@ done
 if [ "$done" == "False" ]; then
     echo "Failed setup-openstack.yml too many times!!!"
     exit 8
+fi
+
+if [[ "$DEPLOY_TEMPEST" == "yes" ]]; then
+    run_ansible os-tempest-install.yml
+    rc=$?
+    if [ $rc != 0 ]; then
+        echo "scripts/create-cluster-osa.sh failed, installing tempest rc=$rc"
+        exit 9
+    fi
 fi

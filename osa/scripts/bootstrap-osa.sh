@@ -206,13 +206,3 @@ grep -q callback_plugins ${OSA_PLAYS}/ansible.cfg || sed -i '/\[defaults\]/a cal
 echo "Bootstrap inventory"
 generate_inventory
 
-if [[ "${DEPLOY_TEMPEST}" == "yes" ]]; then
-    pushd ${OSA_PLAYS} >/dev/null 2>&1
-    run_ansible os-tempest-install.yml
-    rc=$?
-    if [ $rc != 0 ]; then
-        echo "scripts/bootstrap-ansible.sh failed, installing tempest rc=$rc"
-        exit 1
-    fi
-    popd >/dev/null 2>&1
-fi
