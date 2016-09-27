@@ -29,12 +29,21 @@ Debugging hints
 The os-services project clones the projects associated with the DEPLOY_XXX environment
 variables.  The location of these projects can be externally specified as shown below.
 
-    > export GIT_CEPH_URL=git@gitlabhost.rtp.raleigh.ibm.com:Ulysses/ceph.git
-    > export GIT_OPSMGR_URL=git@gitlabhost.rtp.raleigh.ibm.com:Ulysses/opsmgr.git
+    > export GIT_CEPH_URL=git://github.com/open-power/ceph.git
+    > export GIT_OPSMGR_URL=git://github.com/open-power/opsmgr.git
 
-The following variable may be used to specify the location of an alternate git mirror.
+The release tag or branch may be set via the following variables::
+
+    > export CEPH_TAG=master
+    > export OPSMGR_TAG=master
+
+The following variable may be used to specify the location of an alternate git mirror::
 
     > export GIT_MIRROR=github.com
+
+The following variable may be used to install Openstack Tempest for testing purposes::
+
+    > export DEPLOY_TEMPEST=yes
 
 Use the 'screen' command to run the scripts in.  The screen can then be
 detached and it will continue running::
