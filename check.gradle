@@ -1,10 +1,7 @@
 task check (type : Exec) {
-    print 'Running Check Task on os-services'
+    print 'Check task on os-services:'
     workingDir '.'
-    executable = "ls";
-    standardOutput = new ByteArrayOutputStream()
-    ext.output = {
-       return standardOutput.toString()
-    }
+    // Run the default tox environment.
+    executable = "tox"
+    args "-r"
 }
-
