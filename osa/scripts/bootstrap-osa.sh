@@ -70,6 +70,7 @@ function generate_inventory {
             rc=$?
             if [ $rc != 0 ]; then
                 echo "bootstrap-aio.sh failed, rc=$rc"
+                rm -rf /openstack
                 exit 1
             fi
             popd >/dev/null 2>&1
