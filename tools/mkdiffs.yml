@@ -89,5 +89,5 @@ projects:
   - project:
     git: https://github.com/ansible/ansible
     branch: v1.9.4-1
-    target_location: /opt/ansible_v1.9.4-1/
+    target_location: /opt/ansible_v1.9.4-1
     src_location: ansible
