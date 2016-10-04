@@ -20,12 +20,10 @@
 GIT_OPSMGR_URL=${GIT_OPSMGR_URL:-"git://github.com/open-power/opsmgr"}
 GIT_CEPH_URL=${GIT_CEPH_URL:-"git://github.com/open-power/ceph"}
 
-# Get the current branch or tag for this repository, ie. os-services
-MASTER_TAG=`git symbolic-ref -q --short HEAD || git describe --tags --exact-match`
-
-# User can override the git tag or branch that is used to clone the repository
-CEPH_TAG=${CEPH_TAG:-${MASTER_TAG}}
-OPSMGR_TAG=${OPSMGR_TAG:-${MASTER_TAG}}
+# User can override the revision of ulysses sub-projects by specifying a branch, tag, or commit
+source <(grep = subproject-requirements.txt)
+CEPH_TAG=${CEPH_TAG:-$__ceph_tag}
+OPSMGR_TAG=${OPSMGR_TAG:-$__opsmgr_tag}
 
 # Note help text assumes the end user is invoking this script as Genesis is fully automated
 # Default value (yes) is reversed for Genesis
@@ -72,7 +70,6 @@ source osa/scripts/process-args.sh
 
 echo DEPLOY_CEPH=$DEPLOY_CEPH
 echo DEPLOY_OPSMGR=$DEPLOY_OPSMGR
-echo MASTER_TAG=$MASTER_TAG
 
 apt-get -qq update
 apt-get -qq -y install build-essential libssl-dev libffi-dev python-dev \
