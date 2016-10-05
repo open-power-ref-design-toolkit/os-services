@@ -1,0 +1,3 @@
+# The default branch, release tag, or commit to be cloned
+__ceph_tag=branch-v1
+__opsmgr_tag=branch-v1
