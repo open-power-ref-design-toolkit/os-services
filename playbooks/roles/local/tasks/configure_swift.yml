@@ -43,5 +43,5 @@
   file: path="/etc/openstack_deploy/env.d/{{ item }}" state=absent
   with_items: swift_minimum_exclude_services
   when:
-    - "'swift' in {{ reference_architecture }}"
-    - "'private-compute-cloud' not in {{ reference_architecture }}"
+    - "{{ 'swift' in reference_architecture }}"
+    - "{{ 'private-compute-cloud' not in reference_architecture }}"
