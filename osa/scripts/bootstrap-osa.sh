@@ -149,13 +149,12 @@ if [ $rc != 0 ]; then
     exit 1
 fi
 
-# Copy configuration files before patches are applied, so that patches may be provided for configuration files
-cp -R /opt/openstack-ansible/etc/openstack_deploy /etc
-
-# TODO(luke): Need to apply patches to all controller nodes for opsmgr resiliency
-
 # Apply patches iff osa is installed above.  Code is intended to be reentrant
 if [ "$INSTALL" == "True" ] && [ -d $PCLD_DIR/diffs ]; then
+    # Copy configuration files before patches are applied, so that patches may be provided for configuration files
+    cp -R /opt/openstack-ansible/etc/openstack_deploy /etc
+
+    # TODO(luke): Need to apply patches to all controller nodes for opsmgr resiliency
     echo "Applying patches"
     cd /
     ANSIBLE_PATCH=False
