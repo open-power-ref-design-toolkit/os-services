@@ -20,7 +20,7 @@
 # Default value (yes) is reversed for Genesis
 
 if [ "$1" == "--help" ]; then
-    echo "Usage: create-cluster.sh [-i <controllernode1,...>] [-s <storagenode1,...>] [-c <computenode1,...>]"
+    echo "Usage: create-cluster.sh"
     echo ""
     echo "export DEPLOY_CEPH=yes|no                          Default is no"
     echo "export DEPLOY_OPSMGR=yes|no                        Default is no"
