@@ -299,6 +299,22 @@ if [ "$done" == "False" ]; then
     exit 8
 fi
 
+# The post-deploy.yml playbook copies /etc/openstack_deploy to each controller node enabling
+# each to assume the role of operational management.  Copying the data allows each node to
+# recreate the configuration. The data pertains to inventory, user variables, and user secrets.
+
+echo "Invoking post-deploy playbooks"
+pushd $PCLD_DIR/playbooks >/dev/null 2>&1
+run_ansible -i $OSA_DIR/playbooks/inventory/dynamic_inventory.py post-deploy.yml
+rc=$?
+if [ $rc != 0 ]; then
+    echo "scripts/create-cluster-osa.sh failed, invoking post-deploy playbooks rc=$rc"
+    echo "Non-fatal error, continuing..."
+    echo "Manual recovery procedure:"
+    echo "1) For each controller, scp -r /etc/openstack-deploy root@controller:/etc"
+fi
+popd >/dev/null 2>&1
+
 if [[ "$DEPLOY_TEMPEST" == "yes" ]]; then
     run_ansible os-tempest-install.yml
     rc=$?

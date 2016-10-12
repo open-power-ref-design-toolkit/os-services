@@ -182,9 +182,8 @@ if [ "$INSTALL" == "True" ] && [ -d $PCLD_DIR/diffs ]; then
     fi
 fi
 
-# Patch ansible if a git mirror is specified.  At least one of the target files is created by patch above
+# Patch OSA to use git mirror.  At least one of the target files is created by patch above
 if [ ! -z $GIT_MIRROR ]; then
-    # TODO: Replacing string can be taken as an input
     sed -i "s/git\.openstack\.org/$GIT_MIRROR/g" $FILES_WITH_GIT_URLS
 fi
 
@@ -205,13 +204,14 @@ for k in $KEYS; do
 done
 
 # Update the file /opt/openstack-ansible/playbooks/ansible.cfg
-grep -q callback_plugins ${OSA_PLAYS}/ansible.cfg || sed -i '/\[defaults\]/a callback_plugins = plugins/callbacks' ${OSA_PLAYS}/ansible.cfg
+grep -q callback_plugins ${OSA_PLAYS}/ansible.cfg ||
+    sed -i '/\[defaults\]/a callback_plugins = plugins/callbacks' ${OSA_PLAYS}/ansible.cfg
 
 # TODO, clone yggdrasil or just pull the dynamic inventory module.
 
 # Call the playbook to do additional pre-OSA prep
-# pushd $OSA_DIR/playbook >/dev/null 2>&1
-# ansible-playbook -i /path/to/inventory.py site.yml
+# pushd playbooks >/dev/null 2>&1
+# ansible-playbook -i /path/to/inventory.py pre-deploy.yml
 # popd >/dev/null 2>&1
 
 echo "Bootstrap inventory"
