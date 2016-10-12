@@ -29,7 +29,7 @@ OPSMGR_TAG=${OPSMGR_TAG:-$__opsmgr_tag}
 # Default value (yes) is reversed for Genesis
 
 if [ "$1" == "--help" ]; then
-    echo "Usage: bootstrap-cluster.sh [-i <controllernode1,...>] [-s <storagenode1,...>] [-c <computenode1,...>]"
+    echo "Usage: bootstrap-cluster.sh"
     echo ""
     echo "export DEPLOY_CEPH=yes|no                          Default is no"
     echo "export DEPLOY_OPSMGR=yes|no                        Default is no"

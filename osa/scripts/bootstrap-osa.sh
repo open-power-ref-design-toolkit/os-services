@@ -79,12 +79,10 @@ function generate_inventory {
 }
 
 if [ "$1" == "--help" ]; then
-    echo "Usage: bootstrap-osa.sh [-i <controllernode1,...>] [-s <storagenode1,...>] [-c <computenode1,...>]"
+    echo "Usage: bootstrap-osa.sh"
     echo ""
     echo "export DEPLOY_HARDENING=yes|no                     Default is no"
     echo "export ADMIN_PASSWORD=                             Not applicable unless set"
-    echo ""
-    echo "Default is no"
     exit 1
 fi
 
