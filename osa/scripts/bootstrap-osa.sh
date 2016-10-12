@@ -182,13 +182,16 @@ if [ "$INSTALL" == "True" ] && [ -d $PCLD_DIR/diffs ]; then
     fi
 fi
 
-# Patch ansible if a git mirror is specified.  At least one of the target files is created by patch above
+# Patch OSA to use git mirror.  At least one of the target files is created by patch above
 if [ ! -z $GIT_MIRROR ]; then
-    # TODO: Replacing string can be taken as an input
     sed -i "s/git\.openstack\.org/$GIT_MIRROR/g" $FILES_WITH_GIT_URLS
 fi
 
-# Override nova, neutron roles' git projects versions because OSA_TAG could be a later version than the branch
+# Copy repo keys from openstack_services.yml for the services
+# we build ppc64le virtual environments for.  This ensures the
+# branch and commit hash that corresponds to the OSA tag is used
+# during the Power virtual environment build.
+
 VAR_FILE=${OSA_PLAYS}/defaults/repo_packages/openstack_services.yml
 PVAR_FILE=${OSA_PLAYS}/vars/pkvm/pkvm.yml
 KEYS=$(grep -e "^neutron_.*:" -e "^nova_.*:" $VAR_FILE | awk '{print $1}')
@@ -201,7 +204,8 @@ for k in $KEYS; do
 done
 
 # Update the file /opt/openstack-ansible/playbooks/ansible.cfg
-grep -q callback_plugins ${OSA_PLAYS}/ansible.cfg || sed -i '/\[defaults\]/a callback_plugins = plugins/callbacks' ${OSA_PLAYS}/ansible.cfg
+grep -q callback_plugins ${OSA_PLAYS}/ansible.cfg ||
+    sed -i '/\[defaults\]/a callback_plugins = plugins/callbacks' ${OSA_PLAYS}/ansible.cfg
 
 echo "Bootstrap inventory"
 generate_inventory
