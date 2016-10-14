@@ -176,7 +176,7 @@ if [ "$INSTALL" == "True" ] && [ -d $PCLD_DIR/diffs ]; then
         echo "pip uninstall ansible"
         pip uninstall -y ansible
         echo "pip install patched ansible"
-        pip install -q /opt/ansible_*
+        pip install -q /opt/ansible_* --upgrade
     fi
 fi
 
