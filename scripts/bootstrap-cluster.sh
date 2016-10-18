@@ -19,11 +19,14 @@
 # User can override the git urls
 GIT_OPSMGR_URL=${GIT_OPSMGR_URL:-"git://github.com/open-power/opsmgr"}
 GIT_CEPH_URL=${GIT_CEPH_URL:-"git://github.com/open-power/ceph-services"}
+# Internal GIT_GENESIS_URL="git@gitlabhost.rtp.raleigh.ibm.com:Ulysses/yggdrasil.git"
+GIT_GENESIS_URL=${GIT_GENESIS_URL:-"git://github.com/open-power/cluster-genesis"}
 
 # User can override the revision of ulysses sub-projects by specifying a branch, tag, or commit
 source <(grep = subproject-requirements.txt)
 CEPH_TAG=${CEPH_TAG:-$__ceph_tag}
 OPSMGR_TAG=${OPSMGR_TAG:-$__opsmgr_tag}
+GENESIS_TAG=${GENESIS_TAG:-$__genesis_tag}
 
 # Note help text assumes the end user is invoking this script as Genesis is fully automated
 # Default value (yes) is reversed for Genesis
