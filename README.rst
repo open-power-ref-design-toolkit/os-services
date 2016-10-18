@@ -63,7 +63,7 @@ Related projects
 ----------------
 
     > cluster-genesis
-    > ceph
+    > ceph-services
     > opsmgr
 
 For additional information, see::
