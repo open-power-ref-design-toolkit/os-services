@@ -15,12 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- include: setup_storage.yml
-  when: swift_do_setup | bool
+- include: setup_storage_install.yml
 
-- include: setup_inventory.yml
-  when: swift_do_inventory | bool
+- include: setup_storage_facts.yml
 
-- include: cleanup.yml
-  when: swift_do_cleanup | bool
+- include: setup_storage_sanity.yml
+  any_errors_fatal: true
+
+- include: setup_storage_init.yml
 

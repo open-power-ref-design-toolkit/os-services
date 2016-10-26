@@ -1,0 +1,49 @@
+#!/usr/bin/env python
+#
+# Copyright 2016 IBM Corp.
+#
+# All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import sys
+
+# Restrictions on the ring device lists:
+#   1. If account and container ring device lists are specified
+#      on a node, the values must match.  Account and container rings
+#      will have the same disks.
+#   2. If account, container, and object ring devices are specified
+#      on a node, the metadata and object lists must be either
+#      mutually exclusive or equal.  No partial overlaps.
+
+account_set=set({{ account_devices }})
+container_set=set({{ container_devices }})
+object_set=set({{ object_devices }})
+
+if account_set and container_set:
+    sym_diff_set=account_set ^ container_set
+    if sym_diff_set:
+        print "Account and container must be equal: %s" % sym_diff_set
+        sys.exit(1)
+
+if account_set and container_set and object_set:
+    sym_diff_set=account_set ^ object_set
+    overlap_set=account_set & object_set
+    if sym_diff_set and overlap_set:
+        print "Account and object must be equal or mutually exclusive: %s" % sym_diff_set
+        sys.exit(1)
+    if not sym_diff_set:
+        print "account_matches_object"
+
+sys.exit(0)
+
