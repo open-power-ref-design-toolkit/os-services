@@ -17,8 +17,8 @@
 #    under the License.
 
 # User can override the git urls
-GIT_OPSMGR_URL=${GIT_OPSMGR_URL:-"git://github.com/open-power/opsmgr"}
-GIT_CEPH_URL=${GIT_CEPH_URL:-"git://github.com/open-power/ceph-services"}
+GIT_OPSMGR_URL=${GIT_OPSMGR_URL:-"git://github.com/open-power-ref-design/opsmgr"}
+GIT_CEPH_URL=${GIT_CEPH_URL:-"git://github.com/open-power-ref-design/ceph-services"}
 
 # User can override the revision of ulysses sub-projects by specifying a branch, tag, or commit
 source <(grep = subproject-requirements.txt)
