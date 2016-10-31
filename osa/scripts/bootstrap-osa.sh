@@ -91,7 +91,7 @@ if [ ! -e scripts/bootstrap-osa.sh ]; then
     exit 1
 fi
 PCLD_DIR=`pwd`
-GENESIS_DIR="${PCLD_DIR}/../genesis"
+GENESIS_DIR="${PCLD_DIR}/../cluster-genesis"
 
 # Checkout the openstack-ansible repository
 INSTALL=False
@@ -207,8 +207,8 @@ grep -q callback_plugins ${OSA_PLAYS}/ansible.cfg ||
     sed -i '/\[defaults\]/a callback_plugins = plugins/callbacks' ${OSA_PLAYS}/ansible.cfg
 
 if [ ! -d ${GENESIS_DIR} ]; then
-    # Clone genesis to access the dynamic inventory module.
-    echo "Installing genesis..."
+    # Clone cluster-genesis to access the dynamic inventory module.
+    echo "Installing cluster-genesis..."
     git clone ${GIT_GENESIS_URL} ${GENESIS_DIR}
     if [ $? != 0 ]; then
         echo "Manual retry procedure:"
