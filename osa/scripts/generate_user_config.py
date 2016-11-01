@@ -356,6 +356,9 @@ class OSAFileGenerator(object):
         if br_swift_repl:
             swift['repl_network'] = br_swift_repl
 
+        if 'global_overrides' not in self.user_config:
+            self.user_config['global_overrides'] = {}
+
         self.user_config['global_overrides']['swift'] = swift
 
         return

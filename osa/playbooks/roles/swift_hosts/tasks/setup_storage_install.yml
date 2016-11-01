@@ -15,12 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- include: setup_storage.yml
-  when: swift_do_setup | bool
-
-- include: setup_inventory.yml
-  when: swift_do_inventory | bool
-
-- include: cleanup.yml
-  when: swift_do_cleanup | bool
+  - name: install required apt packages
+    apt:
+      name: "{{ item }}"
+      update_cache: yes
+    retries: 5
+    delay: 2
+    with_items:
+      - xfsprogs
+      - gdisk
+      - lvm2
 

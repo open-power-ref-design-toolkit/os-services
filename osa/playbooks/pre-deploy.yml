@@ -20,6 +20,37 @@
   roles:
     - local
 
-- hosts: swift_metadata:swift_object
+# Perform all setup steps in parallel prior to the inventory update.
+- name: Swift setup storage.
+  hosts: swift-metadata:swift-object
   roles:
-    - swift_hosts
+    - role: "swift_hosts"
+      swift_do_setup: true
+      swift_do_inventory: false
+      swift_do_cleanup: false
+
+# Each host should be processed one at a time when updating the
+# /var/oprc/inventory.yml (genesis inventory).  For this reason
+# serial=1 is set.  Without this multiple hosts would collide
+# trying to access the inventory file at the same time.
+- name: Swift update storage inventory.
+  hosts: swift-metadata:swift-object
+  serial: 1
+  roles:
+    - role: "swift_hosts"
+      swift_do_setup: false
+      swift_do_inventory: true
+      swift_do_cleanup: false
+
+# All the inventory update files are stored within the same directory.
+# This means the cleanup step must be performed as a separate play,
+# because if any single host were to clean up that directory during
+# the inventory step it would impact all subsequent hosts.
+- name: Swift cleans up remnants from the setup storage and inventory plays.
+  hosts: swift-metadata:swift-object
+  roles:
+    - role: "swift_hosts"
+      swift_do_setup: false
+      swift_do_inventory: false
+      swift_do_cleanup: true
+
