@@ -15,12 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- name: Copy ppc64le repo files from deployer node to the repo container
-  copy:
-    src: "/tmp/ppc64le_wheels/"
-    dest: "{{ repo_build_output }}"
-    force: yes
-  register: copy_wheel
-  when: hostvars['localhost']['pkvm_repo_host'] is defined
-  tags:
-    - copy_ppc64_wheels
+  - name: install required apt packages
+    apt:
+      name: "{{ item }}"
+      update_cache: yes
+    retries: 5
+    delay: 2
+    with_items:
+      - xfsprogs
+      - gdisk
+      - lvm2
+

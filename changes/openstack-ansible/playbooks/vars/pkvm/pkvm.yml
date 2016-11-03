@@ -21,3 +21,15 @@ repo_build_global_links_path: "/var/www/repo/links"
 repo_build_release_path: "/var/www/repo/os-releases"
 repo_build_release_tag: "{{ openstack_release }}"
 pkvm_repo_build_output: "/tmp/ppc64le_wheels/"
+
+compute_pkgs_ppc64le:
+    - "nova-{{ repo_build_release_tag }}-ppc64le.tgz"
+    - "nova-{{ repo_build_release_tag }}-ppc64le.checksum"
+    - "neutron-{{ repo_build_release_tag }}-ppc64le.tgz"
+    - "neutron-{{ repo_build_release_tag }}-ppc64le.checksum"
+
+swift_pkgs_ppc64le:
+    - "swift-{{ repo_build_release_tag }}-ppc64le.tgz"
+    - "swift-{{ repo_build_release_tag }}-ppc64le.checksum"
+
+

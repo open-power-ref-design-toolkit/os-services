@@ -91,6 +91,7 @@ if [ ! -e scripts/bootstrap-osa.sh ]; then
     exit 1
 fi
 PCLD_DIR=`pwd`
+GENESIS_DIR="${PCLD_DIR}/../cluster-genesis"
 
 # Checkout the openstack-ansible repository
 INSTALL=False
@@ -154,7 +155,7 @@ if [ "$INSTALL" == "True" ] && [ -d $PCLD_DIR/diffs ]; then
 
     # TODO(luke): Need to apply patches to all controller nodes for opsmgr resiliency
     echo "Applying patches"
-    cd /
+    pushd / >/dev/null 2>&1
     ANSIBLE_PATCH=False
     for f in ${PCLD_DIR}/diffs/*.patch; do
         patch -N -p1 < $f
@@ -171,6 +172,8 @@ if [ "$INSTALL" == "True" ] && [ -d $PCLD_DIR/diffs ]; then
             ANSIBLE_PATCH=True
         fi
     done
+
+    popd >/dev/null 2>&1
 
     if [ "$ANSIBLE_PATCH" == "True" ]; then
         echo "pip uninstall ansible"
@@ -192,7 +195,7 @@ fi
 
 VAR_FILE=${OSA_PLAYS}/defaults/repo_packages/openstack_services.yml
 PVAR_FILE=${OSA_PLAYS}/vars/pkvm/pkvm.yml
-KEYS=$(grep -e "^neutron_.*:" -e "^nova_.*:" $VAR_FILE | awk '{print $1}')
+KEYS=$(grep -e "^neutron_.*:" -e "^nova_.*:" -e "^swift_.*:" $VAR_FILE | awk '{print $1}')
 
 for k in $KEYS; do
     # Remove any existing lines with this key
@@ -204,6 +207,48 @@ done
 # Update the file /opt/openstack-ansible/playbooks/ansible.cfg
 grep -q callback_plugins ${OSA_PLAYS}/ansible.cfg ||
     sed -i '/\[defaults\]/a callback_plugins = plugins/callbacks' ${OSA_PLAYS}/ansible.cfg
+
+if [ ! -d ${GENESIS_DIR} ]; then
+    # Clone cluster-genesis to access the dynamic inventory module.
+    echo "Installing cluster-genesis..."
+    git clone ${GIT_GENESIS_URL} ${GENESIS_DIR}
+    if [ $? != 0 ]; then
+        echo "Manual retry procedure:"
+        echo "1) fix root cause of error if known"
+        echo "2) rm -rf ${GENESIS_DIR}"
+        echo "3) re-run command"
+    exit 1
+    fi
+
+    pushd ${GENESIS_DIR} >/dev/null 2>&1
+    git checkout ${GENESIS_TAG}
+    if [ $? != 0 ]; then
+        exit 1
+    fi
+    popd >/dev/null 2>&1
+fi
+
+# Validate domain specific settings in the inventory.
+echo "Validate domain settings..."
+pushd ${GENESIS_DIR} >/dev/null 2>&1
+./domain/scripts/validate_inventory.py --file /var/oprc/inventory.yml
+rc=$?
+if [ $rc != 0 ]; then
+    echo "${GENESIS_DIR}/domain/scripts/validate_inventory.py failed, rc=$rc"
+    exit 1
+fi
+popd >/dev/null 2>&1
+
+# Call the pre-deploy playbook to do additional pre-OSA prep.
+echo "Run pre-OSA prep..."
+pushd playbooks >/dev/null 2>&1
+ansible-playbook -i ${GENESIS_DIR}/scripts/python/yggdrasil/inventory.py pre-deploy.yml
+rc=$?
+if [ $rc != 0 ]; then
+    echo "playbooks/pre-deploy.yml failed, rc=$rc"
+    exit 1
+fi
+popd >/dev/null 2>&1
 
 echo "Bootstrap inventory"
 generate_inventory

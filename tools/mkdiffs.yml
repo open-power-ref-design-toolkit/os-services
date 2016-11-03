@@ -5,7 +5,27 @@ changes_loc: ../changes
 temp_diff_loc: ../.diffs
 gitsrc_loc: ../.gitsrc
 
-changes:
+# Individual files that changes will reference
+#
+# example:
+#   The changed file should go into 'changes/files/<path>/<changed_file>', then
+# create an entry in the 'files' section as below:
+#
+# files:
+#   - file:
+#     source: .gitsrc/openstack-ansible/etc/openstack_deploy/env.d/swift.yml
+#     target: /etc/openstack_deploy/env.d/swift.yml
+#
+files:
+  - file:
+    source: .gitsrc/openstack-ansible/etc/openstack_deploy/env.d/swift.yml
+    target: /etc/openstack_deploy/env.d/swift.yml
+  - file:
+    source: .gitsrc/openstack-ansible/etc/openstack_deploy/env.d/cinder.yml
+    target: /etc/openstack_deploy/env.d/cinder.yml
+
+# Projects to clone
+projects:
   - project:
     git: https://git.openstack.org/openstack/openstack-ansible-galera_client
     branch: 13.1.0
@@ -62,7 +82,12 @@ changes:
     target_location: /etc/ansible/roles/rsyslog_client
     src_location: rsyslog_client
   - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-os_swift
+    branch: 13.1.0
+    target_location: /etc/ansible/roles/os_swift
+    src_location: os_swift
+  - project:
     git: https://github.com/ansible/ansible
     branch: v1.9.4-1
-    target_location: /opt/ansible_v1.9.4-1/
+    target_location: /opt/ansible_v1.9.4-1
     src_location: ansible

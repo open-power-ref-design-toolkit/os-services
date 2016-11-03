@@ -43,23 +43,6 @@ def rm_dir(directory):
         exit(1)
 
 
-def clone_all(conf):
-    print ('Cloning the git projects.')
-    git_dir = conf['gitsrc_loc']
-    for project in conf['changes']:
-        print ('  ' + project['git'])
-        git_clone(project['git'], project['branch'],
-                  git_dir + '/' + project['src_location'])
-
-
-def confirm_clones(conf):
-    git_dir = conf['gitsrc_loc']
-    for project in conf['changes']:
-        if not os.path.isdir(git_dir + os.sep + project['src_location']):
-            print ('Clone not found for project: ' + project['git'])
-            exit(1)
-
-
 def git_clone(url, branch, tgt_dir):
     # Remove the target directory before cloning
     rm_dir(tgt_dir)
@@ -71,10 +54,25 @@ class CreateDiffs(object):
     def __init__(self, conf):
         super(CreateDiffs, self).__init__()
         self.conf = conf
-        self.git_dir = conf['gitsrc_loc']
+        self.git_dir = os.path.normpath(
+            os.path.join(EXEC_DIR, self.conf['gitsrc_loc']))
         self.diffs_dir = os.path.normpath(
             os.path.join(EXEC_DIR, self.conf['temp_diff_loc']))
         self.changes_loc = os.path.join(EXEC_DIR, self.conf['changes_loc'])
+
+    def confirm_clones(self):
+        for project in self.conf['projects']:
+            if not os.path.isdir(
+                    self.git_dir + os.sep + project['src_location']):
+                print ('Clone not found for project: ' + project['git'])
+                exit(1)
+
+    def clone_all(self):
+        print ('Cloning the git projects.')
+        for project in self.conf['projects']:
+            print ('  ' + project['git'])
+            git_clone(project['git'], project['branch'],
+                      self.git_dir + '/' + project['src_location'])
 
     def create_dir(self):
         rm_dir(self.diffs_dir)
@@ -85,9 +83,17 @@ class CreateDiffs(object):
         project_name = chg_path.split(chgs_loc)[1].split(os.sep)[1]
 
         # Now find the project in the conf
-        for project in self.conf['changes']:
+        for project in self.conf['projects']:
             if project['src_location'] == project_name:
                 return project
+
+        return None
+
+    def find_file(self, tgt_file):
+        # Now find the file in the conf
+        for file in self.conf['files']:
+            if file['target'] == tgt_file:
+                return file
 
         return None
 
@@ -97,7 +103,7 @@ class CreateDiffs(object):
             norm_dir = os.path.normpath(directory)
             for file_name in file_names:
                 changed_file = os.path.join(norm_dir, file_name)
-                print ('Processing: ' + changed_file)
+                print ('\nProcessing: ' + changed_file)
 
                 # Calculate the file relative the changes directory
                 relative_change = changed_file.split(norm_chg_loc)[1]
@@ -105,28 +111,41 @@ class CreateDiffs(object):
 
                 # Get the project from the config
                 project = self.find_project(norm_chg_loc, norm_dir)
+                if project:
+                    # Project relative path:
+                    src_loc = project['src_location']
+                    prj_rel_path = relative_change[len(src_loc) + 1:
+                                                   len(relative_change)]
 
-                # Project relative path:
-                src_loc = project['src_location']
-                prj_rel_path = relative_change[len(src_loc) + 1:
-                                               len(relative_change)]
+                    # Full diff path
+                    diff_path = (project['target_location'] + os.sep +
+                                 os.path.dirname(prj_rel_path))
 
-                # Full diff path
-                diff_path = (project['target_location'] + os.sep +
-                             os.path.dirname(prj_rel_path))
+                    # Original File
+                    orig_file_path = (self.git_dir + os.sep +
+                                      project['src_location'] +
+                                      os.sep + prj_rel_path)
 
-                # Original File
-                orig_file_path = (self.git_dir + os.sep +
-                                  project['src_location'] +
-                                  os.sep + prj_rel_path)
+                    # Diff output file
+                    diff_file_name = (project['target_location'] + os.sep +
+                                      prj_rel_path)
+
+                else:
+                    # This is an individual file
+                    tgt_file = (os.sep +
+                                os.sep.join(relative_change.split(os.sep)[1:]))
+                    file = self.find_file(tgt_file)
+                    orig_file_path = file.get('source', 'None')
+
+                    # Target path for the file
+                    diff_path = os.path.dirname(tgt_file)
+                    diff_file_name = tgt_file
+
                 # Ensure the original file exists.
                 if not os.path.isfile(orig_file_path):
                     print ('  Original file not found: ' + orig_file_path)
                     orig_file_path = "None"
 
-                # Diff output file
-                diff_file_name = (project['target_location'] + os.sep +
-                                  prj_rel_path)
                 diff_file_name = diff_file_name.replace(os.sep, '-')
                 diff_output_file = (self.diffs_dir + os.sep +
                                     diff_file_name.lstrip('-') + '.patch')
@@ -140,19 +159,18 @@ class CreateDiffs(object):
 def process_files(skip_git_cloning):
     conf = _load_config()
 
-    if not skip_git_cloning:
-        clone_all(conf)
-    else:
-        confirm_clones(conf)
-
     crt_diffs = CreateDiffs(conf)
+    if not skip_git_cloning:
+        crt_diffs.clone_all()
+    else:
+        crt_diffs.confirm_clones()
     crt_diffs.create_dir()
     crt_diffs.create_file_diffs()
 
     print ('\nGenerated patch files are available in directory: %s' %
-           os.path.normpath(os.path.join(EXEC_DIR, conf['temp_diff_loc'])))
+           crt_diffs.diffs_dir)
     print ('The project source is in directory: %s' %
-           os.path.normpath(os.path.join(EXEC_DIR, conf['gitsrc_loc'])))
+           crt_diffs.git_dir)
 
 
 def parse_command():

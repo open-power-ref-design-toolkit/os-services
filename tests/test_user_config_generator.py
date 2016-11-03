@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import os
 from os import path
 import sys
@@ -39,6 +40,152 @@ COMMON_HOST_SERVICES = (
     'haproxy_hosts',
     'log_hosts'
 )
+
+SWIFT_NORMAL_INPUT_DICT = {
+    'reference-architecture': ['private-compute-cloud', 'swift'],
+    'networks': {
+        'openstack-stg': {
+            'bridge': 'br-storage',
+        },
+        'swift-replication': {
+            'bridge': 'br-swift-repl',
+        },
+    },
+    'nodes': {
+        'swift-proxy': [
+            {
+                'hostname': 'swiftproxy1',
+                'openstack-mgmt-addr': '1.2.3.4',
+            },
+        ],
+        'controllers': [
+            {
+                'hostname': 'controller1',
+                'openstack-mgmt-addr': '1.2.3.9',
+            },
+        ],
+        'swift-metadata': [
+            {
+                'hostname': 'swiftmetadata1',
+                'openstack-mgmt-addr': '1.2.3.5',
+                'domain-settings': {
+                    'account-ring-disks': [
+                        'meta1',
+                        'meta2',
+                        'meta3',
+                    ],
+                    'container-ring-disks': [
+                        'meta1',
+                        'meta2',
+                        'meta3',
+                    ],
+                },
+            },
+        ],
+        'swift-object': [
+            {
+                'hostname': 'swiftobject1',
+                'openstack-mgmt-addr': '1.2.3.6',
+                'domain-settings': {
+                    'object-ring-disks': [
+                        'disk1',
+                        'disk2',
+                        'disk3',
+                    ],
+                },
+            },
+            {
+                'hostname': 'swiftobject2',
+                'openstack-mgmt-addr': '1.2.3.7',
+                'domain-settings': {
+                    'object-ring-disks': [
+                        'disk1',
+                        'disk2',
+                        'disk3',
+                    ],
+                },
+            },
+            {
+                'hostname': 'swiftobject3',
+                'openstack-mgmt-addr': '1.2.3.8',
+                'domain-settings': {
+                    'object-ring-disks': [
+                        'disk1',
+                        'disk2',
+                        'disk3',
+                    ],
+                },
+            },
+        ],
+    },
+}
+
+E_SWIFT_HOSTS = {
+    'swiftmetadata1': {
+        'ip': '1.2.3.5',
+        'container_vars': {
+            'swift_vars': {
+                'zone': 0,
+                'drives': [
+                    {'name': 'meta1',
+                     'groups': ['account', 'container']},
+                    {'name': 'meta2',
+                     'groups': ['account', 'container']},
+                    {'name': 'meta3',
+                     'groups': ['account', 'container']}
+                ],
+            },
+        },
+    },
+    'swiftobject1': {
+        'ip': '1.2.3.6',
+        'container_vars': {
+            'swift_vars': {
+                'zone': 0,
+                'drives': [
+                    {'name': 'disk1',
+                     'groups': ['default']},
+                    {'name': 'disk2',
+                     'groups': ['default']},
+                    {'name': 'disk3',
+                     'groups': ['default']},
+                ],
+            },
+        },
+    },
+    'swiftobject2': {
+        'ip': '1.2.3.7',
+        'container_vars': {
+            'swift_vars': {
+                'zone': 1,
+                'drives': [
+                    {'name': 'disk1',
+                     'groups': ['default']},
+                    {'name': 'disk2',
+                     'groups': ['default']},
+                    {'name': 'disk3',
+                     'groups': ['default']},
+                ],
+            },
+        },
+    },
+    'swiftobject3': {
+        'ip': '1.2.3.8',
+        'container_vars': {
+            'swift_vars': {
+                'zone': 2,
+                'drives': [
+                    {'name': 'disk1',
+                     'groups': ['default']},
+                    {'name': 'disk2',
+                     'groups': ['default']},
+                    {'name': 'disk3',
+                     'groups': ['default']},
+                ],
+            },
+        },
+    },
+}
 
 
 class TestOFGBasics(unittest.TestCase):
@@ -112,8 +259,12 @@ class TestCIDRNetworks(unittest.TestCase):
                 },
                 'openstack-tenant-vxlan': {
                     'addr': '3.4.5.6/20'
+                },
+                'swift-replication': {
+                    'addr': '4.5.6.7/20'
                 }
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_cidr_networks()
@@ -124,9 +275,11 @@ class TestCIDRNetworks(unittest.TestCase):
         self.assertIn('container', networks)
         self.assertIn('storage', networks)
         self.assertIn('tunnel', networks)
+        self.assertIn('swift_repl', networks)
         self.assertEqual('1.2.3.4/20', networks['container'])
         self.assertEqual('2.3.4.5/20', networks['storage'])
         self.assertEqual('3.4.5.6/20', networks['tunnel'])
+        self.assertEqual('4.5.6.7/20', networks['swift_repl'])
 
     def test_get_missing_networks(self):
         self.ofg.gen_dict = {
@@ -139,8 +292,12 @@ class TestCIDRNetworks(unittest.TestCase):
                 },
                 'openstack-tenant-vxlan': {
                     'addr': '3.4.5.6/20'
+                },
+                'swift-replication': {
+                    'addr': '4.5.6.7/20'
                 }
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_cidr_networks()
@@ -157,8 +314,12 @@ class TestCIDRNetworks(unittest.TestCase):
                 },
                 'openstack-tenant-vxlan': {
                     'addr': '3.4.5.6/20'
+                },
+                'swift-replication': {
+                    'addr': '4.5.6.7/20'
                 }
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_cidr_networks()
@@ -169,6 +330,7 @@ class TestCIDRNetworks(unittest.TestCase):
         self.assertNotIn('container', networks)
         self.assertIn('storage', networks)
         self.assertIn('tunnel', networks)
+        self.assertIn('swift_repl', networks)
 
     def test_get_missing_storage_network(self):
         self.ofg.gen_dict = {
@@ -181,8 +343,12 @@ class TestCIDRNetworks(unittest.TestCase):
                 },
                 'openstack-tenant-vxlan': {
                     'addr': '3.4.5.6/20'
+                },
+                'swift-replication': {
+                    'addr': '4.5.6.7/20'
                 }
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_cidr_networks()
@@ -193,6 +359,7 @@ class TestCIDRNetworks(unittest.TestCase):
         self.assertIn('container', networks)
         self.assertNotIn('storage', networks)
         self.assertIn('tunnel', networks)
+        self.assertIn('swift_repl', networks)
 
     def test_get_missing_tunnel_network(self):
         self.ofg.gen_dict = {
@@ -205,6 +372,38 @@ class TestCIDRNetworks(unittest.TestCase):
                 },
                 'openstack-tenant-vxLAN': {  # should be 'open....-vxlan'
                     'addr': '3.4.5.6/20'
+                },
+                'swift-replication': {
+                    'addr': '4.5.6.7/20'
+                }
+            },
+            'reference-architecture': ['private-compute-cloud']
+        }
+
+        self.ofg._configure_cidr_networks()
+        result = self.ofg.user_config
+
+        self.assertIn('cidr_networks', result)
+        networks = result['cidr_networks']
+        self.assertIn('container', networks)
+        self.assertIn('storage', networks)
+        self.assertNotIn('tunnel', networks)
+        self.assertIn('swift_repl', networks)
+
+    def test_get_missing_swift_network(self):
+        self.ofg.gen_dict = {
+            'networks': {
+                'openstack-mgmt': {
+                    'addr': '1.2.3.4/20'
+                },
+                'openstack-stg': {
+                    'addr': '2.3.4.5/20'
+                },
+                'openstack-tenant-vxlan': {  # should be 'open....-vxlan'
+                    'addr': '3.4.5.6/20'
+                },
+                'swift-REPlication': {
+                    'addr': '4.5.6.7/20'
                 }
             }
         }
@@ -216,7 +415,8 @@ class TestCIDRNetworks(unittest.TestCase):
         networks = result['cidr_networks']
         self.assertIn('container', networks)
         self.assertIn('storage', networks)
-        self.assertNotIn('tunnel', networks)
+        self.assertIn('tunnel', networks)
+        self.assertNotIn('swift_repl', networks)
 
     def test_get_not_valid_network(self):
         self.ofg.gen_dict = {
@@ -245,7 +445,8 @@ class TestConfigureInfraHosts(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_infra_hosts()
@@ -264,6 +465,28 @@ class TestConfigureInfraHosts(unittest.TestCase):
             self.assertIn(svc, result)
             self.assertEqual(expected, result[svc])
 
+    def test_ref_arch_not_found(self):
+        self.ofg.gen_dict = {
+            'nodes': {
+                'controllers': [
+                    {
+                        'hostname': 'host1',
+                        'openstack-mgmt-addr': '11.22.33.44',
+                    },
+                    {
+                        'hostname': 'host2',
+                        'openstack-mgmt-addr': '55.66.77.88',
+                    }
+                ]
+            },
+            'reference-architecture': ['swift']
+        }
+        self.ofg._configure_infra_hosts()
+        result = self.ofg.user_config
+
+        self.assertNotIn('storage-infra_hosts', result)
+        self.assertNotIn('network_hosts', result)
+
     def test_nodes_not_found(self):
         self.ofg.gen_dict = {
             'hosts': {  # mistakenly used 'hosts'
@@ -277,7 +500,8 @@ class TestConfigureInfraHosts(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_infra_hosts()
@@ -296,7 +520,8 @@ class TestConfigureInfraHosts(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_infra_hosts()
@@ -316,7 +541,8 @@ class TestConfigureInfraHosts(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_infra_hosts()
@@ -344,7 +570,8 @@ class TestConfigureInfraHosts(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_infra_hosts()
@@ -403,7 +630,8 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                         'openstack-mgmt-addr': 'ignored',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_global_overrides()
@@ -478,7 +706,7 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                 'container_type': 'veth',
                 'container_interface': 'eth11',
                 'type': 'vlan',
-                'range': '1:1',
+                'range': '1:4094',
                 'net_name': 'vlan',
                 'group_binds': [
                     'neutron_linuxbridge_agent',
@@ -503,6 +731,136 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
         }
         self.assertEqual(vlan_flat_network, provider_networks[4])
 
+    def test_ref_arch_not_found(self):
+        self.ofg.gen_dict = {
+            'internal-floating-ipaddr': '11.22.33.44/22',
+            'external-floating-ipaddr': '22.33.44.55/22',
+            'networks': {
+                'openstack-mgmt': {
+                    'bridge': 'br-mgmt',
+                    'eth-port': 'eth0',
+                },
+                'openstack-stg': {
+                    'bridge': 'br-stg',
+                    'eth-port': 'eth1',
+                },
+                'openstack-tenant-vxlan': {
+                    'bridge': 'br-vxlan',
+                    'eth-port': 'eth10',
+                },
+                'openstack-tenant-vlan': {
+                    'bridge': 'br-vlan',
+                    'eth-port': 'eth11',
+                }
+            },
+            'nodes': {
+                'controllers': [
+                    {
+                        'hostname': 'host1',
+                        'openstack-mgmt-addr': '11.22.33.44',
+                        'external1-addr': '55.66.77.88',
+                    },
+                    {
+                        'hostname': 'ignored',
+                        'openstack-mgmt-addr': 'ignored',
+                    }
+                ]
+            },
+            'reference-architecture': ['swift']
+        }
+
+        self.ofg._configure_global_overrides()
+        result = self.ofg.user_config
+
+        overrides = result['global_overrides']
+        self.assertEqual('11.22.33.44', overrides['internal_lb_vip_address'])
+        self.assertEqual('22.33.44.55', overrides['external_lb_vip_address'])
+        self.assertNotIn('tunnel_bridge', overrides)
+        self.assertEqual('br-mgmt', overrides['management_bridge'])
+
+        provider_networks = overrides['provider_networks']
+
+        def _contains_network(provider_networks, bridge_name):
+            for network in provider_networks:
+                for n in network.values():
+                    bridge = n.get('container_bridge')
+                    if bridge == bridge_name:
+                        return True
+            return False
+
+        self.assertTrue(_contains_network(provider_networks, 'br-mgmt'))
+        self.assertTrue(_contains_network(provider_networks, 'br-stg'))
+        self.assertFalse(_contains_network(provider_networks, 'br-vxlan'))
+        self.assertFalse(_contains_network(provider_networks, 'br-vlan'))
+
+    def test_dbaas_mgmt_network(self):
+        self.ofg.gen_dict = {
+            'internal-floating-ipaddr': '11.22.33.44/22',
+            'external-floating-ipaddr': '22.33.44.55/22',
+            'networks': {
+                'openstack-mgmt': {
+                    'bridge': 'br-mgmt',
+                    'eth-port': 'eth0',
+                },
+                'openstack-stg': {
+                    'bridge': 'br-stg',
+                    'eth-port': 'eth1',
+                },
+                'openstack-tenant-vxlan': {
+                    'bridge': 'br-vxlan',
+                    'eth-port': 'eth10',
+                },
+                'openstack-tenant-vlan': {
+                    'bridge': 'br-vlan',
+                    'eth-port': 'eth11',
+                }
+            },
+            'nodes': {
+                'controllers': [
+                    {
+                        'hostname': 'host1',
+                        'openstack-mgmt-addr': '11.22.33.44',
+                        'external1-addr': '55.66.77.88',
+                    },
+                    {
+                        'hostname': 'ignored',
+                        'openstack-mgmt-addr': 'ignored',
+                    }
+                ]
+            },
+            'reference-architecture': ['private-compute-cloud', 'dbaas']
+        }
+
+        self.ofg._configure_global_overrides()
+        result = self.ofg.user_config
+
+        overrides = result['global_overrides']
+        self.assertEqual('11.22.33.44', overrides['internal_lb_vip_address'])
+        self.assertEqual('22.33.44.55', overrides['external_lb_vip_address'])
+        self.assertEqual('br-vxlan', overrides['tunnel_bridge'])
+        self.assertEqual('br-mgmt', overrides['management_bridge'])
+        provider_networks = overrides['provider_networks']
+
+        # verify management network
+        mgmt_network = {
+            'network': {
+                'container_bridge': 'br-mgmt',
+                'container_type': 'veth',
+                'container_interface': 'eth1',
+                'ip_from_q': 'container',
+                'type': 'flat',
+                'host_bind_override': 'veth-infra',
+                'net_name': 'infra',
+                'group_binds': [
+                    'all_containers',
+                    'hosts'
+                ],
+                'is_container_address': True,
+                'is_ssh_address': True
+            }
+        }
+        self.assertEqual(mgmt_network, provider_networks[0])
+
     def test_nodes_not_found(self):
         self.ofg.gen_dict = {
             'hosts': {  # mistakenly used 'hosts'
@@ -516,7 +874,8 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_global_overrides()
@@ -535,7 +894,8 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_global_overrides()
@@ -559,7 +919,8 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_global_overrides()
@@ -593,7 +954,8 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                         'openstack-mgmt-addr': 'ignored',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_global_overrides()
@@ -668,7 +1030,7 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                 'container_type': 'veth',
                 'container_interface': 'eth11',
                 'type': 'vlan',
-                'range': '1:1',
+                'range': '1:4094',
                 'net_name': 'vlan',
                 'group_binds': [
                     'neutron_linuxbridge_agent',
@@ -721,7 +1083,8 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                         'openstack-mgmt-addr': 'ignored',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_global_overrides()
@@ -796,7 +1159,7 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                 'container_type': 'veth',
                 'container_interface': 'eth11',
                 'type': 'vlan',
-                'range': '1:1',
+                'range': '1:4094',
                 'net_name': 'vlan',
                 'group_binds': [
                     'neutron_linuxbridge_agent',
@@ -836,7 +1199,8 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                         'mgmt-addr': '11.22.33.44',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_global_overrides()
@@ -866,7 +1230,8 @@ class TestConfigureComputeHosts(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_compute_hosts()
@@ -878,6 +1243,25 @@ class TestConfigureComputeHosts(unittest.TestCase):
         self.assertEqual({'ip': '11.22.33.44'}, compute_hosts['host1'])
         self.assertIn('host2', compute_hosts)
         self.assertEqual({'ip': '55.66.77.88'}, compute_hosts['host2'])
+
+    def test_ref_arch_not_found(self):
+        self.ofg.gen_dict = {
+            'nodes': {
+                'compute': [
+                    {
+                        'hostname': 'host1',
+                        'openstack-mgmt-addr': '11.22.33.44',
+                    },
+                    {
+                        'hostname': 'host2',
+                        'openstack-mgmt-addr': '55.66.77.88',
+                    }
+                ]
+            },
+            'reference-architecture': ['swift']
+        }
+        self.ofg._configure_compute_hosts()
+        self.assertEqual({}, self.ofg.user_config)
 
     def test_nodes_not_found(self):
         self.ofg.gen_dict = {
@@ -892,7 +1276,8 @@ class TestConfigureComputeHosts(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_compute_hosts()
@@ -911,7 +1296,8 @@ class TestConfigureComputeHosts(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_compute_hosts()
@@ -930,7 +1316,8 @@ class TestConfigureComputeHosts(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_compute_hosts()
@@ -963,7 +1350,8 @@ class TestConfigureStorageHosts(unittest.TestCase):
                         'openstack-mgmt-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_storage_hosts()
@@ -1011,7 +1399,28 @@ class TestConfigureStorageHosts(unittest.TestCase):
                         'openstack-stg-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
+        }
+
+        self.ofg._configure_storage_hosts()
+        self.assertEqual({}, self.ofg.user_config)
+
+    def test_ref_arch_not_found(self):
+        self.ofg.gen_dict = {
+            'nodes': {
+                'controllers': [
+                    {
+                        'hostname': 'host1',
+                        'openstack-mgmt-addr': '11.22.33.44',
+                    },
+                    {
+                        'hostname': 'host2',
+                        'openstack-mgmt-addr': '55.66.77.88',
+                    }
+                ]
+            },
+            'reference-architecture': ['swift']
         }
 
         self.ofg._configure_storage_hosts()
@@ -1030,7 +1439,8 @@ class TestConfigureStorageHosts(unittest.TestCase):
                         'openstack-stg-addr': '55.66.77.88',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_storage_hosts()
@@ -1049,7 +1459,8 @@ class TestConfigureStorageHosts(unittest.TestCase):
                         'openstack-stg': '55.66.77.88',  # ignored key
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_storage_hosts()
@@ -1068,7 +1479,8 @@ class TestConfigureStorageHosts(unittest.TestCase):
                         'openstack-stg-addr': '11.22.33.44',
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         self.ofg._configure_storage_hosts()
@@ -1241,7 +1653,8 @@ class TestGenerateCeph(unittest.TestCase):
                         'openstack-stg-addr': '5.6.7.8'
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         ofg.generate_ceph()
@@ -1261,9 +1674,20 @@ class TestGenerateCeph(unittest.TestCase):
     def test_generate_no_nodes(self, mock_dump):
         ofg = guc.OSAFileGenerator('input-file', 'output-dir')
         # ofg.gen_dict is empty
+        ofg.gen_dict = {
+            'reference-architecture': ['private-compute-cloud']
+        }
 
         ofg.generate_ceph()
+        self.assertEqual(0, mock_dump.call_count)
 
+    def test_generate_no_arch(self, mock_dump):
+        ofg = guc.OSAFileGenerator('input-file', 'output-dir')
+        ofg.gen_dict = {
+            'reference-architecture': ['swift']
+        }
+
+        ofg.generate_ceph()
         self.assertEqual(0, mock_dump.call_count)
 
     def test_generate_no_controllers(self, mock_dump):
@@ -1279,7 +1703,8 @@ class TestGenerateCeph(unittest.TestCase):
                         'openstack-stg-addr': '5.6.7.8'
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         ofg.generate_ceph()
@@ -1299,7 +1724,8 @@ class TestGenerateCeph(unittest.TestCase):
                         'openstack-mgmt-addr': '5.6.7.8'
                     }
                 ]
-            }
+            },
+            'reference-architecture': ['private-compute-cloud']
         }
 
         ofg.generate_ceph()
@@ -1316,6 +1742,327 @@ class TestGenerateCeph(unittest.TestCase):
         }
         mock_dump.assert_called_once_with(expected, 'user_var_ceph.yml')
 
+
+class TestConfigureSwift(unittest.TestCase):
+    def setUp(self):
+        super(TestConfigureSwift, self).setUp()
+        self.ofg = guc.OSAFileGenerator('input-file', 'output-dir')
+        self.maxDiff = None
+
+    def test_normal(self):
+        self.ofg.gen_dict = copy.deepcopy(SWIFT_NORMAL_INPUT_DICT)
+
+        # Expected global_overrides.swift dict.
+        e_go_swift = {
+            'mount_point': '/srv/node',
+            'part_power': 8,
+            'storage_network': 'br-storage',
+            'repl_network': 'br-swift-repl',
+            'storage_policies': [
+                {
+                    'policy': {
+                        'default': 'True',
+                        'index': 0,
+                        'name': 'default'
+                    },
+                },
+            ],
+        }
+
+        # Expected swift-proxy_hosts dict.
+        e_proxy_hosts = {
+            'swiftproxy1': {
+                'ip': '1.2.3.4'
+            },
+        }
+
+        # Expected swift_hosts dict.
+        e_swift_hosts = copy.deepcopy(E_SWIFT_HOSTS)
+
+        self.ofg.user_config['global_overrides'] = {}
+        self.ofg.user_config['global_overrides']['swift'] = {}
+
+        self.ofg._configure_swift()
+        result = self.ofg.user_config
+
+        go_swift = result['global_overrides']['swift']
+        proxy_hosts = result['swift-proxy_hosts']
+        swift_hosts = result['swift_hosts']
+
+        self.assertDictEqual(go_swift, e_go_swift)
+        self.assertDictEqual(proxy_hosts, e_proxy_hosts)
+        self.assertDictEqual(swift_hosts, e_swift_hosts)
+
+    def test_swift_replication_network_not_found(self):
+
+        self.ofg.gen_dict = copy.deepcopy(SWIFT_NORMAL_INPUT_DICT)
+        networks = self.ofg.gen_dict.get('networks')
+        if networks:
+            networks.pop('swift-replication', None)
+
+        # Expected global_overrides.swift dict.
+        e_go_swift = {
+            'mount_point': '/srv/node',
+            'part_power': 8,
+            'storage_network': 'br-storage',
+            'storage_policies': [
+                {
+                    'policy': {
+                        'default': 'True',
+                        'index': 0,
+                        'name': 'default'
+                    },
+                },
+            ],
+        }
+
+        # Expected swift-proxy_hosts dict.
+        e_proxy_hosts = {
+            'swiftproxy1': {
+                'ip': '1.2.3.4'
+            },
+        }
+
+        # Expected swift_hosts dict.
+        e_swift_hosts = E_SWIFT_HOSTS
+
+        self.ofg.user_config['global_overrides'] = {}
+        self.ofg.user_config['global_overrides']['swift'] = {}
+
+        self.ofg._configure_swift()
+        result = self.ofg.user_config
+
+        go_swift = result['global_overrides']['swift']
+        proxy_hosts = result['swift-proxy_hosts']
+        swift_hosts = result['swift_hosts']
+
+        self.assertDictEqual(go_swift, e_go_swift)
+        self.assertDictEqual(proxy_hosts, e_proxy_hosts)
+        self.assertDictEqual(swift_hosts, e_swift_hosts)
+
+    def test_non_swift_refarch(self):
+        self.ofg.gen_dict = {
+            'reference-architecture': [
+                'private-compute-cloud',    # notice no swift in list
+            ],
+        }
+
+        self.ofg.user_config['global_overrides'] = {}
+
+        self.ofg._configure_swift()
+        result = self.ofg.user_config
+
+        # Refarch specified no swift, so we should not see
+        # swift in the output.
+        self.assertNotIn('swift', result['global_overrides'])
+
+    def test_valid_swift_minimum_harware_refarch(self):
+        self.ofg.gen_dict = copy.deepcopy(SWIFT_NORMAL_INPUT_DICT)
+
+        self.ofg.gen_dict['reference-architecture'] = [
+            'swift',
+            'swift-minimum-hardware',
+        ]
+
+        nodes = self.ofg.gen_dict.get('nodes')
+        if nodes:
+            nodes.pop('swift-proxy', None)
+
+        # Expected swift-proxy_hosts dict.
+        e_proxy_hosts = {
+            'controller1': {
+                'ip': '1.2.3.9'
+            },
+        }
+
+        self.ofg._configure_swift_proxy_hosts()
+        result = self.ofg.user_config
+
+        proxy_hosts = result['swift-proxy_hosts']
+        self.assertDictEqual(proxy_hosts, e_proxy_hosts)
+
+    def test_valid_swift_refarch(self):
+        self.ofg.gen_dict = copy.deepcopy(SWIFT_NORMAL_INPUT_DICT)
+
+        self.ofg.gen_dict['reference-architecture'] = [
+            'swift',
+        ]
+
+        # Expected swift-proxy_hosts dict.
+        e_proxy_hosts = {
+            'swiftproxy1': {
+                'ip': '1.2.3.4'
+            },
+        }
+
+        self.ofg._configure_swift_proxy_hosts()
+        result = self.ofg.user_config
+
+        proxy_hosts = result['swift-proxy_hosts']
+        self.assertDictEqual(proxy_hosts, e_proxy_hosts)
+
+    def test_invalid_swift_minimum_harware_refarch(self):
+        self.ofg.gen_dict = copy.deepcopy(SWIFT_NORMAL_INPUT_DICT)
+
+        self.ofg.gen_dict['reference-architecture'] = [
+            'swift-minimum-hardware',  # swift not in list
+        ]
+
+        self.ofg._configure_swift_proxy_hosts()
+        result = self.ofg.user_config
+
+        proxy_hosts = result['swift-proxy_hosts']
+        self.assertDictEqual({}, proxy_hosts)
+
+    def test_template_vars(self):
+        self.ofg.gen_dict = copy.deepcopy(SWIFT_NORMAL_INPUT_DICT)
+
+        self.ofg.gen_dict['node-templates'] = {}
+        self.ofg.gen_dict['node-templates']['swift-object'] = {}
+
+        (self.ofg.gen_dict['node-templates']['swift-object']
+            ['domain-settings']) = {
+                'mount-point': '/alt/srv/node',
+                'zone-count': 2
+        }
+
+        self.ofg.user_config['global_overrides'] = {}
+        self.ofg.user_config['global_overrides']['swift'] = {}
+
+        self.ofg._configure_swift()
+        result = self.ofg.user_config
+
+        swift_hosts = result['swift_hosts']
+
+        # Because of the node-templates section we added to the
+        # input dictionary, we expect to see the following
+        # modifications in the output dictionary.
+        e_swift_hosts = copy.deepcopy(E_SWIFT_HOSTS)
+
+        # Mount point for swiftobjectX hosts will be alternate value.
+        # Note that swiftmetadata1 is not impacted because it is not
+        # part of the swift-object template that was modified.
+        for hostname in ('swiftobject1', 'swiftobject2', 'swiftobject3'):
+            (e_swift_hosts[hostname]['container_vars']['swift_vars']
+                ['mount_point']) = '/alt/srv/node'
+
+        # Zone values for the 3 object nodes should be (0,1,0) not (0,1,2).
+        (e_swift_hosts['swiftobject3']['container_vars']['swift_vars']
+            ['zone']) = 0
+
+        self.assertDictEqual(swift_hosts, e_swift_hosts)
+
+    def test_converged_metadata(self):
+        self.ofg.gen_dict = copy.deepcopy(SWIFT_NORMAL_INPUT_DICT)
+
+        # Remove swift metadata nodes.
+        del self.ofg.gen_dict['nodes']['swift-metadata']
+
+        # Add metadata rings to object nodes.
+        a_disks = ['meta1', 'meta2', 'meta3']  # account-ring-disks
+        c_disks = ['meta1', 'meta2', 'meta3']  # container-ring-disks
+
+        swift_object = self.ofg.gen_dict['nodes']['swift-object']
+        for host in swift_object:
+            host['domain-settings']['account-ring-disks'] = a_disks
+            host['domain-settings']['container-ring-disks'] = c_disks
+
+        self.ofg.user_config['global_overrides'] = {}
+        self.ofg.user_config['global_overrides']['swift'] = {}
+
+        self.ofg._configure_swift()
+        result = self.ofg.user_config
+
+        swift_hosts = result['swift_hosts']
+
+        # Because of the changes to the input dictionary we expect
+        # to see the following modifications in the output dictionary.
+        e_swift_hosts = copy.deepcopy(E_SWIFT_HOSTS)
+
+        # Expect swift-metadata to be removed.
+        del e_swift_hosts['swiftmetadata1']
+
+        # Expect metadata rings on swift object nodes.
+        e_drives = [
+            {'name': 'disk1',
+             'groups': ['default']},
+            {'name': 'disk2',
+             'groups': ['default']},
+            {'name': 'disk3',
+             'groups': ['default']},
+            {'name': 'meta1',
+             'groups': ['account', 'container']},
+            {'name': 'meta2',
+             'groups': ['account', 'container']},
+            {'name': 'meta3',
+             'groups': ['account', 'container']},
+        ]
+
+        for hostname in ('swiftobject1', 'swiftobject2', 'swiftobject3'):
+            host = e_swift_hosts[hostname]
+            host['container_vars']['swift_vars']['drives'] = e_drives
+
+        self.assertDictEqual(swift_hosts, e_swift_hosts)
+
+    def test_account_container_on_separate_disks(self):
+        host = {'domain-settings': {'account-ring-disks': ['a', 'b', 'c'],
+                                    'container-ring-disks': ['d', 'e', 'f'],
+                                    'object-ring-disks': ['g', 'h', 'i']}}
+        swift_vars = {}
+        self.ofg._configure_swift_host(host, 0, None, swift_vars)
+        expected_disks = [{'name': 'a',
+                           'groups': ['account']},
+                          {'name': 'b',
+                           'groups': ['account']},
+                          {'name': 'c',
+                           'groups': ['account']},
+                          {'name': 'd',
+                           'groups': ['container']},
+                          {'name': 'e',
+                           'groups': ['container']},
+                          {'name': 'f',
+                           'groups': ['container']},
+                          {'name': 'g',
+                           'groups': ['default']},
+                          {'name': 'h',
+                           'groups': ['default']},
+                          {'name': 'i',
+                           'groups': ['default']}]
+        self.assertEqual(swift_vars['drives'], expected_disks)
+
+    def test_all_rings_on_same_disks(self):
+        host = {'domain-settings': {'account-ring-disks': ['a', 'b', 'c'],
+                                    'container-ring-disks': ['a', 'b', 'c'],
+                                    'object-ring-disks': ['a', 'b', 'c']}}
+        swift_vars = {}
+        self.ofg._configure_swift_host(host, 0, None, swift_vars)
+        expected_disks = [{'name': 'a',
+                           'groups': ['account', 'container', 'default']},
+                          {'name': 'b',
+                           'groups': ['account', 'container', 'default']},
+                          {'name': 'c',
+                           'groups': ['account', 'container', 'default']}]
+        self.assertEqual(swift_vars['drives'], expected_disks)
+
+    def test_container_account_on_same_disks(self):
+        host = {'domain-settings': {'account-ring-disks': ['a', 'b', 'c'],
+                                    'container-ring-disks': ['a', 'b', 'c'],
+                                    'object-ring-disks': ['d', 'e', 'f']}}
+        swift_vars = {}
+        self.ofg._configure_swift_host(host, 0, None, swift_vars)
+        expected_disks = [{'name': 'a',
+                           'groups': ['account', 'container']},
+                          {'name': 'b',
+                           'groups': ['account', 'container']},
+                          {'name': 'c',
+                           'groups': ['account', 'container']},
+                          {'name': 'd',
+                           'groups': ['default']},
+                          {'name': 'e',
+                           'groups': ['default']},
+                          {'name': 'f',
+                           'groups': ['default']}]
+        self.assertEqual(swift_vars['drives'], expected_disks)
 
 if __name__ == '__main__':
     unittest.main()

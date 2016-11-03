@@ -26,6 +26,11 @@ OSA_USER_VAR_HAPROXY = 'user_var_haproxy.yml'
 OSA_USER_VAR_CEILOMETER = 'user_var_ceilometer.yml'
 OSA_USER_VAR_CEPH = 'user_var_ceph.yml'
 
+SWIFT_MINIMUM_HARDWARE = 'swift-minimum-hardware'
+SWIFT = 'swift'
+PRIVATE_COMPUTE_CLOUD = 'private-compute-cloud'
+DBAAS_REF_CLOUD = 'dbaas'
+
 
 class OSAFileGenerator(object):
     """Class for generating various OSA configuration files."""
@@ -77,6 +82,10 @@ class OSAFileGenerator(object):
         if tenant_network:
             cidr['tunnel'] = tenant_network.get('addr', 'N/A')
 
+        swift_repl_network = networks.get('swift-replication', None)
+        if swift_repl_network:
+            cidr['swift_repl'] = swift_repl_network.get('addr', 'N/A')
+
         self.user_config['cidr_networks'] = cidr
 
     def _configure_infra_hosts(self):
@@ -97,14 +106,16 @@ class OSAFileGenerator(object):
                 hosts[hostname] = {
                     'ip': controller.get('openstack-mgmt-addr', 'N/A')
                 }
-
         # Set all the common services across all the controllers
         self.user_config['shared-infra_hosts'] = hosts
         self.user_config['os-infra_hosts'] = copy.deepcopy(hosts)
         self.user_config['repo-infra_hosts'] = copy.deepcopy(hosts)
         self.user_config['identity_hosts'] = copy.deepcopy(hosts)
-        self.user_config['storage-infra_hosts'] = copy.deepcopy(hosts)
-        self.user_config['network_hosts'] = copy.deepcopy(hosts)
+
+        if PRIVATE_COMPUTE_CLOUD in self.get_ref_arch():
+            self.user_config['storage-infra_hosts'] = copy.deepcopy(hosts)
+            self.user_config['network_hosts'] = copy.deepcopy(hosts)
+
         self.user_config['haproxy_hosts'] = copy.deepcopy(hosts)
         self.user_config['log_hosts'] = copy.deepcopy(hosts)
 
@@ -143,9 +154,9 @@ class OSAFileGenerator(object):
         if net_stg:
             br_stg = net_stg.get('bridge', 'N/A')
 
-        net_tunnel = networks.get('openstack-tenant-vxlan', None)
-        if net_tunnel:
-            br_tunnel = net_tunnel.get('bridge', 'N/A')
+        ref_arch_list = self.get_ref_arch()
+        if PRIVATE_COMPUTE_CLOUD in ref_arch_list:
+            net_tunnel = networks.get('openstack-tenant-vxlan', None)
 
         net_vlan = networks.get('openstack-tenant-vlan', None)
         if net_vlan:
@@ -160,9 +171,12 @@ class OSAFileGenerator(object):
             'external_lb_vip_address':
                 self._get_address(self.gen_dict.get('external-floating-ipaddr',
                                                     'N/A')),
-            'tunnel_bridge': br_tunnel,
             'management_bridge': br_mgmt,
         }
+
+        if net_tunnel:
+            br_tunnel = net_tunnel.get('bridge', 'N/A')
+            self.user_config['global_overrides']['tunnel_bridge'] = br_tunnel
 
         # provider networks
         networks = []
@@ -179,6 +193,10 @@ class OSAFileGenerator(object):
             'is_container_address': True,
             'is_ssh_address': True
         }
+        if DBAAS_REF_CLOUD in ref_arch_list:
+            mgmt_network['type'] = 'flat'
+            mgmt_network['host_bind_override'] = 'veth-infra'
+            mgmt_network['net_name'] = 'infra'
 
         storage_network = {
             'container_bridge': br_stg,
@@ -194,57 +212,60 @@ class OSAFileGenerator(object):
                 'swift_proxy',
             ],
         }
-
-        vxlan_network = {
-            'container_bridge': br_tunnel,
-            'container_type': 'veth',
-            'container_interface': 'eth10',
-            'ip_from_q': 'tunnel',
-            'type': 'vxlan',
-            'range': '1:1000',
-            'net_name': 'vxlan',
-            'group_binds': [
-                'neutron_linuxbridge_agent',
-            ]
-        }
-
-        # Genesis doesn't create the veth pair yet, but we still need it.
-        # Hardcode veth12 for now which will make our manual setup easier.
-        host_vlan_intf = 'veth12'
-        vlan_vlan_network = {
-            'container_bridge': br_vlan,
-            'container_type': 'veth',
-            'container_interface': 'eth11',
-            'type': 'vlan',
-            'range': '1:1',
-            'net_name': 'vlan',
-            'group_binds': [
-                'neutron_linuxbridge_agent',
-            ],
-        }
-
-        vlan_flat_network = {
-            'container_bridge': br_vlan,
-            'container_type': 'veth',
-            'container_interface': 'eth12',
-            'host_bind_override': host_vlan_intf,
-            'type': 'flat',
-            'net_name': 'external',
-            'group_binds': [
-                'neutron_linuxbridge_agent',
-            ],
-        }
-
         networks.append({'network': mgmt_network})
         networks.append({'network': storage_network})
-        networks.append({'network': vxlan_network})
-        networks.append({'network': vlan_vlan_network})
-        networks.append({'network': vlan_flat_network})
+
+        if PRIVATE_COMPUTE_CLOUD in ref_arch_list:
+            vxlan_network = {
+                'container_bridge': br_tunnel,
+                'container_type': 'veth',
+                'container_interface': 'eth10',
+                'ip_from_q': 'tunnel',
+                'type': 'vxlan',
+                'range': '1:1000',
+                'net_name': 'vxlan',
+                'group_binds': [
+                    'neutron_linuxbridge_agent',
+                ]
+            }
+
+            # Genesis doesn't create the veth pair yet, but we still need it.
+            # Hardcode veth12 for now which will make our manual setup easier.
+            host_vlan_intf = 'veth12'
+            vlan_vlan_network = {
+                'container_bridge': br_vlan,
+                'container_type': 'veth',
+                'container_interface': 'eth11',
+                'type': 'vlan',
+                'range': '1:4094',
+                'net_name': 'vlan',
+                'group_binds': [
+                    'neutron_linuxbridge_agent',
+                ],
+            }
+
+            vlan_flat_network = {
+                'container_bridge': br_vlan,
+                'container_type': 'veth',
+                'container_interface': 'eth12',
+                'host_bind_override': host_vlan_intf,
+                'type': 'flat',
+                'net_name': 'external',
+                'group_binds': [
+                    'neutron_linuxbridge_agent',
+                ],
+            }
+            networks.append({'network': vxlan_network})
+            networks.append({'network': vlan_vlan_network})
+            networks.append({'network': vlan_flat_network})
 
         self.user_config['global_overrides']['provider_networks'] = networks
 
     def _configure_compute_hosts(self):
         """Configure the compute hosts."""
+        if PRIVATE_COMPUTE_CLOUD not in self.get_ref_arch():
+            return
+
         nodes = self.gen_dict.get('nodes', None)
         if not nodes:
             return
@@ -266,6 +287,9 @@ class OSAFileGenerator(object):
 
     def _configure_storage_hosts(self):
         """Configure the storage hosts."""
+        if PRIVATE_COMPUTE_CLOUD not in self.get_ref_arch():
+            return
+
         nodes = self.gen_dict.get('nodes', None)
         if not nodes:
             return
@@ -308,6 +332,272 @@ class OSAFileGenerator(object):
 
         return
 
+    def _configure_swift_general(self):
+        """Configure general user variables for swift."""
+
+        # Find the storage network bridge name.
+        networks = self.gen_dict.get('networks', None)
+        if not networks:
+            return
+
+        stg_network = networks.get('openstack-stg', None)
+        if not stg_network:
+            return
+
+        bridge_name = stg_network.get('bridge', None)
+        if not bridge_name:
+            return
+
+        swift_rep_network = networks.get('swift-replication', None)
+        br_swift_repl = None
+        if swift_rep_network:
+            br_swift_repl = swift_rep_network.get('bridge', None)
+
+        # General swift vars
+        swift = {}
+        swift['storage_network'] = bridge_name
+        swift['part_power'] = 8
+        swift['mount_point'] = '/srv/node'
+        if br_swift_repl:
+            swift['repl_network'] = br_swift_repl
+
+        if 'global_overrides' not in self.user_config:
+            self.user_config['global_overrides'] = {}
+
+        self.user_config['global_overrides']['swift'] = swift
+
+        return
+
+    def _configure_swift_common_drives(self):
+        """Configure common drives list for swift.
+
+        For cases where the same drives list applies to all swift_hosts.
+        """
+
+        # For most cases the reference architecture needs to have
+        # the drives listed per host, and there is no common drives list.
+        # It may be possible to make use of this if the refarch is
+        # swift_standalone_minimum_hardware but there is no provision
+        # in master_inventory.yml for specifying a common drives list.
+        # This means that even for that particular refarch, this section
+        # will be blank and drives will be specified on a per node basis.
+
+        return
+
+    def _configure_swift_policies(self):
+        """Configure storage_policies for swift."""
+
+        storage_policies = []
+        policy = {
+            'name': 'default',
+            'index': 0,
+            'default': 'True',
+        }
+        storage_policies.append({'policy': policy})
+
+        self.user_config['global_overrides']['swift']['storage_policies'] = (
+            storage_policies)
+
+        return
+
+    def _configure_swift_proxy_hosts(self):
+        """Configure list of swift proxy hosts."""
+
+        proxy_hosts = {}
+        nodes = self.gen_dict.get('nodes', None)
+        if not nodes:
+            return
+
+        ref_arch_list = self.get_ref_arch()
+
+        if SWIFT in ref_arch_list:
+            proxy_list = ('controllers'
+                          if SWIFT_MINIMUM_HARDWARE in ref_arch_list
+                          else 'swift-proxy')
+
+            swift_proxy_hosts = nodes.get(proxy_list, None)
+            if not swift_proxy_hosts:
+                return
+
+            # Swift Proxy Hosts.
+            for proxy in swift_proxy_hosts:
+                hostname = proxy.get('hostname', None)
+                if hostname:
+                    proxy_hosts[hostname] = {
+                        'ip': proxy.get('openstack-mgmt-addr', 'N/A')
+                    }
+
+        self.user_config['swift-proxy_hosts'] = proxy_hosts
+        return
+
+    def _configure_swift_template(self, host_type, template_vars):
+        """Grab values from the node-template for the given host_type."""
+
+        # Find the node-templates section.
+        node_templates = self.gen_dict.get('node-templates', None)
+        if not node_templates:
+            return
+
+        # The host_type is either swift-metadata or swift-object.
+        template = node_templates.get(host_type, None)
+        if not template:
+            return
+
+        # Find the domain-settings section.
+        domain_settings = template.get('domain-settings', None)
+        if not domain_settings:
+            return
+
+        # Override the default zone_count if necessary.
+        zcount = domain_settings.get('zone-count', None)
+        if zcount:
+            template_vars['zone_count'] = zcount
+
+        # Override the default mount_point if necessary.
+        mpoint = domain_settings.get('mount-point', None)
+        if mpoint:
+            template_vars['mount_point'] = mpoint
+
+        return
+
+    def _configure_swift_host(self, host, zone, mount_point, swift_vars):
+        """Configure a single swift_host.
+
+        This typically includes a list of drives specific to this host.
+        """
+
+        domain_settings = host.get('domain-settings', None)
+        if not domain_settings:
+            return
+
+        # There are three different disk lists we need to check.
+        drive_types = (
+            'account-ring-disks',
+            'container-ring-disks',
+            'object-ring-disks')
+
+        name_to_drive = {}
+        for drive_type in drive_types:
+
+            ring_disks = domain_settings.get(drive_type, None)
+            if not ring_disks:
+                continue
+
+            for disk in ring_disks:
+                drive = name_to_drive.get(disk)
+                if not drive:
+                    drive = {
+                        'name': disk,
+                        'groups': [],
+                    }
+                    name_to_drive[disk] = drive
+
+                if drive_type == 'object-ring-disks':
+                    drive['groups'].append('default')
+                elif drive_type == 'account-ring-disks':
+                    drive['groups'].append('account')
+                elif drive_type == 'container-ring-disks':
+                    drive['groups'].append('container')
+        # This list of drives for this host will be inserted into swift_vars.
+        drives = []
+        for drive in sorted(name_to_drive.keys()):
+            drives.append(name_to_drive[drive])
+
+        swift_vars['zone'] = zone
+        swift_vars['drives'] = drives
+
+        # If the mount_point value was specified in the node-template,
+        # use it here.  Otherwise, don't specify a node specific mount_point
+        # here.  That way we default to the mount point generated by
+        # _configure_swift_general.
+        if mount_point:
+            swift_vars['mount_point'] = mount_point
+
+        return
+
+    def _configure_swift_hosts(self):
+        """Configure list of swift_hosts.
+
+        This typically includes a list of drives specific to this host.
+        """
+
+        nodes = self.gen_dict.get('nodes', None)
+        if not nodes:
+            return
+
+        # Swift Metadata and Object Hosts.
+        #
+        # We have a single unified list of swift_hosts.  The key
+        # difference is that a swift_metadata host will only have
+        # drives in the account and container rings, whereas a
+        # swift_object host could have drives in the account,
+        # container, and object rings.
+        swift_hosts = {}
+
+        host_types = ('swift-metadata', 'swift-object')
+        for host_type in host_types:
+            host_list = nodes.get(host_type, None)
+            if not host_list:
+                continue
+
+            # We automatically set the zone index for each host.  This
+            # assumes the default 3x swift replication, so the zone
+            # values cycle between 0-2.  We come back to the starting
+            # value 0 each time the host_type changes (since we want
+            # the first swift_metadata host to be zone 0 and the first
+            # swift_object host to be zone 0).
+            zone = 0
+
+            # See if there are values for zone_count and mount_point
+            # specified in the node-templates.
+            template_vars = {}
+            self._configure_swift_template(host_type, template_vars)
+
+            zone_count = template_vars.get('zone_count', 3)
+            mount_point = template_vars.get('mount_point', None)
+
+            for host in host_list:
+                hostname = host.get('hostname', None)
+                if hostname:
+                    # Fill out the dictionary of swift_vars for
+                    # this host (including the zone and drives list).
+                    swift_vars = {}
+                    self._configure_swift_host(host, zone, mount_point,
+                                               swift_vars)
+
+                    swift_hosts[hostname] = {
+                        'ip': host.get('openstack-mgmt-addr', 'N/A'),
+                        'container_vars': {'swift_vars': swift_vars},
+                    }
+
+                    zone += 1
+                    if zone % zone_count == 0:
+                        zone = 0
+
+        # Avoid adding an empty value for the key 'swift_hosts' in the
+        # case where no swift_metadata or swift_object entries exist
+        # in the inventory.
+        if swift_hosts:
+            self.user_config['swift_hosts'] = swift_hosts
+
+        return
+
+    def _configure_swift(self):
+        """Configure user variables for swift."""
+        ref_arch_list = self.get_ref_arch()
+
+        if SWIFT not in ref_arch_list:
+            return
+
+        self._configure_swift_general()
+        self._configure_swift_common_drives()
+        self._configure_swift_policies()
+        self._configure_swift_proxy_hosts()
+        self._configure_swift_hosts()
+
+    def get_ref_arch(self):
+        return self.gen_dict.get('reference-architecture', [])
+
     def create_user_config(self):
         """Process the inventory input and generate the OSA user config."""
         self._load_yml()
@@ -316,6 +606,7 @@ class OSAFileGenerator(object):
         self._configure_global_overrides()
         self._configure_compute_hosts()
         self._configure_storage_hosts()
+        self._configure_swift()
 
         self._dump_yml(self.user_config, OSA_USER_CFG_FILE)
 
@@ -345,6 +636,9 @@ class OSAFileGenerator(object):
 
     def generate_ceph(self):
         """Generate user variable file for ceph."""
+        if PRIVATE_COMPUTE_CLOUD not in self.get_ref_arch():
+            return
+
         nodes = self.gen_dict.get('nodes', None)
         if not nodes:
             return
@@ -375,6 +669,10 @@ def process_inventory(inv_name, output_dir):
     :param output_dir: The name of path for the generated files.
     """
     generator = OSAFileGenerator(inv_name, output_dir)
+    generator._load_yml()
+    if 'reference-architecture' not in generator.gen_dict:
+        print "The inventory file is missing the reference-architecture."
+        sys.exit(1)
 
     generator.create_user_config()
     generator.generate_haproxy()

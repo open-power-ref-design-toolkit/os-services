@@ -15,12 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- name: Copy ppc64le repo files from deployer node to the repo container
-  copy:
-    src: "/tmp/ppc64le_wheels/"
-    dest: "{{ repo_build_output }}"
-    force: yes
-  register: copy_wheel
-  when: hostvars['localhost']['pkvm_repo_host'] is defined
-  tags:
-    - copy_ppc64_wheels
+# These services need to be excluded while installing with
+# 'swift-minimum-hardware' reference architecture
+swift_minimum_exclude_services:
+   - aodh.yml
+   - ceilometer.yml
+   - cinder.yml
+   - glance.yml
+   - heat.yml
+   - ironic.yml
+   - neutron.yml
+   - nova.yml

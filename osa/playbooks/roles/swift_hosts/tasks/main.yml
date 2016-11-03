@@ -15,12 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- name: Copy ppc64le repo files from deployer node to the repo container
-  copy:
-    src: "/tmp/ppc64le_wheels/"
-    dest: "{{ repo_build_output }}"
-    force: yes
-  register: copy_wheel
-  when: hostvars['localhost']['pkvm_repo_host'] is defined
-  tags:
-    - copy_ppc64_wheels
+- include: setup_storage.yml
+  when: swift_do_setup | bool
+
+- include: setup_inventory.yml
+  when: swift_do_inventory | bool
+
+- include: cleanup.yml
+  when: swift_do_cleanup | bool
+

@@ -1,0 +1,20 @@
+diff -Naur a/etc/openstack_deploy/env.d/swift.yml b/etc/openstack_deploy/env.d/swift.yml
+--- a/etc/openstack_deploy/env.d/swift.yml	2016-09-23 14:10:58.462398117 -0500
++++ b/etc/openstack_deploy/env.d/swift.yml	2016-09-23 20:26:09.092010990 -0500
+@@ -1,5 +1,8 @@
+ ---
+ # Copyright 2014, Rackspace US, Inc.
++# Copyright 2016 IBM Corp.
++#
++# All Rights Reserved
+ #
+ # Licensed under the Apache License, Version 2.0 (the "License");
+ # you may not use this file except in compliance with the License.
+@@ -35,6 +38,7 @@
+     contains:
+       - swift_proxy
+     properties:
++      is_metal: SWIFT_PROXY_IS_METAL_VALUE
+       service_name: swift
+       container_release: trusty
+   swift_acc_container:

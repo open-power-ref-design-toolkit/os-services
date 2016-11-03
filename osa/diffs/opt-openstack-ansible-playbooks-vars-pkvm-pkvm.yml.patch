@@ -1,7 +1,7 @@
 diff -Naur a/opt/openstack-ansible/playbooks/vars/pkvm/pkvm.yml b/opt/openstack-ansible/playbooks/vars/pkvm/pkvm.yml
 --- a/opt/openstack-ansible/playbooks/vars/pkvm/pkvm.yml	1969-12-31 19:00:00.000000000 -0500
-+++ b/opt/openstack-ansible/playbooks/vars/pkvm/pkvm.yml	2016-08-19 07:08:17.192435326 -0400
-@@ -0,0 +1,23 @@
++++ b/opt/openstack-ansible/playbooks/vars/pkvm/pkvm.yml	2016-09-02 06:07:52.179047398 -0400
+@@ -0,0 +1,35 @@
 +---
 +# Copyright 2016 IBM Corp.
 +#
@@ -25,3 +25,15 @@ diff -Naur a/opt/openstack-ansible/playbooks/vars/pkvm/pkvm.yml b/opt/openstack-
 +repo_build_release_path: "/var/www/repo/os-releases"
 +repo_build_release_tag: "{{ openstack_release }}"
 +pkvm_repo_build_output: "/tmp/ppc64le_wheels/"
++
++compute_pkgs_ppc64le:
++    - "nova-{{ repo_build_release_tag }}-ppc64le.tgz"
++    - "nova-{{ repo_build_release_tag }}-ppc64le.checksum"
++    - "neutron-{{ repo_build_release_tag }}-ppc64le.tgz"
++    - "neutron-{{ repo_build_release_tag }}-ppc64le.checksum"
++
++swift_pkgs_ppc64le:
++    - "swift-{{ repo_build_release_tag }}-ppc64le.tgz"
++    - "swift-{{ repo_build_release_tag }}-ppc64le.checksum"
++
++
