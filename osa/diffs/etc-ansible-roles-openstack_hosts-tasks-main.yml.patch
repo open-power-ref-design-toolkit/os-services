@@ -1,0 +1,8 @@
+diff -Naur a/etc/ansible/roles/openstack_hosts/tasks/main.yml b/etc/ansible/roles/openstack_hosts/tasks/main.yml
+--- a/etc/ansible/roles/openstack_hosts/tasks/main.yml	2016-11-03 12:40:36.928700560 -0500
++++ b/etc/ansible/roles/openstack_hosts/tasks/main.yml	2016-11-03 11:57:42.140434428 -0500
+@@ -24,3 +24,4 @@
+ - include: openstack_kernel_tuning.yml
+ - include: openstack_authorized_keys.yml
+ - include: openstack_release.yml
++- include: openstack_disable_ipv6.yml
