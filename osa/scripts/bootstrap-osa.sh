@@ -155,7 +155,7 @@ if [ "$INSTALL" == "True" ] && [ -d $PCLD_DIR/diffs ]; then
 
     # TODO(luke): Need to apply patches to all controller nodes for opsmgr resiliency
     echo "Applying patches"
-    cd /
+    pushd / >/dev/null 2>&1
     ANSIBLE_PATCH=False
     for f in ${PCLD_DIR}/diffs/*.patch; do
         patch -N -p1 < $f
@@ -172,6 +172,8 @@ if [ "$INSTALL" == "True" ] && [ -d $PCLD_DIR/diffs ]; then
             ANSIBLE_PATCH=True
         fi
     done
+
+    popd >/dev/null 2>&1
 
     if [ "$ANSIBLE_PATCH" == "True" ]; then
         echo "pip uninstall ansible"
