@@ -793,6 +793,74 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
         self.assertFalse(_contains_network(provider_networks, 'br-vxlan'))
         self.assertFalse(_contains_network(provider_networks, 'br-vlan'))
 
+    def test_dbaas_mgmt_network(self):
+        self.ofg.gen_dict = {
+            'internal-floating-ipaddr': '11.22.33.44/22',
+            'external-floating-ipaddr': '22.33.44.55/22',
+            'networks': {
+                'openstack-mgmt': {
+                    'bridge': 'br-mgmt',
+                    'eth-port': 'eth0',
+                },
+                'openstack-stg': {
+                    'bridge': 'br-stg',
+                    'eth-port': 'eth1',
+                },
+                'openstack-tenant-vxlan': {
+                    'bridge': 'br-vxlan',
+                    'eth-port': 'eth10',
+                },
+                'openstack-tenant-vlan': {
+                    'bridge': 'br-vlan',
+                    'eth-port': 'eth11',
+                }
+            },
+            'nodes': {
+                'controllers': [
+                    {
+                        'hostname': 'host1',
+                        'openstack-mgmt-addr': '11.22.33.44',
+                        'external1-addr': '55.66.77.88',
+                    },
+                    {
+                        'hostname': 'ignored',
+                        'openstack-mgmt-addr': 'ignored',
+                    }
+                ]
+            },
+            'reference-architecture': ['private-compute-cloud', 'dbaas']
+        }
+
+        self.ofg._configure_global_overrides()
+        result = self.ofg.user_config
+
+        overrides = result['global_overrides']
+        self.assertEqual('11.22.33.44', overrides['internal_lb_vip_address'])
+        self.assertEqual('22.33.44.55', overrides['external_lb_vip_address'])
+        self.assertEqual('br-vxlan', overrides['tunnel_bridge'])
+        self.assertEqual('br-mgmt', overrides['management_bridge'])
+        provider_networks = overrides['provider_networks']
+
+        # verify management network
+        mgmt_network = {
+            'network': {
+                'container_bridge': 'br-mgmt',
+                'container_type': 'veth',
+                'container_interface': 'eth1',
+                'ip_from_q': 'container',
+                'type': 'flat',
+                'host_bind_override': 'veth-infra',
+                'net_name': 'infra',
+                'group_binds': [
+                    'all_containers',
+                    'hosts'
+                ],
+                'is_container_address': True,
+                'is_ssh_address': True
+            }
+        }
+        self.assertEqual(mgmt_network, provider_networks[0])
+
     def test_nodes_not_found(self):
         self.ofg.gen_dict = {
             'hosts': {  # mistakenly used 'hosts'

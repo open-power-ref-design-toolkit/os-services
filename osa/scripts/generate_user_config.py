@@ -29,6 +29,7 @@ OSA_USER_VAR_CEPH = 'user_var_ceph.yml'
 SWIFT_MINIMUM_HARDWARE = 'swift-minimum-hardware'
 SWIFT = 'swift'
 PRIVATE_COMPUTE_CLOUD = 'private-compute-cloud'
+DBAAS_REF_CLOUD = 'dbaas'
 
 
 class OSAFileGenerator(object):
@@ -192,6 +193,10 @@ class OSAFileGenerator(object):
             'is_container_address': True,
             'is_ssh_address': True
         }
+        if DBAAS_REF_CLOUD in ref_arch_list:
+            mgmt_network['type'] = 'flat'
+            mgmt_network['host_bind_override'] = 'veth-infra'
+            mgmt_network['net_name'] = 'infra'
 
         storage_network = {
             'container_bridge': br_stg,
