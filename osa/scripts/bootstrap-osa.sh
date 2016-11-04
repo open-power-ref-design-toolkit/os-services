@@ -248,6 +248,12 @@ if real_genesis_inventory_present; then
     popd >/dev/null 2>&1
 fi
 
+# Copy over Trove-specific files - power_trove role and container groups specification
+echo "Copying over Trove files..."
+pushd dbaas >/dev/null 2>&1
+cp -R etc /
+popd >/dev/null 2>&1
+
 echo "Generate OpenStack user configuration"
 generate_user_config
 
