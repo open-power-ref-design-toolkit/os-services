@@ -45,11 +45,11 @@ echo DEPLOY_OPSMGR=$DEPLOY_OPSMGR
 
 # Configure ceph-ansible.  Inventory is created during the bootstrap-ceph phase, so user can customize
 if [ "$DEPLOY_CEPH" == "yes" ]; then
-    if [ ! -d ceph ]; then
+    if [ ! -d ceph-services ]; then
         echo "Run ./scripts/bootstrap-cluster first!!!  Ceph code is missing"
         exit 2
     fi
-    pushd ceph >/dev/null 2>&1
+    pushd ceph-services >/dev/null 2>&1
     echo "Invoking scripts/create-cluster-ceph.sh"
     scripts/create-cluster-ceph.sh $ARGS
     rc=$?

@@ -1,0 +1,251 @@
+---
+version: 1.0
+reference-architecture:
+    - private-compute-cloud
+switches:
+  mgmt:
+  - hostname: mgmtswitch1
+    ipv4-addr: 192.168.16.5
+    rack-id: rack1
+    userid: admin
+    password: admin
+  data:
+  - hostname: dataswitch1
+    ipv4-addr: 192.168.16.10
+    rack-id: rack1
+    userid: admin
+    password: admin
+nodes:
+  controllers:
+  - hostname: aio1
+    userid-ipmi: ADMIN
+    password-ipmi: ADMIN
+    port-ipmi: 3
+    port-pxe: 4
+    port-eth10: 35
+    port-eth11: 59/2
+    mac-ipmi: 0c:c4:7a:4d:86:aa
+    ipv4-ipmi: 192.168.17.101
+    rack-id: rack1
+    template: controllers
+    chassis-part-number: CSE-938BH-R1620BP
+    chassis-serial-number: C9380AE15AH0247
+    model: SYS-5038ML-H8TRF
+    serial-number: S13656825718481
+    mac-pxe: 0c:c4:7a:53:4d:00
+    ipv4-pxe: 192.168.17.102
+    openstack-mgmt-addr: 172.29.236.100
+    openstack-stg-addr: 172.29.244.1
+    openstack-tenant-vlan-addr: 0.0.0.0
+    openstack-tenant-vxlan-addr: 172.29.240.1
+    external1-addr: 10.40.204.2
+    external2-addr: ''
+  compute:
+  - hostname: aio1
+    userid-ipmi: ADMIN
+    password-ipmi: admin
+    port-ipmi: 9
+    port-pxe: 10
+    port-eth10: 10
+    port-eth11: 27
+    mac-ipmi: a0:42:3f:30:62:b5
+    ipv4-ipmi: 192.168.17.107
+    rack-id: rack1
+    template: compute
+    architecture: ppc64
+    mac-pxe: a0:42:3f:31:1c:62
+    ipv4-pxe: 192.168.17.108
+    openstack-mgmt-addr: 172.29.236.100
+    openstack-stg-addr: 172.29.244.4
+    openstack-tenant-vlan-addr: 0.0.0.0
+    openstack-tenant-vxlan-addr: 172.29.240.4
+    external1-addr: 10.40.204.5
+    external2-addr: ''
+ipaddr-mgmt-network: 192.168.17.0/24
+ipaddr-mgmt-switch:
+  rack1: 192.168.16.5
+ipaddr-data-switch:
+  rack1: 192.168.16.10
+redundant-network: false
+userid-default: ubuntu
+password-default: passw0rd
+userid-mgmt-switch: admin
+password-mgmt-switch: admin
+userid-data-switch: admin
+password-data-switch: admin
+internal-floating-ipaddr: 172.29.236.50
+external-floating-ipaddr: 1.2.3.4
+networks:
+  external1:
+    description: Organization site or external network
+    addr: 10.40.204.0/24
+    broadcast: 10.40.204.255
+    gateway: 10.40.204.1
+    dns-nameservers: 4.3.2.1
+    dns-search: my.domain.com
+    method: static
+    eth-port: eth10
+  external2:
+    description: Interface for eth11
+    method: manual
+    eth-port: eth11
+  openstack-mgmt:
+    description: OpenStack Management Network
+    bridge: br-mgmt
+    method: static
+    tcp_segmentation_offload: false
+    addr: 172.29.236.0/22
+    vlan: 210
+    eth-port: eth10
+  openstack-stg:
+    description: OpenStack Storage Network
+    bridge: br-storage
+    method: static
+    tcp_segmentation_offload: false
+    addr: 172.29.244.0/22
+    vlan: 220
+    eth-port: eth10
+  openstack-tenant-vxlan:
+    description: OpenStack Tenant vxlan Network
+    bridge: br-vxlan
+    method: static
+    addr: 172.29.240.0/22
+    vlan: 230
+    eth-port: eth11
+  openstack-tenant-vlan:
+    description: OpenStack Tenant vlan Network
+    bridge: br-vlan
+    method: static
+    addr: 0.0.0.0/1
+    bridge-port: veth12
+    eth-port: eth11
+  ceph-replication:
+    description: Ceph Replication vlan Network
+    addr: 172.29.248.0/22
+    bridge: br-replication
+    method: static
+    vlan: 240
+    eth-port: eth11
+node-templates:
+  controllers:
+    hostname: controller
+    userid-ipmi: ADMIN
+    password-ipmi: ADMIN
+    cobbler-profile: ubuntu-14.04.5-server-amd64.sm
+    os-disk: /dev/sda
+    name-interfaces:
+      mac-pxe: eth15
+      mac-eth10: eth10
+      mac-eth11: eth11
+    bond-interfaces:
+    - - eth10
+      - eth11
+    ports:
+      ipmi:
+        rack1:
+        - 3
+        - 5
+        - 7
+      pxe:
+        rack1:
+        - 4
+        - 6
+        - 8
+      eth10:
+        rack1:
+        - 35
+        - 28
+        - 31
+      eth11:
+        rack1:
+        - 59/2
+        - 59/3
+        - 59/4
+    networks:
+    - openstack-mgmt
+    - openstack-stg
+    - openstack-tenant-vlan
+    - openstack-tenant-vxlan
+    - external1
+    - external2
+  compute:
+    hostname: compute
+    userid-ipmi: ADMIN
+    password-ipmi: admin
+    cobbler-profile: ubuntu-14.04.5-server-ppc64el
+    os-disk: /dev/sdl
+    name-interfaces:
+      mac-pxe: eth15
+      mac-eth10: eth10
+      mac-eth11: eth11
+    bond-interfaces:
+    - - eth10
+      - eth11
+    ports:
+      ipmi:
+        rack1:
+        - 9
+      pxe:
+        rack1:
+        - 10
+      eth10:
+        rack1:
+        - 10
+      eth11:
+        rack1:
+        - 27
+    networks:
+    - openstack-mgmt
+    - openstack-stg
+    - openstack-tenant-vlan
+    - openstack-tenant-vxlan
+    - external1
+    - external2
+  ceph-osd:
+    hostname: cephosd
+    userid-ipmi: ADMIN
+    password-ipmi: admin
+    cobbler-profile: ubuntu-14.04.5-server-ppc64el
+    os-disk: /dev/sdl
+    name-interfaces:
+      mac-pxe: eth15
+      mac-eth10: eth10
+      mac-eth11: eth11
+    bond-interfaces:
+    - - eth10
+      - eth11
+    ports:
+      ipmi:
+        rack1:
+        - 11
+        - 13
+        - 15
+      pxe:
+        rack1:
+        - 12
+        - 14
+        - 16
+      eth10:
+        rack1:
+        - 11
+        - 44
+        - 41
+      eth11:
+        rack1:
+        - 30
+        - 45
+        - 42
+    networks:
+    - external1
+    - openstack-mgmt
+    - openstack-stg
+    - ceph-replication
+    journal-devices:
+    - /dev/sda
+    - /dev/sdb
+    osd-devices:
+    - /dev/sde
+    - /dev/sdf
+    - /dev/sdg
+    - /dev/sdh
+    - /dev/sdi

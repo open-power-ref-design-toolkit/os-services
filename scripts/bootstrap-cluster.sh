@@ -112,10 +112,10 @@ popd >/dev/null 2>&1
 
 # Installs ceph and ceph-ansible
 if [[ "$DEPLOY_CEPH" == "yes" ]]; then
-    if [ ! -d $PCLD_DIR/ceph ]; then
-        git-clone $GIT_CEPH_URL $CEPH_TAG $PCLD_DIR/ceph
+    if [ ! -d $PCLD_DIR/ceph-services ]; then
+        git-clone $GIT_CEPH_URL $CEPH_TAG $PCLD_DIR/ceph-services
     fi
-    pushd ceph >/dev/null 2>&1
+    pushd ceph-services >/dev/null 2>&1
     echo "Invoking scripts/bootstrap-ceph.sh"
     scripts/bootstrap-ceph.sh $ARGS
     rc=$?
