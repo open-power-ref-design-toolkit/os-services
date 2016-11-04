@@ -1,0 +1,103 @@
+---
+# Copyright 2016 IBM Corp.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Ensure trove service
+  keystone:
+    command: "ensure_service"
+    endpoint: "{{ keystone_service_adminurl }}"
+    login_user: "{{ keystone_admin_user_name }}"
+    login_password: "{{ keystone_auth_admin_password }}"
+    login_project_name: "{{ keystone_admin_tenant_name }}"
+    service_name: "{{ trove_service_name }}"
+    service_type: "{{ trove_service_type }}"
+    description: "{{ trove_service_description }}"
+    insecure: "{{ keystone_service_adminuri_insecure }}"
+  register: add_service
+  until: add_service|success
+  retries: 5
+  delay: 2
+  tags:
+    - trove-setup
+    - trove-service-add
+
+- name: Ensure trove user
+  keystone:
+    command: "ensure_user"
+    endpoint: "{{ keystone_service_adminurl }}"
+    login_user: "{{ keystone_admin_user_name }}"
+    login_password: "{{ keystone_auth_admin_password }}"
+    login_project_name: "{{ keystone_admin_tenant_name }}"
+    user_name: "{{ trove_service_user_name }}"
+    tenant_name: "{{ trove_service_tenant_name }}"
+    role_name: "{{ trove_role_name }}"
+    password: "{{ trove_service_password }}"
+    insecure: "{{ keystone_service_adminuri_insecure }}"
+  register: add_service
+  when: not trove_service_in_ldap | bool
+  until: add_service|success
+  retries: 5
+  delay: 10
+  tags:
+    - trove-setup
+    - trove-service-add
+
+- name: Ensure trove user to admin role
+  keystone:
+    command: "ensure_user_role"
+    endpoint: "{{ keystone_service_adminurl }}"
+    login_user: "{{ keystone_admin_user_name }}"
+    login_password: "{{ keystone_auth_admin_password }}"
+    login_project_name: "{{ keystone_admin_tenant_name }}"
+    user_name: "{{ trove_service_user_name }}"
+    tenant_name: "{{ trove_service_project_name }}"
+    role_name: "{{ trove_role_name }}"
+    insecure: "{{ keystone_service_adminuri_insecure }}"
+  register: add_admin_role
+  when: not trove_service_in_ldap | bool
+  until: add_admin_role|success
+  retries: 5
+  delay: 10
+  tags:
+    - trove-api-setup
+    - trove-service-add
+    - trove-setup
+
+
+# Create an endpoint
+- name: Ensure trove endpoint
+  keystone:
+    command: "ensure_endpoint"
+    endpoint: "{{ keystone_service_adminurl }}"
+    login_user: "{{ keystone_admin_user_name }}"
+    login_password: "{{ keystone_auth_admin_password }}"
+    login_project_name: "{{ keystone_admin_tenant_name }}"
+    region_name: "{{ trove_service_region }}"
+    service_name: "{{ trove_service_name }}"
+    service_type: "{{ trove_service_type }}"
+    insecure: "{{ keystone_service_adminuri_insecure }}"
+    endpoint_list:
+      - url: "{{ trove_service_publicurl }}"
+        interface: "public"
+      - url: "{{ trove_service_adminurl }}"
+        interface: "admin"
+      - url: "{{ trove_service_internalurl }}"
+        interface: "internal"
+  register: add_service
+  until: add_service|success
+  retries: 5
+  delay: 10
+  tags:
+    - trove-setup
+    - trove-service-add
