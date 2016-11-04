@@ -36,10 +36,10 @@ OSA_PLAYS="${OSA_DIR}/playbooks"
 
 EXPECTED_ANSIBLE_VERSION="v1.9.4-1"
 
-function generate_inventory {
+function generate_user_config {
 
-    if [ -r $GENESIS_INVENTORY ]; then
-        echo "Inventory provided by genesis"
+    if real_genesis_inventory_present; then
+        echo "Found inventory provided by cluster-genesis"
         $SCRIPTS_DIR/generate_user_config.py \
             -i $GENESIS_INVENTORY \
             -d /etc/openstack_deploy
@@ -49,31 +49,25 @@ function generate_inventory {
             exit 1
         fi
     else
-        if [ ! -z "$allNodes" ]; then
-            # Validate ssh connectivity
-            for node in $allNodes; do
-                ARCH=`ssh -i ~/.ssh/id_rsa root@$node uname -m`
+        echo "Create cluster-genesis style inventory for post-OSA playbooks"
+        cp -r var/oprc /var             # Presently only AIO yml
+
+        # Indicate that inventory is simulated to maintain reentrancy
+        touch $GENESIS_SIMULATED
+
+        if [[ $DEPLOY_AIO == "yes" ]]; then
+            if [ ! -d /openstack ]; then
+                # bootstrap-aio creates /openstack, the mount point for containers
+                pushd $OSA_DIR >/dev/null 2>&1
+                ./scripts/bootstrap-aio.sh
                 rc=$?
                 if [ $rc != 0 ]; then
-                    echo "Node $node failed ssh test"
+                    echo "bootstrap-aio.sh failed, rc=$rc"
+                    rm -rf /openstack
                     exit 1
                 fi
-            done
-        fi
-        if [ $DEPLOY_AIO == "no" ]; then
-            echo "Inventory generated from command arguments"
-            # TODO(luke): Generate openstack_user_config.xml from command line args
-        elif [ ! -d /openstack ]; then
-            # bootstrap-aio creates /openstack, the mount point for containers
-            pushd $OSA_DIR >/dev/null 2>&1
-            ./scripts/bootstrap-aio.sh
-            rc=$?
-            if [ $rc != 0 ]; then
-                echo "bootstrap-aio.sh failed, rc=$rc"
-                rm -rf /openstack
-                exit 1
+                popd >/dev/null 2>&1
             fi
-            popd >/dev/null 2>&1
         fi
     fi
 }
@@ -153,7 +147,6 @@ if [ "$INSTALL" == "True" ] && [ -d $PCLD_DIR/diffs ]; then
     # Copy configuration files before patches are applied, so that patches may be provided for configuration files
     cp -R /opt/openstack-ansible/etc/openstack_deploy /etc
 
-    # TODO(luke): Need to apply patches to all controller nodes for opsmgr resiliency
     echo "Applying patches"
     pushd / >/dev/null 2>&1
     ANSIBLE_PATCH=False
@@ -208,48 +201,53 @@ done
 grep -q callback_plugins ${OSA_PLAYS}/ansible.cfg ||
     sed -i '/\[defaults\]/a callback_plugins = plugins/callbacks' ${OSA_PLAYS}/ansible.cfg
 
-if [ ! -d ${GENESIS_DIR} ]; then
+# Translate cluster-genesis inventory into OpenStack parameters
+if real_genesis_inventory_present; then
+    echo "Found cluster-genesis inventory"
+
     # Clone cluster-genesis to access the dynamic inventory module.
-    echo "Installing cluster-genesis..."
-    git clone ${GIT_GENESIS_URL} ${GENESIS_DIR}
-    if [ $? != 0 ]; then
-        echo "Manual retry procedure:"
-        echo "1) fix root cause of error if known"
-        echo "2) rm -rf ${GENESIS_DIR}"
-        echo "3) re-run command"
-    exit 1
+    if [ ! -d ${GENESIS_DIR} ]; then
+        echo "Installing cluster-genesis..."
+        git clone ${GIT_GENESIS_URL} ${GENESIS_DIR}
+        if [ $? != 0 ]; then
+            echo "Manual retry procedure:"
+            echo "1) fix root cause of error if known"
+            echo "2) rm -rf ${GENESIS_DIR}"
+            echo "3) re-run command"
+            exit 1
+        fi
+
+        pushd ${GENESIS_DIR} >/dev/null 2>&1
+        git checkout ${GENESIS_TAG}
+        if [ $? != 0 ]; then
+            exit 1
+        fi
+        popd >/dev/null 2>&1
     fi
 
+    # Validate domain specific settings in the inventory.
+    echo "Validate domain settings..."
     pushd ${GENESIS_DIR} >/dev/null 2>&1
-    git checkout ${GENESIS_TAG}
-    if [ $? != 0 ]; then
+    ./domain/scripts/validate_inventory.py --file /var/oprc/inventory.yml
+    rc=$?
+    if [ $rc != 0 ]; then
+        echo "${GENESIS_DIR}/domain/scripts/validate_inventory.py failed, rc=$rc"
+        exit 1
+    fi
+    popd >/dev/null 2>&1
+
+    # Call the pre-deploy playbook to do additional pre-OSA prep.
+    echo "Run pre-OSA prep..."
+    pushd playbooks >/dev/null 2>&1
+    ansible-playbook -i ${GENESIS_DIR}/scripts/python/yggdrasil/inventory.py pre-deploy.yml
+    rc=$?
+    if [ $rc != 0 ]; then
+        echo "playbooks/pre-deploy.yml failed, rc=$rc"
         exit 1
     fi
     popd >/dev/null 2>&1
 fi
 
-# Validate domain specific settings in the inventory.
-echo "Validate domain settings..."
-pushd ${GENESIS_DIR} >/dev/null 2>&1
-./domain/scripts/validate_inventory.py --file /var/oprc/inventory.yml
-rc=$?
-if [ $rc != 0 ]; then
-    echo "${GENESIS_DIR}/domain/scripts/validate_inventory.py failed, rc=$rc"
-    exit 1
-fi
-popd >/dev/null 2>&1
-
-# Call the pre-deploy playbook to do additional pre-OSA prep.
-echo "Run pre-OSA prep..."
-pushd playbooks >/dev/null 2>&1
-ansible-playbook -i ${GENESIS_DIR}/scripts/python/yggdrasil/inventory.py pre-deploy.yml
-rc=$?
-if [ $rc != 0 ]; then
-    echo "playbooks/pre-deploy.yml failed, rc=$rc"
-    exit 1
-fi
-popd >/dev/null 2>&1
-
-echo "Bootstrap inventory"
-generate_inventory
+echo "Generate OpenStack user configuration"
+generate_user_config
 

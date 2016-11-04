@@ -223,10 +223,12 @@ fi
 # to ensure that instances can communicate with the neutron metadata service.
 # This is necessary because in an AIO environment there are no physical interfaces involved in
 # instance -> metadata requests, and this results in the checksums being incorrect.
-ansible neutron_agent -m command \
-    -a '/sbin/iptables -t mangle -A POSTROUTING -p tcp --sport 80 -j CHECKSUM --checksum-fill'
-ansible neutron_agent -m shell \
-    -a 'DEBIAN_FRONTEND=noninteractive apt-get install iptables-persistent'
+if [[ "$DEPLOY_AIO" == "yes" ]]; then
+    ansible neutron_agent -m command \
+        -a '/sbin/iptables -t mangle -A POSTROUTING -p tcp --sport 80 -j CHECKSUM --checksum-fill'
+    ansible neutron_agent -m shell \
+        -a 'DEBIAN_FRONTEND=noninteractive apt-get install iptables-persistent'
+fi
 
 # Setup openstack
 i=0
