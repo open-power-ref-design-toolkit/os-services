@@ -1,0 +1,26 @@
+diff -Naur a/etc/ansible/roles/lxc_hosts/defaults/main.yml b/etc/ansible/roles/lxc_hosts/defaults/main.yml
+--- a/etc/ansible/roles/lxc_hosts/defaults/main.yml	2016-11-05 09:11:35.366935190 -0500
++++ b/etc/ansible/roles/lxc_hosts/defaults/main.yml	2016-11-05 08:33:35.392158009 -0500
+@@ -13,9 +13,19 @@
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+ 
+-# Default container apt sources
+-lxc_container_template_main_apt_repo: "http://archive.ubuntu.com/ubuntu/"
+-lxc_container_template_security_apt_repo: "http://security.ubuntu.com/ubuntu"
++# Container main repo mapping
++lxc_main_repo_mapping:
++  x86_64: "http://archive.ubuntu.com/ubuntu"
++  ppc64le: "http://ports.ubuntu.com/ubuntu-ports"
++
++# Container security repo mapping
++lxc_security_repo_mapping:
++  x86_64: "http://security.ubuntu.com/ubuntu"
++  ppc64le: "http://ports.ubuntu.com/ubuntu-ports"
++
++# Container repos
++lxc_container_template_main_apt_repo: "{{ lxc_main_repo_mapping.get( ansible_architecture ) }}"
++lxc_container_template_security_apt_repo: "{{ lxc_security_repo_mapping.get( ansible_architecture ) }}"
+ 
+ # lxc container rootfs directory and cache path
+ lxc_container_directory: "/var/lib/lxc"

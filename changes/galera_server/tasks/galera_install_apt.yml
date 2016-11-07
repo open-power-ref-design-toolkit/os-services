@@ -48,6 +48,7 @@
   apt:
     pkg: "{{ item }}"
     state: latest
+    force: yes
   register: install_packages
   until: install_packages|success
   retries: 5

@@ -197,7 +197,7 @@ neutron_services:
    config_type: "ini"
  neutron-vpnaas-agent:
    group: neutron_l3_agent
-   service_name: neutron-vpnaas-agent
+   service_name: neutron-vpn-agent
    service_en: "{{ neutron_vpnaas | bool }}"
    service_conf: vpnaas_agent.ini
    service_group: neutron_agent
@@ -258,7 +258,7 @@ neutron_driver_metering: neutron.services.metering.drivers.iptables.iptables_dri
 neutron_driver_dhcp: neutron.agent.linux.dhcp.Dnsmasq
 neutron_driver_quota: neutron.db.quota.driver.DbQuotaDriver
 neutron_driver_firewall: neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
-neutron_driver_vpnaas: neutron.services.vpn.device_drivers.ipsec.OpenSwanDriver
+neutron_driver_vpnaas: neutron_vpnaas.services.vpn.device_drivers.ipsec.OpenSwanDriver
 
 ## Quotas
 neutron_default_quota: -1
@@ -284,7 +284,7 @@ neutron_quota_vip: 10
 # If ``neutron_metadata_workers`` is unset the system will use half the number of available VCPUs to
 # compute the number of api workers to use.
 # neutron_metadata_workers: 16
-neutron_metadata_backlog: 128
+neutron_metadata_backlog: 4096
 
 ## Auth
 neutron_service_project_name: service
@@ -319,7 +319,6 @@ neutron_agent_mode: legacy
 neutron_agent_down_time: 120
 neutron_agent_polling_interval: 5
 neutron_report_interval: "{{ neutron_agent_down_time | int / 2 | int }}"
-neutron_network_device_mtu: 1450
 
 # L3HA configuration options.
 neutron_ha_vrrp_auth_type: PASS
@@ -327,7 +326,6 @@ neutron_l3_ha_net_cidr: 169.254.192.0/18
 
 # DHCP AGENT CONFIG
 neutron_dhcp_config:
-  dhcp-option-force: "26,1450"
   log-facility: "/var/log/neutron/neutron-dnsmasq.log"
 
 # Types of networks supported by the ml2 plugin
@@ -412,6 +410,13 @@ neutron_vpnaas_apt_packages:
 neutron_apt_remove_packages:
   - conntrackd
 
+# When running in an AIO, we need to implement an iptables rule in any
+# neutron_agent containers to that ensure instances can communicate with
+# the neutron metadata service. This is necessary because in an AIO
+# environment there are no physical interfaces involved in instance ->
+# metadata requests, and this results in the checksums being incorrect.
+neutron_metadata_checksum_fix: False
+
 # neutron packages that must be installed before anything else
 neutron_requires_pip_packages:
   - virtualenv
@@ -435,9 +440,6 @@ neutron_pip_packages:
   - python-neutronclient
   - python-novaclient
   - repoze.lru
-
-#neutron_optional_plumgrid_pip_packages:
-#  - networking-plumgrid==2015.2.1.1
 
 neutron_proprietary_nuage_pip_packages:
   - nuage-openstack-neutron

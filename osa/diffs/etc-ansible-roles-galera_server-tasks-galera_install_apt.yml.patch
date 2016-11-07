@@ -1,6 +1,6 @@
 diff -Naur a/etc/ansible/roles/galera_server/tasks/galera_install_apt.yml b/etc/ansible/roles/galera_server/tasks/galera_install_apt.yml
---- a/etc/ansible/roles/galera_server/tasks/galera_install_apt.yml	2016-06-17 06:11:33.908764677 -0400
-+++ b/etc/ansible/roles/galera_server/tasks/galera_install_apt.yml	2016-06-17 06:05:07.833513603 -0400
+--- a/etc/ansible/roles/galera_server/tasks/galera_install_apt.yml	2016-11-04 06:59:06.717956305 -0500
++++ b/etc/ansible/roles/galera_server/tasks/galera_install_apt.yml	2016-11-04 06:58:47.123085748 -0500
 @@ -39,6 +39,8 @@
    when: >
      "ansible_date_time.epoch|float - apt_cache_stat.stat.mtime > {{cache_timeout}}" or
@@ -10,10 +10,11 @@ diff -Naur a/etc/ansible/roles/galera_server/tasks/galera_install_apt.yml b/etc/
    tags:
      - galera-apt-packages
  
-@@ -77,4 +79,4 @@
-     deb: "{{ galera_package_path }}"
-     force: yes
-   tags:
--    - galera-apt-packages
-\ No newline at end of file
-+    - galera-apt-packages
+@@ -46,6 +48,7 @@
+   apt:
+     pkg: "{{ item }}"
+     state: latest
++    force: yes
+   register: install_packages
+   until: install_packages|success
+   retries: 5

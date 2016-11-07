@@ -1,0 +1,18 @@
+diff -Naur a/opt/openstack-ansible/ppc_req/global-requirement-pins.txt b/opt/openstack-ansible/ppc_req/global-requirement-pins.txt
+--- a/opt/openstack-ansible/ppc_req/global-requirement-pins.txt	1969-12-31 18:00:00.000000000 -0600
++++ b/opt/openstack-ansible/ppc_req/global-requirement-pins.txt	2016-11-04 06:16:36.866811553 -0500
+@@ -0,0 +1,14 @@
++# This file should only be used to set python package pins that are
++# not present in OpenStack's upper-constraints. Any pins present in
++# this file will override any requirements set in *requirements.txt,
++# upper-constraints and any roles/vars.
++#
++# Use this file with caution!
++#
++###
++### These are pinned to ensure exactly the same behaviour forever!   ###
++### These pins are updated through the sources-branch-updater script ###
++###
++pip==8.1.2
++setuptools==28.0.0
++wheel==0.29.0

@@ -53,6 +53,7 @@ nova_system_group_name: nova
 nova_system_shell: /bin/bash
 nova_system_comment: nova system user
 nova_system_home_folder: "/var/lib/{{ nova_system_user_name }}"
+nova_libvirt_save_path: "{{ nova_system_home_folder }}/save"
 
 ## Manually specified nova UID/GID
 # Deployers can specify a UID for the nova user as well as the GID for the
@@ -189,6 +190,7 @@ nova_novncproxy_vnc_keymap: en-us
 
 ## Nova metadata
 nova_metadata_proxy_enabled: True
+nova_metadata_host: "{{ internal_lb_vip_address }}"
 nova_metadata_port: 8775
 nova_metadata_program_name: nova-api-metadata
 
@@ -243,7 +245,10 @@ nova_image_cache_manager_interval: 0
 nova_resume_guests_state_on_host_boot: False
 nova_dhcp_domain: novalocal
 nova_default_schedule_zone: nova
-glance_api_servers: "{{ glance_host }}:{{ glance_service_port }}"
+
+# Comma separated list of Glance API servers
+# nova_glance_api_servers:
+
 nova_network_type: linuxbridge
 
 nova_network_services:
@@ -396,6 +401,12 @@ nova_pip_packages:
   - keystonemiddleware
   - nova
 
+nova_qemu_user: libvirt-qemu
+nova_qemu_group: kvm
+
+# Define the following variable to drop a replacement
+# file for /etc/libvirt/qemu.conf
+#qemu_conf_dict: {}
 
 ## Tunable overrides
 nova_nova_conf_overrides: {}

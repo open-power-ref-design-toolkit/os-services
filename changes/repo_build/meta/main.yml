@@ -29,6 +29,6 @@ galaxy_info:
     - development
     - openstack
 dependencies:
+  - pip_install
   - apt_package_pinning
   - { role: 'galera_client', when: ansible_architecture != 'ppc64le' }
-  - pip_install
