@@ -21,6 +21,7 @@
 /opsmgr
 .diffs/
 .gitsrc/
+.versionDiffOutput
 openstack_user_config.yml
 user_var_haproxy.yml
 user_var_ceilometer.yml
