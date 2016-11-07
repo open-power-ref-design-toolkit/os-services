@@ -92,7 +92,7 @@
 - name: Install requires pip packages
   pip:
     name: "{{ item }}"
-    state: present
+    state: latest
     extra_args: "{{ pip_install_options_fact }}"
   register: install_packages
   until: install_packages|success
@@ -207,7 +207,7 @@
 - name: Install pip packages (venv)
   pip:
     name: "{{ item }}"
-    state: present
+    state: latest
     virtualenv: "{{ horizon_venv_bin | dirname }}"
     virtualenv_site_packages: "no"
     extra_args: "{{ pip_install_options_fact }}"
@@ -226,7 +226,7 @@
 - name: Install pip packages (no venv)
   pip:
     name: "{{ item }}"
-    state: present
+    state: latest
     extra_args: "{{ pip_install_options_fact }}"
   register: install_packages
   until: install_packages|success

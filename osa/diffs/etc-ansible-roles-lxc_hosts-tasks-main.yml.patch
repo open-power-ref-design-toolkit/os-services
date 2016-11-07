@@ -1,30 +1,7 @@
 diff -Naur a/etc/ansible/roles/lxc_hosts/tasks/main.yml b/etc/ansible/roles/lxc_hosts/tasks/main.yml
---- a/etc/ansible/roles/lxc_hosts/tasks/main.yml	2016-09-23 14:10:39.518398823 -0500
-+++ b/etc/ansible/roles/lxc_hosts/tasks/main.yml	2016-10-07 14:52:51.874002732 -0500
-@@ -13,17 +13,18 @@
- # See the License for the specific language governing permissions and
- # limitations under the License.
- 
--- name: Check for the presence of a public key file on the host
--  stat:
-+- name: Check for the presence of a public key file on the deployment host
-+  local_action:
-+    module: stat
-     path: /root/.ssh/id_rsa.pub
-   register: _ssh_key
-   when: lxc_container_ssh_key is undefined
-   tags:
-     - always
- 
--- name: Fail if a ssh public key is not set in a var and not present on the host
-+- name: Fail if a ssh public key is not set in a var and is not present on the deployment host
-   fail:
--    msg: "Please set the lxc_container_ssh_key variable or ensure that the host has the file /root/.ssh/id_rsa.pub present."
-+    msg: "Please set the lxc_container_ssh_key variable or ensure that the deployment host has the file /root/.ssh/id_rsa.pub present."
-   when:
-     - lxc_container_ssh_key is undefined
-     - not _ssh_key.stat.exists
-@@ -47,6 +48,6 @@
+--- a/etc/ansible/roles/lxc_hosts/tasks/main.yml	2016-11-05 12:52:52.015030175 -0500
++++ b/etc/ansible/roles/lxc_hosts/tasks/main.yml	2016-10-28 02:00:39.841123000 -0500
+@@ -48,6 +48,6 @@
  - include: lxc_dnsmasq_cleanup.yml
  - include: lxc_cache.yml
  - include: lxc_cache_preparation.yml

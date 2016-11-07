@@ -1,0 +1,25 @@
+diff -Naur a/etc/ansible/roles/lxc_container_create/defaults/main.yml b/etc/ansible/roles/lxc_container_create/defaults/main.yml
+--- a/etc/ansible/roles/lxc_container_create/defaults/main.yml	2016-11-05 09:11:36.870894760 -0500
++++ b/etc/ansible/roles/lxc_container_create/defaults/main.yml	2016-11-05 08:36:59.334683292 -0500
+@@ -44,8 +44,19 @@
+   --user {{ lxc_container_user_name }}
+   --password {{ lxc_container_user_password }}
+ 
+-lxc_container_template_main_apt_repo: "https://mirror.rackspace.com/ubuntu"
+-lxc_container_template_security_apt_repo: "https://mirror.rackspace.com/ubuntu"
++# Container main repo mapping
++lxc_main_repo_mapping:
++  x86_64: "http://archive.ubuntu.com/ubuntu"
++  ppc64le: "http://ports.ubuntu.com/ubuntu-ports"
++
++# Container security repo mapping
++lxc_security_repo_mapping:
++  x86_64: "http://security.ubuntu.com/ubuntu"
++  ppc64le: "http://ports.ubuntu.com/ubuntu-ports"
++
++# Container repos
++lxc_container_template_main_apt_repo: "{{ lxc_main_repo_mapping.get( ansible_architecture ) }}"
++lxc_container_template_security_apt_repo: "{{ lxc_security_repo_mapping.get( ansible_architecture ) }}"
+ 
+ lxc_container_default_interfaces: |
+   # The loopback network interface

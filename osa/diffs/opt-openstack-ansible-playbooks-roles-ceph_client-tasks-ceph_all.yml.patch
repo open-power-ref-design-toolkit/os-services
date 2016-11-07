@@ -1,7 +1,7 @@
 diff -Naur a/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_all.yml b/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_all.yml
---- a/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_all.yml	2016-06-14 15:14:40.000000000 -0500
-+++ b/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_all.yml	2016-06-15 08:23:05.000000000 -0500
-@@ -22,12 +22,28 @@
+--- a/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_all.yml	2016-11-04 06:59:20.885165625 -0500
++++ b/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_all.yml	2016-10-28 02:00:39.845123000 -0500
+@@ -22,7 +22,18 @@
      - ceph-config
      - ceph-auth
  
@@ -20,13 +20,3 @@ diff -Naur a/opt/openstack-ansible/playbooks/roles/ceph_client/tasks/ceph_all.ym
    tags:     ceph-preinstall
  
  - include:  ceph_install.yml
-   tags:     ceph-install
- 
-+- include: ceph_install_python_libs.yml
-+  when: openstack_service_venv_bin != ''
-+  tags:
-+    - ceph-install
-+
- - include: ceph_get_mon_host.yml
-   tags:
-     - ceph-config
