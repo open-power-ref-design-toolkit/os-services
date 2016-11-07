@@ -1,0 +1,17 @@
+diff -Naur a/etc/ansible/roles/os_swift/templates/container-sync-realms.conf.j2 b/etc/ansible/roles/os_swift/templates/container-sync-realms.conf.j2
+--- a/etc/ansible/roles/os_swift/templates/container-sync-realms.conf.j2	2016-11-07 20:10:39.565355738 +0000
++++ b/etc/ansible/roles/os_swift/templates/container-sync-realms.conf.j2	2016-11-07 19:58:17.194473835 +0000
+@@ -6,7 +6,11 @@
+ {%   if realm.key2 is defined %}
+ key2 = {{ realm.key2 }}
+ {%   endif %}
+-cluster_clustername1 = {{ realm.clustername1 }}
+-cluster_clustername2 = {{ realm.clustername2 }}
++
++{% for key, value in realm.iteritems()|sort %}
++{% if key | match('cluster') %}
++cluster_{{ key }} = {{ value }}
++{% endif %}
++{% endfor %}
+ 
+ {% endfor %}
