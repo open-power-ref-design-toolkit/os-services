@@ -1,0 +1,14 @@
+diff -Naur a/etc/ansible/roles/os_swift/templates/proxy-server.conf.j2 b/etc/ansible/roles/os_swift/templates/proxy-server.conf.j2
+--- a/etc/ansible/roles/os_swift/templates/proxy-server.conf.j2	2016-11-08 15:03:21.599640862 +0100
++++ b/etc/ansible/roles/os_swift/templates/proxy-server.conf.j2	2016-11-08 15:08:08.111641960 +0100
+@@ -90,8 +90,10 @@
+ username = {{ swift_service_user_name }}
+ password = {{ swift_service_password }}
+ delay_auth_decision = {{ swift_delay_auth_decision }}
++include_service_catalog = False
+ {% if memcached_servers is defined %}
+ memcached_servers = {{ memcached_servers }}
++cache = swift.cache
+ 
+ token_cache_time = 300
+ revocation_cache_time = 60
