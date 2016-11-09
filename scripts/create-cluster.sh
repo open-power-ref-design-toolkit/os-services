@@ -27,6 +27,8 @@ if [ "$1" == "--help" ]; then
     echo "export DEPLOY_HARDENING=yes|no                     Default is no"
     echo "export DEPLOY_TEMPEST=yes|no                       Default is no"
     echo "export ADMIN_PASSWORD=                             Not applicable unless set"
+    echo ""
+    echo "See the README.rst file for more information"
     exit 1
 fi
 
