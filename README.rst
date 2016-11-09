@@ -1,9 +1,9 @@
 os-services
-=============
+===========
 
 This project uses the OpenStack Ansible (OSA) project as a base for deploying an
-OpenStack cluster on Ubuntu 14.04.  It is assumed the cluster controllers are x86
-nodes and the compute nodes are ppc64le.  All nodes are pre-conditioned by the
+OpenStack cluster on Ubuntu 14.04. It is assumed the cluster controllers are x86
+nodes and the compute nodes are ppc64le. All nodes are pre-conditioned by the
 cluster-genesis project which orchestrates the overall install and configuration
 process for the cluster.
 
@@ -16,6 +16,7 @@ To deploy openstack on a cluster of nodes pre-configured by cluster-genesis::
     > export ADMIN_PASSWORD=passw0rd
 
     > ./scripts/bootstrap-cluster.sh
+    > Manual configuration of OpenStack-Ansible parameters
     > ./scripts/create-cluster.sh
 
 If the DEPLOY_XXX environment variables are omitted or set to "no", then the
@@ -23,14 +24,39 @@ associated open source projects are not installed, unless the inventory file
 produced by the cluster-genesis project is present at /var/oprc/inventory.yml.
 In this case, the variables DEPLOY_CEPH and DEPLOY_OPSMGR default to "yes".
 
+Manual configuration of OpenStack-Ansible parameters
+----------------------------------------------------
+
+Manual configuration is required to integrate the cloud that is being created
+into your data center. The following list represents some of the items that
+need to be configured. Consult your OpenStack-Ansible documentation for a
+complete list of parameters that need to be set::
+
+    > Configure SSL Certificates
+    > Reserve a set of IP Addresses that Openstack should not allocate
+    > Allocate IP Address Range for expansion of controller, storage, and compute nodes
+    > Allocate a set of IP Addresses for Openstack Trove to use
+    > Setting a unique VRRP ID for keepalived for network high availability
+
+Be sure to consult with your data center administrator for site specific
+policies regarding the use of SSL Certificates and floating external IP
+addresses as well as the selection of a unique VRRP ID within the data
+center. There is a lot of documentation related to Openstack networking
+(Neutron) that is available on the internet. The following topics
+may be searched online to find more information::
+
+    > Legacy networking with Linux bridges
+    > High Availability using VRRP (L3HA) with Linux bridges
+    > Provider networks with Linux bridges
+
 Debugging hints
 ---------------
 
 The os-services project clones the projects associated with the DEPLOY_XXX environment
-variables.  The location of these projects can be externally specified as shown below.
+variables. The location of these projects can be externally specified as shown below::
 
-    > export GIT_CEPH_URL=git://github.com/open-power/ceph.git
-    > export GIT_OPSMGR_URL=git://github.com/open-power/opsmgr.git
+    > export GIT_CEPH_URL=git://github.com/open-power-ref-design/ceph.git
+    > export GIT_OPSMGR_URL=git://github.com/open-power-ref-design/opsmgr.git
 
 The release tag or branch may be set via the following variables::
 
@@ -45,7 +71,7 @@ The following variable may be used to install Openstack Tempest for testing purp
 
     > export DEPLOY_TEMPEST=yes
 
-Use the 'screen' command to run the scripts in.  The screen can then be
+Use the 'screen' command to run the scripts in. The screen can then be
 detached and it will continue running::
 
     > screen
@@ -61,6 +87,8 @@ In another terminal you can examine the output or grep for errors::
 
 Related projects
 ----------------
+
+::
 
     > cluster-genesis
     > ceph-services
