@@ -1,0 +1,16 @@
+diff -Naur a/opt/openstack-ansible/playbooks/vars/configs/haproxy_config.yml b/opt/openstack-ansible/playbooks/vars/configs/haproxy_config.yml
+--- a/opt/openstack-ansible/playbooks/vars/configs/haproxy_config.yml	2016-11-07 17:29:15.176367145 -0600
++++ b/opt/openstack-ansible/playbooks/vars/configs/haproxy_config.yml	2016-11-07 15:03:36.407971926 -0600
+@@ -190,3 +190,12 @@
+       haproxy_backend_nodes: "{{ groups['ironic_api'] | default([]) }}"
+       haproxy_port: 6385
+       haproxy_balance_type: http
++  - service:
++      haproxy_service_name: trove
++      haproxy_backend_nodes: "{{ groups['trove_all'] | default([]) }}"
++      haproxy_port: 8779
++      haproxy_balance_type: http
++      haproxy_backend_options:
++       - "forwardfor"
++       - "httpchk"
++       - "httplog"

@@ -116,6 +116,9 @@ class OSAFileGenerator(object):
             self.user_config['storage-infra_hosts'] = copy.deepcopy(hosts)
             self.user_config['network_hosts'] = copy.deepcopy(hosts)
 
+        if DBAAS_REF_CLOUD in self.get_ref_arch():
+            self.user_config['trove-infra_hosts'] = copy.deepcopy(hosts)
+
         self.user_config['haproxy_hosts'] = copy.deepcopy(hosts)
         self.user_config['log_hosts'] = copy.deepcopy(hosts)
 
