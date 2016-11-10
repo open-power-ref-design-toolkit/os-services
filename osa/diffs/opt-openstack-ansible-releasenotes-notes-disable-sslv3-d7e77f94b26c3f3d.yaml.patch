@@ -1,0 +1,7 @@
+diff -Naur a/opt/openstack-ansible/releasenotes/notes/disable-sslv3-d7e77f94b26c3f3d.yaml b/opt/openstack-ansible/releasenotes/notes/disable-sslv3-d7e77f94b26c3f3d.yaml
+--- a/opt/openstack-ansible/releasenotes/notes/disable-sslv3-d7e77f94b26c3f3d.yaml	1969-12-31 19:00:00.000000000 -0500
++++ b/opt/openstack-ansible/releasenotes/notes/disable-sslv3-d7e77f94b26c3f3d.yaml	2016-11-10 02:53:06.724183073 -0500
+@@ -0,0 +1,3 @@
++---
++fixes:
++  - SSLv3 is now disabled in the haproxy daemon configuration by default.

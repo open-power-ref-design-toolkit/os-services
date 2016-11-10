@@ -1,0 +1,15 @@
+diff -Naur a/opt/openstack-ansible/playbooks/roles/haproxy_server/templates/haproxy.cfg.j2 b/opt/openstack-ansible/playbooks/roles/haproxy_server/templates/haproxy.cfg.j2
+--- a/opt/openstack-ansible/playbooks/roles/haproxy_server/templates/haproxy.cfg.j2	2016-11-10 02:10:54.060597103 -0500
++++ b/opt/openstack-ansible/playbooks/roles/haproxy_server/templates/haproxy.cfg.j2	2016-11-10 02:10:05.960678977 -0500
+@@ -10,7 +10,10 @@
+         maxconn 4096
+         tune.bufsize 384000
+         stats socket /var/run/haproxy.stat level admin mode 600
+-        {% if haproxy_ssl | bool %}tune.ssl.default-dh-param {{haproxy_ssl_dh_param}}{% endif %}
++        {% if haproxy_ssl | bool %}
++        ssl-default-bind-options no-sslv3
++        tune.ssl.default-dh-param {{haproxy_ssl_dh_param}}
++        {% endif %}
+ 
+ defaults
+         log global
