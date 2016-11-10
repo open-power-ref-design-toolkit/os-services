@@ -101,6 +101,8 @@
     owner: root
     group: root
 
+- include: add_infra_net.yml
+
 - name: Copy conf files
   template:
     src: "{{ item }}"
