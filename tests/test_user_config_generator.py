@@ -616,6 +616,7 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                 'openstack-tenant-vlan': {
                     'bridge': 'br-vlan',
                     'eth-port': 'eth11',
+                    'bridge-port': 'veth12',
                 }
             },
             'nodes': {
@@ -801,6 +802,7 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                 'openstack-mgmt': {
                     'bridge': 'br-mgmt',
                     'eth-port': 'eth0',
+                    'bridge-port': 'veth-infra'
                 },
                 'openstack-stg': {
                     'bridge': 'br-stg',
@@ -1045,7 +1047,7 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                 'container_bridge': 'br-vlan',
                 'container_type': 'veth',
                 'container_interface': 'eth12',
-                'host_bind_override': 'veth12',
+                'host_bind_override': 'eth12',
                 'type': 'flat',
                 'net_name': 'external',
                 'group_binds': [
@@ -1070,6 +1072,7 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                 },
                 'openstack-tenant-vlan': {
                     'eth-port': 'eth11',
+                    'bridge-port': 'veth12',
                 }
             },
             'nodes': {
