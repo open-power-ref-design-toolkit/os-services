@@ -198,7 +198,7 @@ class OSAFileGenerator(object):
         }
         if DBAAS_REF_CLOUD in ref_arch_list:
             mgmt_network['type'] = 'flat'
-            mgmt_network['host_bind_override'] = 'veth-infra'
+            mgmt_network['host_bind_override'] = net_mgmt.get('bridge-port')
             mgmt_network['net_name'] = 'infra'
 
         storage_network = {
@@ -232,9 +232,6 @@ class OSAFileGenerator(object):
                 ]
             }
 
-            # Genesis doesn't create the veth pair yet, but we still need it.
-            # Hardcode veth12 for now which will make our manual setup easier.
-            host_vlan_intf = 'veth12'
             vlan_vlan_network = {
                 'container_bridge': br_vlan,
                 'container_type': 'veth',
@@ -247,6 +244,7 @@ class OSAFileGenerator(object):
                 ],
             }
 
+            host_vlan_intf = net_vlan.get('bridge-port', 'eth12')
             vlan_flat_network = {
                 'container_bridge': br_vlan,
                 'container_type': 'veth',
