@@ -1,0 +1,19 @@
+diff -Naur a/etc/ansible/roles/os_swift/defaults/main.yml b/etc/ansible/roles/os_swift/defaults/main.yml
+--- a/etc/ansible/roles/os_swift/defaults/main.yml	2016-11-11 13:59:52.005471703 -0600
++++ b/etc/ansible/roles/os_swift/defaults/main.yml	2016-11-11 13:43:36.000000000 -0600
+@@ -164,6 +164,7 @@
+ swift_object_server_program_config_options: /etc/swift/object-server/object-server.conf
+ swift_object_replicator_program_config_options: /etc/swift/object-server/object-server-replicator.conf
+ swift_object_expirer_program_config_options: /etc/swift/object-server/object-expirer.conf
++swift_object_reconstructor_program_config_options: /etc/swift/object-server/object-server-replicator.conf
+ 
+ swift_proxy_server_program_config_options: /etc/swift/proxy-server/proxy-server.conf
+ 
+@@ -309,6 +310,7 @@
+   - swift-object-updater
+   - swift-object-replicator-server
+   - swift-object-expirer
++  - swift-object-reconstructor
+ 
+ swift_proxy_program_names:
+   - swift-proxy-server
