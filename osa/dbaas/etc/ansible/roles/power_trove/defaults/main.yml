@@ -98,8 +98,6 @@ trove_service_in_ldap: false
 trove_infra_net_phys_net: infra
 trove_infra_net_type: flat
 trove_infra_subnet_cidr: "{{ container_cidr }}"
-trove_infra_subnet_alloc_start: "172.29.236.100"
-trove_infra_subnet_alloc_end: "172.29.236.110"
 trove_infra_openrc: /root/openrc
 
 MY_IP: "{{ hostvars[groups['trove_all'][0]]['container_address'] }}"
