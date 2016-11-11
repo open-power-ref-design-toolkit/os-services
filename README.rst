@@ -94,6 +94,9 @@ Related projects
     > ceph-services
     > opsmgr
 
-For additional information, see::
+For information about Database as a Service (Openstack Trove) see::
 
+    > README-dbaas.rst
+
+For additional information, see::
     >
