@@ -1,0 +1,15 @@
+diff -Naur a/etc/ansible/roles/os_swift/templates/object-server.conf.j2 b/etc/ansible/roles/os_swift/templates/object-server.conf.j2
+--- a/etc/ansible/roles/os_swift/templates/object-server.conf.j2	2016-11-11 13:59:52.013471843 -0600
++++ b/etc/ansible/roles/os_swift/templates/object-server.conf.j2	2016-11-11 13:42:55.000000000 -0600
+@@ -47,6 +47,11 @@
+ 
+ [object-auditor]
+ log_facility = LOG_LOCAL4
++
++[object-reconstructor]
++log_facility = LOG_LOCAL4
++concurrency = 6
++reclaim_age = {{ reclaim_age | default(604800) }}
+ {% endif %}
+ 
+ [object-updater]
