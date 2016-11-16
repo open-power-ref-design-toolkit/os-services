@@ -167,7 +167,7 @@ echo "Generating passwords"
 ./scripts/pw-token-gen.py --file /etc/openstack_deploy/user_secrets.yml
 
 # Generate passwords needed for Trove
-./scripts/pw-token-gen.py --file /etc/openstack_deploy/user_secrets.trove.yml
+./scripts/pw-token-gen.py --file /etc/openstack_deploy/user_secrets_trove.yml
 
 echo "Running OSA playbooks"
 
