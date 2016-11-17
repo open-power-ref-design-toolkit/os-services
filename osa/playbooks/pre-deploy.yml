@@ -15,13 +15,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- hosts: localhost
+- name: Initialize first controller node
+  hosts: localhost
   connection: local
   roles:
     - local
 
+- name: Initialize known_hosts file for default osa networks on all servers
+  hosts: all
+  roles:
+    - role: "known_hosts"
+      key: "hostname"
+    - role: "known_hosts"
+      key: "openstack_mgmt_addr"
+    - role: "known_hosts"
+      key: "openstack_stg_addr"
+    - role: "known_hosts"
+      key: "external1_addr"
+
 # Perform all setup steps in parallel prior to the inventory update.
-- name: Swift setup storage.
+- name: Swift setup storage
   hosts: swift-metadata:swift-object
   roles:
     - role: "swift_hosts"
@@ -33,7 +46,7 @@
 # /var/oprc/inventory.yml (genesis inventory).  For this reason
 # serial=1 is set.  Without this multiple hosts would collide
 # trying to access the inventory file at the same time.
-- name: Swift update storage inventory.
+- name: Swift update storage inventory
   hosts: swift-metadata:swift-object
   serial: 1
   roles:
@@ -46,7 +59,7 @@
 # This means the cleanup step must be performed as a separate play,
 # because if any single host were to clean up that directory during
 # the inventory step it would impact all subsequent hosts.
-- name: Swift cleans up remnants from the setup storage and inventory plays.
+- name: Swift cleans up remnants from the setup storage and inventory plays
   hosts: swift-metadata:swift-object
   roles:
     - role: "swift_hosts"
