@@ -1214,6 +1214,78 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
         self.assertEqual('N/A', overrides['internal_lb_vip_address'])
         self.assertEqual('N/A', overrides['external_lb_vip_address'])
 
+    def test_jumbo_frame(self):
+        self.ofg.gen_dict = {
+            'internal-floating-ipaddr': '11.22.33.44/22',
+            'external-floating-ipaddr': '22.33.44.55/22',
+            'networks': {
+                'openstack-mgmt': {
+                    'bridge': 'br-mgmt',
+                    'eth-port': 'eth0',
+                    'mtu': 9000
+                },
+                'openstack-stg': {
+                    'bridge': 'br-stg',
+                    'eth-port': 'eth1',
+                    'mtu': 9000
+                },
+                'openstack-tenant-vxlan': {
+                    'bridge': 'br-vxlan',
+                    'eth-port': 'eth10',
+                    'mtu': 9000
+                },
+                'openstack-tenant-vlan': {
+                    'bridge': 'br-vlan',
+                    'eth-port': 'eth11',
+                    'bridge-port': 'veth12',
+                    'mtu': 9000
+                }
+            },
+            'nodes': {
+                'controllers': [
+                    {
+                        'hostname': 'host1',
+                        'openstack-mgmt-addr': '11.22.33.44',
+                        'external1-addr': '55.66.77.88',
+                    },
+                    {
+                        'hostname': 'ignored',
+                        'openstack-mgmt-addr': 'ignored',
+                    }
+                ]
+            },
+            'reference-architecture': ['private-compute-cloud']
+        }
+
+        self.ofg._configure_global_overrides()
+        result = self.ofg.user_config
+        overrides = result['global_overrides']
+
+        provider_networks = overrides['provider_networks']
+
+        # Verify networks
+        for x in range(5):
+            mtu = provider_networks[x]['network'].get('container_mtu')
+            self.assertEqual(mtu, 9000,
+                             'Network %s does not have the right MTU' % x)
+
+        # Let's verify that not specifying MTU on one network works.
+        self.ofg.gen_dict['networks'].get('openstack-tenant-vxlan').pop('mtu')
+        self.ofg._configure_global_overrides()
+        result = self.ofg.user_config
+        overrides = result['global_overrides']
+        provider_networks = overrides['provider_networks']
+        for x in range(1):
+            mtu = provider_networks[x]['network'].get('container_mtu')
+            self.assertEqual(mtu, 9000,
+                             'Network %s does not have the right MTU' % x)
+        mtu = provider_networks[2]['network'].get('container_mtu')
+        self.assertEqual(mtu, None)
+        for x in range(3, 5):
+            mtu = provider_networks[x]['network'].get('container_mtu')
+            self.assertEqual(mtu, 9000,
+                             'Network %s does not have the right MTU' % x)
+
 
 class TestConfigureComputeHosts(unittest.TestCase):
     def setUp(self):

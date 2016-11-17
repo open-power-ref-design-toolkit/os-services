@@ -196,6 +196,8 @@ class OSAFileGenerator(object):
             'is_container_address': True,
             'is_ssh_address': True
         }
+        if 'mtu' in net_mgmt:
+            mgmt_network['container_mtu'] = net_mgmt.get('mtu')
         if DBAAS_REF_CLOUD in ref_arch_list:
             mgmt_network['type'] = 'flat'
             mgmt_network['host_bind_override'] = net_mgmt.get('bridge-port')
@@ -215,6 +217,8 @@ class OSAFileGenerator(object):
                 'swift_proxy',
             ],
         }
+        if 'mtu' in net_stg:
+            storage_network['container_mtu'] = net_stg.get('mtu')
         networks.append({'network': mgmt_network})
         networks.append({'network': storage_network})
 
@@ -231,6 +235,8 @@ class OSAFileGenerator(object):
                     'neutron_linuxbridge_agent',
                 ]
             }
+            if 'mtu' in net_tunnel:
+                vxlan_network['container_mtu'] = net_tunnel.get('mtu')
 
             vlan_vlan_network = {
                 'container_bridge': br_vlan,
@@ -243,6 +249,8 @@ class OSAFileGenerator(object):
                     'neutron_linuxbridge_agent',
                 ],
             }
+            if 'mtu' in net_vlan:
+                vlan_vlan_network['container_mtu'] = net_vlan.get('mtu')
 
             host_vlan_intf = net_vlan.get('bridge-port', 'eth12')
             vlan_flat_network = {
@@ -256,6 +264,8 @@ class OSAFileGenerator(object):
                     'neutron_linuxbridge_agent',
                 ],
             }
+            if 'mtu' in net_vlan:
+                vlan_flat_network['container_mtu'] = net_vlan.get('mtu')
             networks.append({'network': vxlan_network})
             networks.append({'network': vlan_vlan_network})
             networks.append({'network': vlan_flat_network})
