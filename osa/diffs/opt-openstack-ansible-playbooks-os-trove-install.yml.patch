@@ -1,11 +1,9 @@
 diff -Naur a/opt/openstack-ansible/playbooks/os-trove-install.yml b/opt/openstack-ansible/playbooks/os-trove-install.yml
 --- a/opt/openstack-ansible/playbooks/os-trove-install.yml	1969-12-31 18:00:00.000000000 -0600
-+++ b/opt/openstack-ansible/playbooks/os-trove-install.yml	2016-11-07 17:21:38.044346470 -0600
-@@ -0,0 +1,158 @@
++++ b/opt/openstack-ansible/playbooks/os-trove-install.yml	2016-11-17 19:45:21.556034970 -0600
+@@ -0,0 +1,160 @@
 +---
 +# Copyright 2016 IBM Corp.
-+#
-+#
 +#
 +# Licensed under the Apache License, Version 2.0 (the "License");
 +# you may not use this file except in compliance with the License.
@@ -79,6 +77,8 @@ diff -Naur a/opt/openstack-ansible/playbooks/os-trove-install.yml b/opt/openstac
 +         login_host: "{{ trove_galera_address }}"
 +         name: "{{ trove_galera_database }}"
 +         state: "present"
++      delegate_to: "{{ groups['galera_all'][0] }}"
++      run_once: true
 +      tags:
 +         - trove-db-setup
 +
@@ -95,6 +95,8 @@ diff -Naur a/opt/openstack-ansible/playbooks/os-trove-install.yml b/opt/openstac
 +      with_items:
 +         - "localhost"
 +         - "%"
++      delegate_to: "{{ groups['galera_all'][0] }}"
++      run_once: true
 +      tags:
 +         - trove-db-setup
 +

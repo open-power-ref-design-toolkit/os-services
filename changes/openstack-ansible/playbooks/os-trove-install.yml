@@ -73,6 +73,8 @@
          login_host: "{{ trove_galera_address }}"
          name: "{{ trove_galera_database }}"
          state: "present"
+      delegate_to: "{{ groups['galera_all'][0] }}"
+      run_once: true
       tags:
          - trove-db-setup
 
@@ -89,6 +91,8 @@
       with_items:
          - "localhost"
          - "%"
+      delegate_to: "{{ groups['galera_all'][0] }}"
+      run_once: true
       tags:
          - trove-db-setup
 
