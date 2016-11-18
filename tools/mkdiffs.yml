@@ -92,6 +92,11 @@ projects:
     target_location: /etc/ansible/roles/os_swift
     src_location: os_swift
   - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-os_keystone
+    branch: 13.3.5
+    target_location: /etc/ansible/roles/os_keystone
+    src_location: os_keystone
+  - project:
     git: https://git.openstack.org/openstack/openstack-ansible-openstack_hosts
     branch: 13.3.5
     target_location: /etc/ansible/roles/openstack_hosts
