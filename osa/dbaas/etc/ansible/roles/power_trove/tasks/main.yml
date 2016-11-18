@@ -131,11 +131,6 @@
   tags:
    - conf-file
 
-- name: Trove db_sync
-  command: su -s /bin/sh -c "trove-manage db_sync" trove
-  tags:
-   - restart-services
-
 - name: Restart trove-api
   service:
     name: trove-api
@@ -154,6 +149,12 @@
   service:
     name: trove-conductor
     state: restarted
+  tags:
+   - restart-services
+
+- name: Trove db_sync
+  command: su -s /bin/sh -c "trove-manage db_sync" trove
+  when: inventory_hostname == groups['trove_all'][0]
   tags:
    - restart-services
 

@@ -73,6 +73,8 @@
 - name: Store infra network id
   set_fact:
     trove_infra_net_id: "{{ neutron_networks.trove_infra_net.id }}"
+  delegate_to: "{{ groups['trove_all'][0] }}"
+  run_once: true
   when: infra_net.rc != 0
   tags:
     - infra-net
