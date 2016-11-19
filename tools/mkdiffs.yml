@@ -77,6 +77,11 @@ projects:
     target_location: /etc/ansible/roles/os_nova
     src_location: os_nova
   - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-plugins
+    branch: 13.3.5
+    target_location: /etc/ansible/library/provider_networks
+    src_location: plugins
+  - project:
     git: https://git.openstack.org/openstack/openstack-ansible-repo_build
     branch: 13.3.5
     target_location: /etc/ansible/roles/repo_build

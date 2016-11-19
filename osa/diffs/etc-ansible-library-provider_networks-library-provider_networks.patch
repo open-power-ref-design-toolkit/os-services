@@ -1,0 +1,16 @@
+diff -Naur a/etc/ansible/library/provider_networks/library/provider_networks b/etc/ansible/library/provider_networks/library/provider_networks
+--- a/etc/ansible/library/provider_networks/library/provider_networks	2016-11-19 09:58:14.705205545 -0600
++++ b/etc/ansible/library/provider_networks/library/provider_networks	2016-11-19 09:56:50.424953053 -0600
+@@ -192,9 +192,9 @@
+             elif net['network']['type'] == "flat":
+                 if "flat" not in self.network_types:
+                     self.network_types.append('flat')
+-                    self.network_flat_networks.append(
+-                        net['network']['net_name']
+-                    )
++                self.network_flat_networks.append(
++                    net['network']['net_name']
++                )
+ 
+             # Create the network mappings
+             if net['network']['type'] not in ['raw', 'vxlan']:
