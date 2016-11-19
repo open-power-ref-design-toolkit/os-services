@@ -31,14 +31,12 @@
     login_user: "{{ keystone_admin_user_name }}"
     login_password: "{{ keystone_auth_admin_password }}"
     login_project_name: "{{ keystone_admin_tenant_name }}"
-  when: infra_net.rc != 0
   tags:
     - infra-net
 
 - name: Store admin tenant id
   set_fact:
     keystone_admin_tenant_id: "{{ keystone_facts.id }}"
-  when: infra_net.rc != 0
   tags:
     - infra-net
 
@@ -56,6 +54,24 @@
   tags:
     - infra-net
 
+- name: Store infra network id
+  set_fact:
+    trove_infra_net_id: "{{ neutron_networks.trove_infra_net.id }}"
+  delegate_to: "{{ groups['trove_all'][0] }}"
+  run_once: true
+  tags:
+    - infra-net
+
+- name: Check if trove_infra_subnet exists
+  shell: >
+    . {{ trove_infra_openrc }};
+    openstack subnet show trove_infra_subnet
+  register: infra_subnet
+  failed_when: False
+  changed_when: infra_subnet.rc != 0
+  tags:
+    - infra-net
+
 - name: Create infra subnet
   neutron:
     command: create_subnet
@@ -66,16 +82,7 @@
     tenant_id: "{{ keystone_admin_tenant_id }}"
   delegate_to: "{{ groups['trove_all'][0] }}"
   run_once: true
-  when: infra_net.rc != 0
-  tags:
-    - infra-net
-
-- name: Store infra network id
-  set_fact:
-    trove_infra_net_id: "{{ neutron_networks.trove_infra_net.id }}"
-  delegate_to: "{{ groups['trove_all'][0] }}"
-  run_once: true
-  when: infra_net.rc != 0
+  when: infra_subnet.rc != 0
   tags:
     - infra-net
 

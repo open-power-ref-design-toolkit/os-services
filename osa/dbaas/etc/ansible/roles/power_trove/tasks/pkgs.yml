@@ -18,12 +18,17 @@
     path: "{{ tmp_dir }}"
     state: directory
     mode: 0700
+  tags:
+    - trove-pkgs
 
 - name: Get trove code from server
   git:
     repo: "{{ trove_repo }}"
     dest: "{{ tmp_dir }}/trove"
     version: "{{ trove_repo_branch }}"
+    force: yes
+  tags:
+    - trove-pkgs
 
 - name: Install apt packages
   apt:
