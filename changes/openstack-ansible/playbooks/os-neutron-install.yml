@@ -168,6 +168,20 @@
         - ansible_architecture == 'ppc64le'
       tags:
         - neutron-config
+    - name: Update the sysctl conf to disable ipv6
+      sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        sysctl_set: "{{ item.set|default('yes') }}"
+        state: "{{ item.state|default('present') }}"
+        reload: "{{ item.reload|default('yes') }}"
+      with_items:
+        - { key: 'net.ipv6.conf.all.disable_ipv6', value: 1 }
+        - { key: 'net.ipv6.conf.default.disable_ipv6', value: 1 }
+        - { key: 'net.ipv6.conf.lo.disable_ipv6', value: 1 }
+      tags:
+        - disable_ipv6
+
   roles:
     - role: "os_neutron"
       neutron_venv_tag: "{{ openstack_release }}"
