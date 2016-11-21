@@ -1,6 +1,6 @@
-diff -Naur a/etc/ansible/library/provider_networks/library/provider_networks b/etc/ansible/library/provider_networks/library/provider_networks
---- a/etc/ansible/library/provider_networks/library/provider_networks	2016-11-19 09:58:14.705205545 -0600
-+++ b/etc/ansible/library/provider_networks/library/provider_networks	2016-11-19 09:56:50.424953053 -0600
+diff -Naur a/etc/ansible/plugins/library/provider_networks b/etc/ansible/plugins/library/provider_networks
+--- a/etc/ansible/plugins/library/provider_networks	2016-11-21 08:54:54.733921686 -0600
++++ b/etc/ansible/plugins/library/provider_networks	2016-11-21 08:46:17.504688259 -0600
 @@ -192,9 +192,9 @@
              elif net['network']['type'] == "flat":
                  if "flat" not in self.network_types:
