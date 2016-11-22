@@ -20,10 +20,11 @@ SCRIPTS_DIR=$(dirname $0)
 SCRIPTS_DIR=$(readlink -ne $SCRIPTS_DIR)
 source $SCRIPTS_DIR/process-args.sh
 
-FILES_WITH_GIT_URLS="/opt/openstack-ansible/ansible-role-requirements.yml \
+OSA_FILES_WITH_GIT_URLS="/opt/openstack-ansible/ansible-role-requirements.yml \
     /opt/openstack-ansible/playbooks/defaults/repo_packages/openstack_services.yml \
-    /opt/openstack-ansible/playbooks/defaults/repo_packages/openstack_other.yml \
-    /opt/openstack-ansible/playbooks/vars/pkvm/pkvm.yml"
+    /opt/openstack-ansible/playbooks/defaults/repo_packages/openstack_other.yml"
+
+PPC_FILES_WITH_GIT_URLS="/opt/openstack-ansible/playbooks/vars/pkvm/pkvm.yml"
 
 echo "DEPLOY_AIO=$DEPLOY_AIO"
 echo "infraNodes=$infraNodes"
@@ -109,6 +110,10 @@ if [ ! -d /opt/openstack-ansible ]; then
         exit 1
     fi
     popd >/dev/null 2>&1
+    if [ -n "$GIT_MIRROR" ]; then
+        echo "Patching OSA files to include GIT_MIRROR"
+        sed -i "s/git\.openstack\.org/$GIT_MIRROR/g" $OSA_FILES_WITH_GIT_URLS
+    fi
     # An openstack-ansible script is invoked below to install ansible
     rm -rf /etc/ansible
     INSTALL=True
@@ -122,6 +127,17 @@ if [ ! -d /etc/ansible ]; then
     BOOTSTRAP_OPTS="${BOOTSTRAP_OPTS} bootstrap_host_ubuntu_security_repo=http://security.ubuntu.com/ubuntu/"
     scripts/bootstrap-ansible.sh
     rc=$?
+    if [ $rc != 0 ]; then
+        # Override the user's lack of input as the goal is to automate install and workaround errors
+        if [ -z "$GIT_MIRROR" ]; then
+            GIT_MIRROR=github.com
+            echo "Setting GIT_MIRROR=$GIT_MIRROR"
+            sed -i "s/git\.openstack\.org/$GIT_MIRROR/g" $OSA_FILES_WITH_GIT_URLS
+        fi
+        echo "Installing ansible [retry]..."
+        scripts/bootstrap-ansible.sh
+        rc=$?
+    fi
     if [ $rc != 0 ]; then
         echo "scripts/bootstrap-ansible.sh failed, rc=$rc"
         echo "Manual retry procedure:"
@@ -158,8 +174,9 @@ if [ "$INSTALL" == "True" ] && [ -d $PCLD_DIR/diffs ]; then
             echo "Patch $f could not be applied"
             echo "Manual retry procedure:"
             echo "1) fix patch $f"
-            echo "2) rm -rf /etc/ansible; rm -rf /opt/ansible_$EXPECTED_ANSIBLE_VERSION"
-            echo "3) re-run command"
+            echo "2) pip uninstall ansible"
+            echo "3) rm -rf /etc/ansible; rm -rf /opt/ansible_$EXPECTED_ANSIBLE_VERSION"
+            echo "4) re-run command"
             exit 1
         elif [[ "$f" == *"/opt-ansible"* ]]; then
             ANSIBLE_PATCH=True
@@ -174,11 +191,6 @@ if [ "$INSTALL" == "True" ] && [ -d $PCLD_DIR/diffs ]; then
         echo "pip install patched ansible"
         pip install -q /opt/ansible_* --upgrade
     fi
-fi
-
-# Patch OSA to use git mirror.  At least one of the target files is created by patch above
-if [ ! -z $GIT_MIRROR ]; then
-    sed -i "s/git\.openstack\.org/$GIT_MIRROR/g" $FILES_WITH_GIT_URLS
 fi
 
 # Copy repo keys from openstack_services.yml for the services
@@ -196,6 +208,12 @@ for k in $KEYS; do
     # Put in new lines
     grep -e "^$k" $VAR_FILE >>$PVAR_FILE
 done
+
+# If the patch was made previously to osa-proper files, do it here also.  This is a new file
+if [ -n "$GIT_MIRROR" ]; then
+    echo "Patching OSA PPC files to include GIT_MIRROR"
+    sed -i "s/git\.openstack\.org/$GIT_MIRROR/g" $PPC_FILES_WITH_GIT_URLS
+fi
 
 # Update the file /opt/openstack-ansible/playbooks/ansible.cfg
 grep -q callback_plugins ${OSA_PLAYS}/ansible.cfg ||
