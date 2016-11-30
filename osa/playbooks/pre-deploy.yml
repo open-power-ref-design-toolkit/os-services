@@ -15,6 +15,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+- name: Update apt cache
+  hosts: all
+  vars:
+    cache_timeout: 600
+  tasks:
+    # OpenStack-Ansible does the following for apt cache update. We do it here
+    # as well to ensure the cache is properly updated on all systems before all
+    # other tasks, including Ceph Ansible.
+    # Replace the next 2 tasks by a standard apt with cache
+    # when https://github.com/ansible/ansible-modules-core/pull/1517 is merged
+    # in 1.9.x or we move to 2.0 (if tested working)
+    - name: Check apt last update file
+      stat:
+        path: /var/cache/apt
+      register: apt_cache_stat
+
+    - name: Update apt if needed
+      apt:
+        update_cache: yes
+      when: "ansible_date_time.epoch|float - apt_cache_stat.stat.mtime > {{cache_timeout}}"
+
 - name: Initialize first controller node
   hosts: localhost
   connection: local
