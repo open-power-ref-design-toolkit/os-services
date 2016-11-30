@@ -73,41 +73,27 @@
     - infra-net
 
 - name: Create infra subnet
-  neutron:
-    command: create_subnet
-    openrc_path: "{{ trove_infra_openrc }}"
-    net_name: trove_infra_net
-    subnet_name: trove_infra_subnet
-    cidr: "{{ trove_infra_subnet_cidr }}"
-    tenant_id: "{{ keystone_admin_tenant_id }}"
+  shell: >
+    . {{ trove_infra_openrc }};
+    neutron subnet-create
+    --tenant-id {{keystone_admin_tenant_id}}
+    --name trove_infra_subnet
+    --allocation-pool start={{trove_infra_subnet_alloc_start}},end={{trove_infra_subnet_alloc_end}}
+    --enable-dhcp
+    trove_infra_net
+    {{trove_infra_subnet_cidr}}
+  register: subnet_create
+  failed_when: subnet_create.rc != 0
   delegate_to: "{{ groups['trove_all'][0] }}"
   run_once: true
   when: infra_subnet.rc != 0
   tags:
     - infra-net
 
-# NOTE: Mitaka needs specific setting of allocation pools.
-#       This is not needed in Newton because allocation_pools
-#       was introduced as an option in the create_subnet command
-- name: Update allocation pools
+- name: Wait for infra subnet to be ready
   shell: >
     . {{ trove_infra_openrc }};
-    if openstack network show trove_infra_net 2>&1 | grep -q "No Network found";
-    then
-      neutron subnet-update --allocation-pool
-      start={{trove_infra_subnet_alloc_start}},end={{trove_infra_subnet_alloc_end}}
-      trove_infra_subnet;
-    fi
-  delegate_to: "{{ groups['trove_all'][0] }}"
-  run_once: true
-  when: infra_net.rc != 0
-  tags:
-    - infra-net
-
-- name: Wait for infra network to be ready
-  shell: >
-    . {{ trove_infra_openrc }};
-    openstack network show trove_infra_net
+    openstack subnet show trove_infra_subnet
   register: result
   until: result.rc == 0
   retries: 20
