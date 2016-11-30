@@ -1,0 +1,12 @@
+diff -Naur a/opt/openstack-ansible/tests/roles/bootstrap-host/tasks/prepare_mongodb_service.yml b/opt/openstack-ansible/tests/roles/bootstrap-host/tasks/prepare_mongodb_service.yml
+--- a/opt/openstack-ansible/tests/roles/bootstrap-host/tasks/prepare_mongodb_service.yml	2016-11-30 16:05:04.000000000 -0600
++++ b/opt/openstack-ansible/tests/roles/bootstrap-host/tasks/prepare_mongodb_service.yml	2016-11-30 15:21:44.000000000 -0600
+@@ -45,7 +45,7 @@
+   wait_for:
+     host: "{{ bootstrap_host_mongodb_address }}"
+     port: 27017
+-    delay: 5
++    delay: 15
+     timeout: 30
+   when:
+     - mongodb_restart is defined
