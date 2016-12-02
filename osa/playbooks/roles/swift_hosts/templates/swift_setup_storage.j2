@@ -248,9 +248,8 @@ function clean_disk
     if [[ $rc -eq 0 ]] ; then
         deactivate_lvm_volume_group $device
         remove_lvm_physical_volume $device
-    else
-        zap_disk $device
     fi
+    zap_disk $device
 }
 
 function zap_disk_list
