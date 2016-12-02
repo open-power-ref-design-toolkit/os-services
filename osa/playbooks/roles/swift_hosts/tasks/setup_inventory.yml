@@ -44,7 +44,7 @@
 
   - name: Update genesis inventory with account disk list.
     command: >
-      {{ role_dir }}/files/swift_update_disk_lists.py
+      {{ role_path }}/files/swift_update_disk_lists.py
       -n {{ inventory_hostname }}
       -i /var/oprc/inventory.yml.updating
       -o /var/oprc/inventory.yml.updating
@@ -55,7 +55,7 @@
 
   - name: Update genesis inventory with container disk list.
     command: >
-      {{ role_dir }}/files/swift_update_disk_lists.py
+      {{ role_path }}/files/swift_update_disk_lists.py
       -n {{ inventory_hostname }}
       -i /var/oprc/inventory.yml.updating
       -o /var/oprc/inventory.yml.updating
@@ -66,7 +66,7 @@
 
   - name: Update genesis inventory with object disk list.
     command: >
-      {{ role_dir }}/files/swift_update_disk_lists.py
+      {{ role_path }}/files/swift_update_disk_lists.py
       -n {{ inventory_hostname }}
       -i /var/oprc/inventory.yml.updating
       -o /var/oprc/inventory.yml.updating

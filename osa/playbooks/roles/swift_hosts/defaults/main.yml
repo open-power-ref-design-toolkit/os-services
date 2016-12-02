@@ -32,10 +32,6 @@ report_only: false
 # You should never need to adjust this.
 date: "{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
 
-# Role directory.
-# You should never need to adjust this.
-role_dir: "{{ lookup('pipe', 'pwd')|dirname }}"
-
 # Set to true by the playbook when the specified account, container,
 # and object device lists match one another.  If this is true, all
 # filesystem labels will use the 'disk' prefix (e.g. /srv/node/disk1,
