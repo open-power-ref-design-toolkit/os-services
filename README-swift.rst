@@ -13,10 +13,10 @@ instructions describe the general process::
 Select a sample config.yml to use as a starting point for your
 configuration, for example::
 
-    domain/configs/swift-converged-metadata-object.yml
-    domain/configs/swift-proxy-on-controllers.yml
-    domain/configs/swift-scale-out.yml
-    domain/configs/swift-with-compute-cloud.yml
+    domain/configs/swift-large.yml
+    domain/configs/swift-medium.yml
+    domain/configs/swift-small.yml
+    domain/configs/swift-small-with-compute-cloud.yml
 
 Copy the selected file into place::
 
