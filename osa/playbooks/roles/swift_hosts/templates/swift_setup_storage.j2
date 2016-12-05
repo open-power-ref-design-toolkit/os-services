@@ -185,8 +185,28 @@ function is_mounted
 {
     typeset device=$1    # device is assumed to be a disk like /dev/sda
 
-    mount | awk '{print $1}' | grep "${device}\b"
+    # The requirement for this grep is that it finds /dev/sda itself,
+    # finds parts such as /dev/sda1 or /dev/sda2, but does not find
+    # devices with a similar name such as /dev/sdaa.
+    #
+    # Thus the [1-9]? after the device name says the numbers may or
+    # may not be present.  The $ at the end says the pattern is
+    # immediately followed by a newline, which should eliminate
+    # /dev/sdaa.
+    mount | awk '{print $1}' | grep -E "${device}[1-9]?$"
     return $?
+}
+
+function do_umount
+{
+    typeset device=$1    # device is assumed to be a disk like /dev/sda
+    typeset name
+
+    # See is_mounted.
+    for name in `mount | awk '{print $1}' | grep -E "${device}[1-9]?$"`
+    do
+        umount $name
+    done
 }
 
 # returns 0 for true and 1 for false.
@@ -240,7 +260,7 @@ function clean_disk
     is_mounted $device
     rc=$?
     if [[ $rc -eq 0 ]] ; then
-        umount $device
+        do_umount $device
     fi
 
     is_lvm_physical_volume $device
