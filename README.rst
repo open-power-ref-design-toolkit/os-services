@@ -98,5 +98,9 @@ For information about Database as a Service (Openstack Trove) see::
 
     > README-dbaas.rst
 
+For information about Object Storage (Openstack Swift) see::
+
+    > README-swift.rst
+
 For additional information, see::
     >
