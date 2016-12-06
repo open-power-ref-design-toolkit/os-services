@@ -26,3 +26,10 @@ swift_minimum_exclude_services:
    - ironic.yml
    - neutron.yml
    - nova.yml
+
+# Overrides for running services in containers or bare metal.
+# We want to run the cinder_volumes service in containers and
+# the value for the swift_proxy is dependent on the reference architecture.
+container_is_metal_overrides:
+    cinder_volumes: false
+    swift_proxy: "{{ 'swift-minimum-hardware' not in reference_architecture }}"
