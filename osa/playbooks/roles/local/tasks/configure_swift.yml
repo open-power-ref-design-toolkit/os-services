@@ -15,27 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- name: HA Proxy config for Swift standalone with separate internal and external IPs
-  copy:
-    src: swift_haproxy_diff_floaters.yml
-    dest: /etc/openstack_deploy/user_swift_haproxy.yml
-  when:
-    - "{{ 'swift' in reference_architecture }}"
-    - "{{ 'private-compute-cloud' not in reference_architecture }}"
-    - "{{ internal_floating_ipaddr != external_floating_ipaddr }}"
-
-- name: HA Proxy config for Swift standalone
-  copy:
-    src: swift_haproxy_equal_floaters.yml
-    dest: /etc/openstack_deploy/user_swift_haproxy.yml
-  when:
-    - "{{ 'swift' in reference_architecture }}"
-    - "{{ 'private-compute-cloud' not in reference_architecture }}"
-    - "{{ internal_floating_ipaddr == external_floating_ipaddr }}"
-
 - name: Remove files from /etc/openstack_deploy/env.d
   file: path="/etc/openstack_deploy/env.d/{{ item }}" state=absent
   with_items: swift_minimum_exclude_services
   when:
     - "{{ 'swift' in reference_architecture }}"
     - "{{ 'private-compute-cloud' not in reference_architecture }}"
+
