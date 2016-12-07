@@ -1,11 +1,11 @@
 diff -Naur a/etc/ansible/roles/openstack_hosts/tasks/openstack_kernel_modules.yml b/etc/ansible/roles/openstack_hosts/tasks/openstack_kernel_modules.yml
---- a/etc/ansible/roles/openstack_hosts/tasks/openstack_kernel_modules.yml	2016-11-23 05:11:11.369501774 +0000
-+++ b/etc/ansible/roles/openstack_hosts/tasks/openstack_kernel_modules.yml	2016-11-23 05:08:19.796977753 +0000
-@@ -42,6 +42,7 @@
-   with_items: openstack_host_specific_kernel_modules
+--- a/etc/ansible/roles/openstack_hosts/tasks/openstack_kernel_modules.yml	2016-12-01 19:56:09.196863791 -0600
++++ b/etc/ansible/roles/openstack_hosts/tasks/openstack_kernel_modules.yml	2016-12-01 19:22:13.958416989 -0600
+@@ -41,6 +41,7 @@
+   with_items: "{{ openstack_host_specific_kernel_modules }}"
    when:
-     - openstack_host_specific_kernel_modules is defined
+     - openstack_host_specific_kernel_modules | length > 0
 +    - groups["{{ item.group }}"] is defined
      - inventory_hostname in groups["{{ item.group }}"]
-   ignore_errors: yes
-   tags:
+   failed_when: false
+ 

@@ -1,6 +1,6 @@
 diff -Naur a/opt/openstack-ansible/playbooks/files/smt.conf b/opt/openstack-ansible/playbooks/files/smt.conf
 --- a/opt/openstack-ansible/playbooks/files/smt.conf	1969-12-31 18:00:00.000000000 -0600
-+++ b/opt/openstack-ansible/playbooks/files/smt.conf	2016-06-14 16:46:07.000000000 -0500
++++ b/opt/openstack-ansible/playbooks/files/smt.conf	2016-11-11 06:05:14.227431263 -0600
 @@ -0,0 +1,11 @@
 +#
 +# A task to turn off smt

@@ -1,8 +1,8 @@
 diff -Naur a/etc/ansible/roles/os_nova/defaults/main.yml b/etc/ansible/roles/os_nova/defaults/main.yml
---- a/etc/ansible/roles/os_nova/defaults/main.yml	2016-11-05 15:56:45.328327660 -0500
-+++ b/etc/ansible/roles/os_nova/defaults/main.yml	2016-11-05 15:55:21.722545478 -0500
-@@ -221,7 +221,7 @@
- nova_consoleauth_program_name: nova-consoleauth
+--- a/etc/ansible/roles/os_nova/defaults/main.yml	2016-12-01 19:55:59.121168316 -0600
++++ b/etc/ansible/roles/os_nova/defaults/main.yml	2016-12-01 19:36:33.364394234 -0600
+@@ -236,7 +236,7 @@
+ nova_console_agent_enabled: True
  nova_console_keymap: en-us
  # Set the console type. Presently the only options are ["spice", "novnc"].
 -nova_console_type: spice
@@ -10,23 +10,3 @@ diff -Naur a/etc/ansible/roles/os_nova/defaults/main.yml b/etc/ansible/roles/os_
  
  # Nova console ssl info, presently only used by novnc console type
  nova_console_ssl_dir: "/etc/nova/ssl"
-@@ -369,7 +369,7 @@
-   - kpartx
-   - libvirt-bin
-   - open-iscsi
--  - python-libguestfs
-+#  - python-libguestfs
-   - python-libvirt
-   - qemu
-   - qemu-utils
-@@ -413,3 +413,10 @@
- nova_rootwrap_conf_overrides: {}
- nova_api_paste_ini_overrides: {}
- nova_policy_overrides: {}
-+
-+# Ubuntu Cloud Archive variables
-+nova_uca_enable: True
-+uca_openstack_release: mitaka
-+uca_apt_repo_url: "http://ubuntu-cloud.archive.canonical.com/ubuntu"
-+uca_repo_dist: "{{ ansible_lsb.codename }}-updates/{{ uca_openstack_release }}"
-+uca_repo: "deb {{ uca_apt_repo_url }} {{ uca_repo_dist }} main"

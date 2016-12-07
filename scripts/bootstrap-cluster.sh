@@ -83,8 +83,8 @@ apt-get -qq -y install build-essential libssl-dev libffi-dev python-dev \
     ntp ntpdate tcpdump vlan
 
 CODENAME=`lsb_release -c | awk '{print $2}'`
-if [ $? != 0 ] || [ "$CODENAME" != "trusty" ]; then
-    echo "Unsupported Linux distribution.  Must be Ubuntu 14.04"
+if [ $? != 0 ] || [ "$CODENAME" != "xenial" ]; then
+    echo "Unsupported Linux distribution.  Must be Ubuntu 16.04"
 else
     # XXX Does this need to be done on each controller node?
     # Sequentially invoke build/install/wget scripts to replace

@@ -24,18 +24,16 @@ OSA_FILES_WITH_GIT_URLS="/opt/openstack-ansible/ansible-role-requirements.yml \
     /opt/openstack-ansible/playbooks/defaults/repo_packages/openstack_services.yml \
     /opt/openstack-ansible/playbooks/defaults/repo_packages/openstack_other.yml"
 
-PPC_FILES_WITH_GIT_URLS="/opt/openstack-ansible/playbooks/vars/pkvm/pkvm.yml"
-
 echo "DEPLOY_AIO=$DEPLOY_AIO"
 echo "infraNodes=$infraNodes"
 echo "allNodes=$allNodes"
 echo "GIT_MIRROR=$GIT_MIRROR"
 
-OSA_TAG=${OSA_TAG:-"13.3.5"}
+OSA_TAG=${OSA_TAG:-"14.0.3"}
 OSA_DIR="/opt/openstack-ansible"
 OSA_PLAYS="${OSA_DIR}/playbooks"
 
-EXPECTED_ANSIBLE_VERSION="v1.9.4-1"
+ANSIBLE_RUNTIME_DIR="/opt/ansible-runtime"
 
 function generate_user_config {
 
@@ -100,7 +98,7 @@ if [ ! -d /opt/openstack-ansible ]; then
         exit 1
     fi
     pushd ${OSA_DIR} >/dev/null 2>&1
-    git checkout stable/mitaka
+    git checkout stable/newton
     if [ $? != 0 ]; then
         exit 1
     fi
@@ -141,7 +139,7 @@ if [ ! -d /etc/ansible ]; then
         echo "scripts/bootstrap-ansible.sh failed, rc=$rc"
         echo "Manual retry procedure:"
         echo "1) fix root cause of error if known"
-        echo "2) rm -rf /etc/ansible; rm -rf /opt/ansible_$EXPECTED_ANSIBLE_VERSION"
+        echo "2) rm -rf /etc/ansible; rm -rf $ANSIBLE_RUNTIME_DIR"
         echo "3) re-run command"
         exit 1
     fi
@@ -164,7 +162,7 @@ if [ "$INSTALL" == "True" ] && [ -d $PCLD_DIR/diffs ]; then
 
     echo "Applying patches"
     pushd / >/dev/null 2>&1
-    ANSIBLE_PATCH=False
+
     for f in ${PCLD_DIR}/diffs/*.patch; do
         patch -N -p1 < $f
         rc=$?
@@ -174,49 +172,14 @@ if [ "$INSTALL" == "True" ] && [ -d $PCLD_DIR/diffs ]; then
             echo "Manual retry procedure:"
             echo "1) fix patch $f"
             echo "2) pip uninstall ansible"
-            echo "3) rm -rf /etc/ansible; rm -rf /opt/ansible_$EXPECTED_ANSIBLE_VERSION"
+            echo "3) rm -rf /etc/ansible; rm -rf $ANSIBLE_RUNTIME_DIR"
             echo "4) re-run command"
             exit 1
-        elif [[ "$f" == *"/opt-ansible"* ]]; then
-            ANSIBLE_PATCH=True
         fi
     done
 
     popd >/dev/null 2>&1
-
-    if [ "$ANSIBLE_PATCH" == "True" ]; then
-        echo "pip uninstall ansible"
-        pip uninstall -y ansible
-        echo "pip install patched ansible"
-        pip install -q /opt/ansible_* --upgrade
-    fi
 fi
-
-# Copy repo keys from openstack_services.yml for the services
-# we build ppc64le virtual environments for.  This ensures the
-# branch and commit hash that corresponds to the OSA tag is used
-# during the Power virtual environment build.
-
-VAR_FILE=${OSA_PLAYS}/defaults/repo_packages/openstack_services.yml
-PVAR_FILE=${OSA_PLAYS}/vars/pkvm/pkvm.yml
-KEYS=$(grep -e "^neutron_.*:" -e "^nova_.*:" -e "^swift_.*:" $VAR_FILE | awk '{print $1}')
-
-for k in $KEYS; do
-    # Remove any existing lines with this key
-    sed -i "/^$k.*$/d" $PVAR_FILE
-    # Put in new lines
-    grep -e "^$k" $VAR_FILE >>$PVAR_FILE
-done
-
-# If the patch was made previously to osa-proper files, do it here also.  This is a new file
-if [ -n "$GIT_MIRROR" ]; then
-    echo "Patching OSA PPC files to include GIT_MIRROR"
-    sed -i "s/git\.openstack\.org/$GIT_MIRROR/g" $PPC_FILES_WITH_GIT_URLS
-fi
-
-# Update the file /opt/openstack-ansible/playbooks/ansible.cfg
-grep -q callback_plugins ${OSA_PLAYS}/ansible.cfg ||
-    sed -i '/\[defaults\]/a callback_plugins = plugins/callbacks' ${OSA_PLAYS}/ansible.cfg
 
 # Translate cluster-genesis inventory into OpenStack parameters
 if real_genesis_inventory_present; then

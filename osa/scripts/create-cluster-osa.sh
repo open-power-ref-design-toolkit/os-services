@@ -139,7 +139,7 @@ function rebuild_container {
 cd ${OSA_DIR}
 
 # Apply host security hardening with openstack-ansible-security
-# The is applied as part of setup-hosts.yml
+# This is applied as part of setup-hosts.yml
 if [[ "$DEPLOY_HARDENING" == "yes" ]]; then
     echo "Security hardening enabled"
     if grep -q '^apply_security_hardening:' /etc/openstack_deploy/user_variables.yml
@@ -156,6 +156,14 @@ else
     else
         echo "apply_security_hardening: false" >> /etc/openstack_deploy/user_variables.yml
     fi
+fi
+
+# Disable apt cache proxy until the currently existing issues are fixed
+if grep -q '^repo_pkg_cache_enabled:' /etc/openstack_deploy/user_variables.yml
+then
+    sed -i "s/^repo_pkg_cache_enabled:.*/repo_pkg_cache_enabled: false/" /etc/openstack_deploy/user_variables.yml
+else
+    echo "repo_pkg_cache_enabled: false" >> /etc/openstack_deploy/user_variables.yml
 fi
 
 # Set password in file for named secret if it is not set in file and environment variable is set

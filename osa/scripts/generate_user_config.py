@@ -31,6 +31,19 @@ SWIFT = 'swift'
 PRIVATE_COMPUTE_CLOUD = 'private-compute-cloud'
 DBAAS_REF_CLOUD = 'dbaas'
 
+ARCHITECTURE = 'architecture'
+X86_64 = 'x86_64'
+PPC64 = 'ppc64'
+PPC64LE = 'ppc64le'
+
+REPO_INFRA_HOSTS = 'repo-infra_hosts'
+OS_INFRA_HOSTS = 'os-infra_hosts'
+SHARED_INFRA_HOSTS = 'shared-infra_hosts'
+IDENTITY_HOSTS = 'identity_hosts'
+COMPUTE_HOSTS = 'compute_hosts'
+SWIFT_PROXY_HOSTS = 'swift-proxy_hosts'
+SWIFT_HOSTS = 'swift_hosts'
+
 
 class OSAFileGenerator(object):
     """Class for generating various OSA configuration files."""
@@ -88,13 +101,17 @@ class OSAFileGenerator(object):
 
         self.user_config['cidr_networks'] = cidr
 
-    def _configure_infra_hosts(self):
-        """Configure the infra hosts."""
+    def _get_controllers(self):
         nodes = self.gen_dict.get('nodes', None)
         if not nodes:
-            return
+            return None
 
-        controllers = nodes.get('controllers', None)
+        return nodes.get('controllers', None)
+
+    def _configure_infra_hosts(self):
+        """Configure the infra hosts."""
+
+        controllers = self._get_controllers()
         if not controllers:
             return
 
@@ -107,10 +124,10 @@ class OSAFileGenerator(object):
                     'ip': controller.get('openstack-mgmt-addr', 'N/A')
                 }
         # Set all the common services across all the controllers
-        self.user_config['shared-infra_hosts'] = hosts
-        self.user_config['os-infra_hosts'] = copy.deepcopy(hosts)
-        self.user_config['repo-infra_hosts'] = copy.deepcopy(hosts)
-        self.user_config['identity_hosts'] = copy.deepcopy(hosts)
+        self.user_config[SHARED_INFRA_HOSTS] = hosts
+        self.user_config[OS_INFRA_HOSTS] = copy.deepcopy(hosts)
+        self.user_config[REPO_INFRA_HOSTS] = copy.deepcopy(hosts)
+        self.user_config[IDENTITY_HOSTS] = copy.deepcopy(hosts)
 
         if PRIVATE_COMPUTE_CLOUD in self.get_ref_arch():
             self.user_config['storage-infra_hosts'] = copy.deepcopy(hosts)
@@ -272,29 +289,33 @@ class OSAFileGenerator(object):
 
         self.user_config['global_overrides']['provider_networks'] = networks
 
-    def _configure_compute_hosts(self):
-        """Configure the compute hosts."""
+    def _get_compute_hosts(self):
         if PRIVATE_COMPUTE_CLOUD not in self.get_ref_arch():
-            return
+            return None
 
         nodes = self.gen_dict.get('nodes', None)
         if not nodes:
-            return
+            return None
 
-        hosts = nodes.get('compute', None)
+        return nodes.get('compute', None)
+
+    def _configure_compute_hosts(self):
+        """Configure the compute hosts."""
+
+        hosts = self._get_compute_hosts()
         if not hosts:
             return
 
         # Compute Hosts
         compute_hosts = {}
-        for controller in hosts:
-            hostname = controller.get('hostname', None)
+        for compute in hosts:
+            hostname = compute.get('hostname', None)
             if hostname:
                 compute_hosts[hostname] = {
-                    'ip': controller.get('openstack-mgmt-addr', 'N/A')
+                    'ip': compute.get('openstack-mgmt-addr', 'N/A')
                 }
 
-        self.user_config['compute_hosts'] = compute_hosts
+        self.user_config[COMPUTE_HOSTS] = compute_hosts
 
     def _configure_storage_hosts(self):
         """Configure the storage hosts."""
@@ -411,13 +432,12 @@ class OSAFileGenerator(object):
 
         return
 
-    def _configure_swift_proxy_hosts(self):
-        """Configure list of swift proxy hosts."""
-
-        proxy_hosts = {}
+    def _get_swift_proxy_hosts(self):
         nodes = self.gen_dict.get('nodes', None)
         if not nodes:
-            return
+            return None
+
+        swift_proxy_hosts = []
 
         ref_arch_list = self.get_ref_arch()
 
@@ -427,18 +447,27 @@ class OSAFileGenerator(object):
                           else 'swift-proxy')
 
             swift_proxy_hosts = nodes.get(proxy_list, None)
-            if not swift_proxy_hosts:
-                return
 
-            # Swift Proxy Hosts.
-            for proxy in swift_proxy_hosts:
-                hostname = proxy.get('hostname', None)
-                if hostname:
-                    proxy_hosts[hostname] = {
-                        'ip': proxy.get('openstack-mgmt-addr', 'N/A')
-                    }
+        return swift_proxy_hosts
 
-        self.user_config['swift-proxy_hosts'] = proxy_hosts
+    def _configure_swift_proxy_hosts(self):
+        """Configure list of swift proxy hosts."""
+
+        swift_proxy_hosts = self._get_swift_proxy_hosts()
+        if swift_proxy_hosts is None:
+            return
+
+        proxy_hosts = {}
+
+        # Swift Proxy Hosts.
+        for proxy in swift_proxy_hosts:
+            hostname = proxy.get('hostname', None)
+            if hostname:
+                proxy_hosts[hostname] = {
+                    'ip': proxy.get('openstack-mgmt-addr', 'N/A')
+                }
+
+        self.user_config[SWIFT_PROXY_HOSTS] = proxy_hosts
         return
 
     def _configure_swift_template(self, host_type, template_vars):
@@ -526,6 +555,13 @@ class OSAFileGenerator(object):
 
         return
 
+    def _get_swift_hosts(self, host_type):
+        nodes = self.gen_dict.get('nodes', None)
+        if not nodes:
+            return None
+
+        return nodes.get(host_type, None)
+
     def _configure_swift_hosts(self):
         """Configure list of swift_hosts.
 
@@ -589,7 +625,7 @@ class OSAFileGenerator(object):
         # case where no swift_metadata or swift_object entries exist
         # in the inventory.
         if swift_hosts:
-            self.user_config['swift_hosts'] = swift_hosts
+            self.user_config[SWIFT_HOSTS] = swift_hosts
 
         return
 
@@ -609,6 +645,62 @@ class OSAFileGenerator(object):
     def get_ref_arch(self):
         return self.gen_dict.get('reference-architecture', [])
 
+    def _do_configure_repo_hosts(self, hosts, hosts_type,
+                                 repo_hosts_archs_set):
+        """Configure repo hosts of any other architecture if the
+           hosts of given host type are of different architecture
+           compared to the controller nodes.
+        """
+        if not hosts:
+            return
+
+        for host in hosts:
+            hostname = host.get('hostname', None)
+            if hostname:
+                arch = host.get(ARCHITECTURE, X86_64)
+                if arch.lower().startswith(PPC64):
+                    arch = PPC64LE
+                if arch not in repo_hosts_archs_set:
+                    self.user_config[REPO_INFRA_HOSTS][hostname] = \
+                        copy.deepcopy(self.user_config[hosts_type][hostname])
+                    repo_hosts_archs_set.add(arch)
+
+    def _get_repo_hosts_archs_set(self):
+        controllers = self._get_controllers()
+        if not controllers:
+            return None
+        repo_hosts_archs = set()
+        for controller in controllers:
+            hostname = controller.get('hostname', None)
+            if hostname:
+                arch = controller.get(ARCHITECTURE, X86_64)
+                if arch.lower().startswith(PPC64):
+                    arch = PPC64LE
+                repo_hosts_archs.add(arch)
+        return repo_hosts_archs
+
+    def _configure_extra_repo_hosts(self):
+        """Configure repo hosts of any other architecture if the
+           hosts (compute nodes, storage nodes, etc) are of different
+           architecture compared to the controller nodes.
+        """
+
+        # repo_hosts_archs is the set of architectures for which
+        # repo container will be created and repo will be built.
+        repo_hosts_archs = self._get_repo_hosts_archs_set()
+        if not repo_hosts_archs:
+            return
+
+        hosts = self._get_compute_hosts()
+        self._do_configure_repo_hosts(hosts, COMPUTE_HOSTS, repo_hosts_archs)
+        hosts = self._get_swift_proxy_hosts()
+        self._do_configure_repo_hosts(hosts, SWIFT_PROXY_HOSTS,
+                                      repo_hosts_archs)
+        hosts = self._get_swift_hosts('swift-metadata')
+        self._do_configure_repo_hosts(hosts, SWIFT_HOSTS, repo_hosts_archs)
+        hosts = self._get_swift_hosts('swift-object')
+        self._do_configure_repo_hosts(hosts, SWIFT_HOSTS, repo_hosts_archs)
+
     def create_user_config(self):
         """Process the inventory input and generate the OSA user config."""
         self._load_yml()
@@ -618,6 +710,7 @@ class OSAFileGenerator(object):
         self._configure_compute_hosts()
         self._configure_storage_hosts()
         self._configure_swift()
+        self._configure_extra_repo_hosts()
 
         self._dump_yml(self.user_config, OSA_USER_CFG_FILE)
 

@@ -28,86 +28,96 @@ files:
 projects:
   - project:
     git: https://git.openstack.org/openstack/openstack-ansible-galera_client
-    branch: 13.3.5
+    branch: 14.0.3
     target_location: /etc/ansible/roles/galera_client
     src_location: galera_client
   - project:
     git: https://git.openstack.org/openstack/openstack-ansible-galera_server
-    branch: 13.3.5
+    branch: 14.0.3
     target_location: /etc/ansible/roles/galera_server
     src_location: galera_server
   - project:
     git: https://git.openstack.org/openstack/openstack-ansible-lxc_hosts
-    branch: 13.3.5
+    branch: 14.0.3
     target_location: /etc/ansible/roles/lxc_hosts
     src_location: lxc_hosts
   - project:
     git: https://git.openstack.org/openstack/openstack-ansible-lxc_container_create
-    branch: 13.3.5
+    branch: 14.0.3
     target_location: /etc/ansible/roles/lxc_container_create
     src_location: lxc_container_create
   - project:
     git: https://git.openstack.org/openstack/openstack-ansible
-    branch: 13.3.5
+    branch: 14.0.3
     target_location: /opt/openstack-ansible
     src_location: openstack-ansible
   - project:
     git: https://git.openstack.org/openstack/openstack-ansible-os_cinder
-    branch: 13.3.5
+    branch: 14.0.3
     target_location: /etc/ansible/roles/os_cinder
     src_location: os_cinder
   - project:
     git: https://git.openstack.org/openstack/openstack-ansible-os_glance
-    branch: 13.3.5
+    branch: 14.0.3
     target_location: /etc/ansible/roles/os_glance
     src_location: os_glance
   - project:
     git: https://git.openstack.org/openstack/openstack-ansible-os_horizon
-    branch: 13.3.5
+    branch: 14.0.3
     target_location: /etc/ansible/roles/os_horizon
     src_location: os_horizon
   - project:
     git: https://git.openstack.org/openstack/openstack-ansible-os_neutron
-    branch: 13.3.5
+    branch: 14.0.3
     target_location: /etc/ansible/roles/os_neutron
     src_location: os_neutron
   - project:
     git: https://git.openstack.org/openstack/openstack-ansible-os_nova
-    branch: 13.3.5
+    branch: 14.0.3
     target_location: /etc/ansible/roles/os_nova
     src_location: os_nova
   - project:
     git: https://git.openstack.org/openstack/openstack-ansible-plugins
-    branch: 13.3.5
+    branch: 14.0.3
     target_location: /etc/ansible/plugins
     src_location: plugins
   - project:
     git: https://git.openstack.org/openstack/openstack-ansible-repo_build
-    branch: 13.3.5
+    branch: 14.0.3
     target_location: /etc/ansible/roles/repo_build
     src_location: repo_build
   - project:
     git: https://git.openstack.org/openstack/openstack-ansible-rsyslog_client
-    branch: 13.3.5
+    branch: 14.0.3
     target_location: /etc/ansible/roles/rsyslog_client
     src_location: rsyslog_client
   - project:
     git: https://git.openstack.org/openstack/openstack-ansible-os_swift
-    branch: 13.3.5
+    branch: 14.0.3
     target_location: /etc/ansible/roles/os_swift
     src_location: os_swift
   - project:
     git: https://git.openstack.org/openstack/openstack-ansible-os_keystone
-    branch: 13.3.5
+    branch: 14.0.3
     target_location: /etc/ansible/roles/os_keystone
     src_location: os_keystone
   - project:
     git: https://git.openstack.org/openstack/openstack-ansible-openstack_hosts
-    branch: 13.3.5
+    branch: 14.0.3
     target_location: /etc/ansible/roles/openstack_hosts
     src_location: openstack_hosts
   - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-haproxy_server
+    branch: 14.0.3
+    target_location: /etc/ansible/roles/haproxy_server
+    src_location: haproxy_server
+  - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-ceph_client
+    branch: 14.0.3
+    target_location: /etc/ansible/roles/ceph_client
+    src_location: ceph_client
+  - project:
     git: https://github.com/ansible/ansible
-    branch: v1.9.4-1
-    target_location: /opt/ansible_v1.9.4-1
+    branch: v2.1.1.0-1
+    target_location: /opt/ansible-runtime
     src_location: ansible
