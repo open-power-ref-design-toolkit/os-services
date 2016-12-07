@@ -86,7 +86,6 @@ if [ ! -e scripts/bootstrap-osa.sh ]; then
     exit 1
 fi
 PCLD_DIR=`pwd`
-GENESIS_DIR="${PCLD_DIR}/../cluster-genesis"
 
 # Checkout the openstack-ansible repository
 INSTALL=False
