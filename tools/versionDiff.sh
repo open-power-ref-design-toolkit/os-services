@@ -56,7 +56,7 @@ dir1=$1
 # from git repositories
 dir2=$2
 
-EXEC_DIR=`dirname $0`
+EXEC_DIR=`dirname $(readlink -f $0)`
 
 # Output dir where the diff files are saved
 patch_dir=$EXEC_DIR/../.versionDiffOutput
@@ -134,7 +134,7 @@ pushd $EXEC_DIR/../changes > /dev/null 2>&1
 num_applicable=0
 total_patches=$modified_files_cnt
 for file in $files; do
-    patch_file=$patch_dir/${file//\//_}.diff
+    patch_file=$patch_dir/${file//\//-}.diff
     if [ -f $patch_file ]; then
         echo "patch file " $patch_file >> $log_file 2>&1
         patch --dry-run -N -p1 < $patch_file  >> $log_file 2>&1
@@ -165,7 +165,7 @@ read -r apply_or_not
 
 if [ $apply_or_not == "y" ]; then
     for file in $files; do
-        patch_file=$patch_dir/${file//\//_}.diff
+        patch_file=$patch_dir/${file//\//-}.diff
         if [ -f $patch_file ]; then
             echo "Patch file " $patch_file >> $log_file 2>&1
             # Patches are applied to os-services/changes/ directory
