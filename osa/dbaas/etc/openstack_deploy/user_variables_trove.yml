@@ -15,4 +15,8 @@
 
 trove_infra_subnet_alloc_start: "172.29.236.100"
 trove_infra_subnet_alloc_end: "172.29.236.110"
+trove_rabbitmq_userid: trove
+trove_rabbitmq_vhost: /trove
+trove_galera_database: trove
+trove_galera_user: trove
 

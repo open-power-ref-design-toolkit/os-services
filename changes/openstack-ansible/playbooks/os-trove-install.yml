@@ -145,16 +145,12 @@
       trove_openstack_db_connection_string: "mysql+pymysql://{{ trove_galera_user }}:{{ trove_galera_password }}@{{ trove_galera_address }}/{{ trove_galera_database }}"
       trove_repo: https://git.openstack.org/openstack/trove.git
       trove_repo_branch: stable/mitaka
+      trove_rabbitmq_port: "{{ rabbitmq_port }}"
 
   vars:
       is_metal: "{{ properties.is_metal|default(false) }}"
       trove_galera_address: "{{ internal_lb_vip_address }}"
-      trove_galera_database: trove
-      trove_galera_user: trove
-      trove_rabbitmq_userid: trove
-      trove_rabbitmq_vhost: /trove
       trove_rabbitmq_servers: "{{ rabbitmq_servers }}"
-      trove_rabbitmq_port: "{{ rabbitmq_port }}"
       trove_rabbitmq_use_ssl: "{{ rabbitmq_use_ssl }}"
       internal_db_pkgs:
           - python-mysqldb
