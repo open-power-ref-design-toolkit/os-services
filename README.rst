@@ -85,6 +85,11 @@ In another terminal you can examine the output or grep for errors::
 .. warning::  It is not recommended to use the 'nohup' command.  It is known to
   cause errors while deploying.
 
+Bug Reporting
+-------------
+The current list of bugs can be found on launchpad:
+https://bugs.launchpad.net/open-power-ref-design
+
 Related projects
 ----------------
 
