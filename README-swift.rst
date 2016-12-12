@@ -1,6 +1,6 @@
-=============================
+================================
 Object Storage (OpenStack Swift)
-=============================
+================================
 
 The OpenStack Swift component is installed as part of an OpenStack cluster when
 the cluster-genesis project is appropriately configured.  The following
