@@ -7,7 +7,7 @@ nodes and the compute nodes are ppc64le. All nodes are pre-conditioned by the
 cluster-genesis project which orchestrates the overall install and configuration
 process for the cluster.
 
-To deploy openstack on a cluster of nodes pre-configured by cluster-genesis::
+To deploy OpenStack on a cluster of nodes pre-configured by cluster-genesis::
 
     > export DEPLOY_CEPH=yes
     > export DEPLOY_OPSMGR=yes
@@ -33,15 +33,15 @@ need to be configured. Consult your OpenStack-Ansible documentation for a
 complete list of parameters that need to be set::
 
     > Configure SSL Certificates
-    > Reserve a set of IP Addresses that Openstack should not allocate
+    > Reserve a set of IP Addresses that OpenStack should not allocate
     > Allocate IP Address Range for expansion of controller, storage, and compute nodes
-    > Allocate a set of IP Addresses for Openstack Trove to use
+    > Allocate a set of IP Addresses for OpenStack Trove to use
     > Setting a unique VRRP ID for keepalived for network high availability
 
 Be sure to consult with your data center administrator for site specific
 policies regarding the use of SSL Certificates and floating external IP
 addresses as well as the selection of a unique VRRP ID within the data
-center. There is a lot of documentation related to Openstack networking
+center. There is a lot of documentation related to OpenStack networking
 (Neutron) that is available on the internet. The following topics
 may be searched online to find more information::
 
@@ -67,7 +67,7 @@ The following variable may be used to specify the location of an alternate git m
 
     > export GIT_MIRROR=github.com
 
-The following variable may be used to install Openstack Tempest for testing purposes::
+The following variable may be used to install OpenStack Tempest for testing purposes::
 
     > export DEPLOY_TEMPEST=yes
 
@@ -99,13 +99,10 @@ Related projects
     > ceph-services
     > opsmgr
 
-For information about Database as a Service (Openstack Trove) see::
+For information about Database as a Service (OpenStack Trove) see:
 
-    > README-dbaas.rst
+    `Database as a Service <README-dbaas.rst>`_
 
-For information about Object Storage (Openstack Swift) see::
+For information about Object Storage (OpenStack Swift) see:
 
-    > README-swift.rst
-
-For additional information, see::
-    >
+    `Object Storage <README-swift.rst>`_
