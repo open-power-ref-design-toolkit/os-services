@@ -27,6 +27,9 @@ CEPH_TAG=${CEPH_TAG:-$__ceph_tag}
 OPSMGR_TAG=${OPSMGR_TAG:-$__opsmgr_tag}
 export GENESIS_TAG=${GENESIS_TAG:-$__genesis_tag}
 
+# User can override the location of the cluster-genesis project.
+export GENESIS_DIR=${GENESIS_DIR:-"/opt/cluster-genesis"}
+
 # Note help text assumes the end user is invoking this script as Genesis is fully automated
 # Default value (yes) is reversed for Genesis
 
@@ -122,7 +125,8 @@ if [[ "$DEPLOY_CEPH" == "yes" ]]; then
     rc=$?
     if [ $rc != 0 ]; then
         echo "Failed scripts/bootstrap-ceph.sh, rc=$rc"
-        echo "You may want to continue manually.  cd ceph; ./scripts/bootstrap-ceph.sh"
+        echo "You may want to continue manually."
+        echo "cd ceph-services; ./scripts/bootstrap-ceph.sh"
         exit 4
     fi
     popd >/dev/null 2>&1
