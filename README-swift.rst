@@ -1,8 +1,8 @@
 =============================
-Object Storage (Openstack Swift)
+Object Storage (OpenStack Swift)
 =============================
 
-The Openstack Swift component is installed as part of an OpenStack cluster when
+The OpenStack Swift component is installed as part of an OpenStack cluster when
 the cluster-genesis project is appropriately configured.  The following
 instructions describe the general process::
 
@@ -29,7 +29,7 @@ are described below.  When the cluster-genesis project is activated,
 it will automatically invoke the bootstrap software that is provided
 by this project.
 
-General information about the Openstack Swift component can be found at:
+General information about the OpenStack Swift component can be found at:
 https://wiki.openstack.org/wiki/Swift
 
 Installation and Customization
@@ -56,21 +56,23 @@ overlap.  The lists must either be identical or mutually exclusive.
 Here is an example where all rings use the devices on path
 pci-0004:03 as well as /dev/sdz.
 
-node-templates:
-    swift-object:
-        domain-settings:
-            account-ring-devices:
-                - /dev/disk/by-path/pci-0004:03
-                - /dev/sdz
-            container-ring-devices:
-                - /dev/disk/by-path/pci-0004:03
-                - /dev/sdz
-            object-ring-devices:
-                - /dev/disk/by-path/pci-0004:03
-                - /dev/sdz
+ .. code-block:: yaml
+
+    node-templates:
+        swift-object:
+            domain-settings:
+                account-ring-devices:
+                    - /dev/disk/by-path/pci-0004:03
+                    - /dev/sdz
+                container-ring-devices:
+                    - /dev/disk/by-path/pci-0004:03
+                    - /dev/sdz
+                object-ring-devices:
+                    - /dev/disk/by-path/pci-0004:03
+                    - /dev/sdz
 
 
-The Openstack cluster deployment is done in two parts. An initial bootstrap
+The OpenStack cluster deployment is done in two parts. An initial bootstrap
 script sets up the environment that contains user-configurable parameters that
 can be customized, such as storage policies and passwords. See README.rst
 for more details.
@@ -78,17 +80,21 @@ for more details.
 After the bootstrap phase, the following parameters can be customized
 prior to the create cluster phase:
 
+
 * ``/etc/openstack_deploy/openstack_user_config.yml`` (optional)
 
-  swift:
-    mount_point: /srv/node
-    part_power: 8
-    storage_network: br-storage
-    storage_policies:
-    - policy:
-        default: 'True'
-        index: 0
-        name: default
+     .. code-block:: yaml
+
+          swift:
+            mount_point: /srv/node
+            part_power: 8
+            storage_network: br-storage
+            storage_policies:
+            - policy:
+                default: 'True'
+                index: 0
+                name: default
+
 
   The default settings (which are shown above) include a 3x replication
   policy for the object ring.  The account and container rings do not
@@ -100,69 +106,77 @@ prior to the create cluster phase:
   For example, the default storage policy could be changed to use
   erasure coding:
 
-    storage_policies:
-    - policy:
-        default: 'True'
-        index: 0
-        name: default
-        policy_type: erasure_coding
-        ec_type: jerasure_rs_vand
-        ec_num_data_fragments: 10
-        ec_num_parity_fragments: 4
-        ec_object_segment_size: 1048576
+     .. code-block:: yaml
+
+        storage_policies:
+        - policy:
+            default: 'True'
+            index: 0
+            name: default
+            policy_type: erasure_coding
+            ec_type: jerasure_rs_vand
+            ec_num_data_fragments: 10
+            ec_num_parity_fragments: 4
+            ec_object_segment_size: 1048576
+
 
   Here is an example using multiple storage policies, where the default
   storage policy named 'default' uses 3x replication and an additional storage
   policy named 'ec10-4' uses erasure coding:
 
-    storage_policies:
-    - policy:
-        default: 'True'
-        index: 0
-        name: default
-    - policy:
-        index: 1
-        name: ec10-4
-        policy_type: erasure_coding
-        ec_type: jerasure_rs_vand
-        ec_num_data_fragments: 10
-        ec_num_parity_fragments: 4
-        ec_object_segment_size: 1048576
+     .. code-block:: yaml
+
+
+        storage_policies:
+        - policy:
+            default: 'True'
+            index: 0
+            name: default
+        - policy:
+            index: 1
+            name: ec10-4
+            policy_type: erasure_coding
+            ec_type: jerasure_rs_vand
+            ec_num_data_fragments: 10
+            ec_num_parity_fragments: 4
+            ec_object_segment_size: 1048576
 
   The swift_hosts section of openstack_user_config.yml shows
   which rings reside on a particular set of drives within each
   host.  This is initially based on the settings provided by
   config.yml prior to the bootstrap phase.  For example:
 
-  swift_hosts:
-    swift-object-1:
-      container_vars:
-        swift_vars:
-          drives:
-          - groups:
-             - default
-            name: disk1
-          - groups:
-            - default
-            name: disk2
+     .. code-block:: yaml
 
-...
 
-          - groups:
-            - default
-            name: disk7
-          - groups:
-            - account
-            - container
-            name: meta1
-          - groups:
-            - account
-            - container
-            name: meta2
-          - groups:
-            - account
-            - container
-            name: meta6
+      swift_hosts:
+        swift-object-1:
+          container_vars:
+            swift_vars:
+              drives:
+              - groups:
+                 - default
+                name: disk1
+              - groups:
+                - default
+                name: disk2
+              ...
+
+              - groups:
+                - default
+                name: disk7
+              - groups:
+                - account
+                - container
+                name: meta1
+              - groups:
+                - account
+                - container
+                name: meta2
+              - groups:
+                - account
+                - container
+                name: meta6
 
 * ``/etc/openstack_deploy/user_secrets.yml`` (optional)
 
@@ -201,22 +215,24 @@ individual node sets domain-settings to override the template.
 Here is an example where node 192.168.16.112 specifies different
 devices to override the node-templates section shown above.
 
-nodes:
-    swift-object:
-    -   ipv4-pxe: 192.168.16.112
-        domain-settings:
-            account-ring-devices:
-                - /dev/sdx
-                - /dev/sdy
-                - /dev/sdz
-            container-ring-devices:
-                - /dev/sdx
-                - /dev/sdy
-                - /dev/sdz
-            object-ring-devices:
-                - /dev/sdx
-                - /dev/sdy
-                - /dev/sdz
+    .. code-block:: yaml
+
+        nodes:
+            swift-object:
+            -   ipv4-pxe: 192.168.16.112
+                domain-settings:
+                    account-ring-devices:
+                        - /dev/sdx
+                        - /dev/sdy
+                        - /dev/sdz
+                    container-ring-devices:
+                        - /dev/sdx
+                        - /dev/sdy
+                        - /dev/sdz
+                    object-ring-devices:
+                        - /dev/sdx
+                        - /dev/sdy
+                        - /dev/sdz
 
 Verifying an install
 --------------------
@@ -231,7 +247,7 @@ After successful installation, verify that Swift services are running correctly.
 
   $ source /root/openrc
 
-* Run some sample Openstack Swift commands and ensure they run
+* Run some sample OpenStack Swift commands and ensure they run
   without any errors::
 
   $ swift list
@@ -242,25 +258,25 @@ After successful installation, verify that Swift services are running correctly.
   $ swift upload <containerName> <filename>
   $ swift download <containerName> <filename>
 
-* Find the public endpoint URL for the Openstack Keystone
+* Find the public endpoint URL for the OpenStack Keystone
   identity service, so that it can be used to access Swift
   from remote hosts::
 
   $ openstack catalog list
 
-Using Openstack Swift
+Using OpenStack Swift
 ---------------------
-Further information on using the Openstack Swift client can be found at:
+Further information on using the OpenStack Swift client can be found at:
 http://docs.openstack.org/user-guide/managing-openstack-object-storage-with-swift-cli.html
 
-Administration for Openstack Swift
+Administration for OpenStack Swift
 ----------------------------------
-The Openstack Ansible playbooks can be used to perform administrative
+The OpenStack Ansible playbooks can be used to perform administrative
 tasks in the cluster.  The playbooks are found on the deployer node in::
 
   /opt/openstack-ansible/playbooks
 
-The Swift role for Openstack Ansible is found in::
+The Swift role for OpenStack Ansible is found in::
 
   /etc/ansible/roles/os_swift
 
