@@ -15,8 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- include: configure_swift.yml
-
 - name: write container is_metal overrides
   template:
     src: container_is_metal_override.j2

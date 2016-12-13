@@ -123,21 +123,27 @@ class OSAFileGenerator(object):
                 hosts[hostname] = {
                     'ip': controller.get('openstack-mgmt-addr', 'N/A')
                 }
-        # Set all the common services across all the controllers
+
+        # Set all the common services across all the controllers which
+        # provides the minimal control plane.
         self.user_config[SHARED_INFRA_HOSTS] = hosts
-        self.user_config[OS_INFRA_HOSTS] = copy.deepcopy(hosts)
         self.user_config[REPO_INFRA_HOSTS] = copy.deepcopy(hosts)
         self.user_config[IDENTITY_HOSTS] = copy.deepcopy(hosts)
+        self.user_config['dashboard_hosts'] = copy.deepcopy(hosts)
+        self.user_config['haproxy_hosts'] = copy.deepcopy(hosts)
+        self.user_config['log_hosts'] = copy.deepcopy(hosts)
 
         if PRIVATE_COMPUTE_CLOUD in self.get_ref_arch():
+            # Private compute cloud adds additional services to the
+            # control plane.
             self.user_config['storage-infra_hosts'] = copy.deepcopy(hosts)
             self.user_config['network_hosts'] = copy.deepcopy(hosts)
+            self.user_config['image_hosts'] = copy.deepcopy(hosts)
+            self.user_config['compute-infra_hosts'] = copy.deepcopy(hosts)
+            self.user_config['orchestration_hosts'] = copy.deepcopy(hosts)
 
         if DBAAS_REF_CLOUD in self.get_ref_arch():
             self.user_config['trove-infra_hosts'] = copy.deepcopy(hosts)
-
-        self.user_config['haproxy_hosts'] = copy.deepcopy(hosts)
-        self.user_config['log_hosts'] = copy.deepcopy(hosts)
 
         return
 
