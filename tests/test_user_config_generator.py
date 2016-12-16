@@ -29,17 +29,27 @@ sys.path.append(path.join(TOP_DIR, SCRIPT_DIR))
 
 import generate_user_config as guc
 
-# Shared sequence of host service keys
-COMMON_HOST_SERVICES = (
+# Common services for the minimum control plane
+MIN_CONTROLLER_SERVICES = {
     'shared-infra_hosts',
-    'os-infra_hosts',
     'repo-infra_hosts',
     'identity_hosts',
-    'storage-infra_hosts',
-    'network_hosts',
+    'dashboard_hosts',
     'haproxy_hosts',
     'log_hosts'
-)
+}
+
+# Services added to the control plane for compute clouds
+COMPUTE_CONTROLLER_ADDITIONS = {
+    'storage-infra_hosts',
+    'network_hosts',
+    'image_hosts',
+    'compute-infra_hosts',
+    'orchestration_hosts'
+}
+
+COMPUTE_CONTROLLER_SERVICES = (MIN_CONTROLLER_SERVICES |
+                               COMPUTE_CONTROLLER_ADDITIONS)
 
 SWIFT_NORMAL_INPUT_DICT = {
     'reference-architecture': ['private-compute-cloud', 'swift'],
@@ -461,11 +471,13 @@ class TestConfigureInfraHosts(unittest.TestCase):
             }
         }
 
-        for svc in COMMON_HOST_SERVICES:
+        for svc in COMPUTE_CONTROLLER_SERVICES:
             self.assertIn(svc, result)
             self.assertEqual(expected, result[svc])
 
-    def test_ref_arch_not_found(self):
+    def test_reference_architectures(self):
+        # Test a reference architecture that will produce the minimal
+        # control plane set of services
         self.ofg.gen_dict = {
             'nodes': {
                 'controllers': [
@@ -483,9 +495,29 @@ class TestConfigureInfraHosts(unittest.TestCase):
         }
         self.ofg._configure_infra_hosts()
         result = self.ofg.user_config
+        for svc in MIN_CONTROLLER_SERVICES:
+            self.assertIn(svc, result)
+        for svc in COMPUTE_CONTROLLER_ADDITIONS:
+            self.assertNotIn(svc, result)
+        self.assertNotIn('trove-infra_hosts', result)
 
-        self.assertNotIn('storage-infra_hosts', result)
-        self.assertNotIn('network_hosts', result)
+        # Now test the private compute cloud reference architecture
+        self.ofg.gen_dict['reference-architecture'] = ['private-compute-cloud']
+        self.ofg._configure_infra_hosts()
+        result = self.ofg.user_config
+        for svc in COMPUTE_CONTROLLER_SERVICES:
+            self.assertIn(svc, result)
+        self.assertNotIn('trove-infra_hosts', result)
+
+        # Test the DBaaS reference architecture
+        # Now test the private compute cloud reference architecture
+        ra = ['private-compute-cloud', 'dbaas']
+        self.ofg.gen_dict['reference-architecture'] = ra
+        self.ofg._configure_infra_hosts()
+        result = self.ofg.user_config
+        for svc in COMPUTE_CONTROLLER_SERVICES:
+            self.assertIn(svc, result)
+        self.assertIn('trove-infra_hosts', result)
 
     def test_nodes_not_found(self):
         self.ofg.gen_dict = {
@@ -553,7 +585,7 @@ class TestConfigureInfraHosts(unittest.TestCase):
                 'ip': '55.66.77.88',
             }
         }
-        for svc in COMMON_HOST_SERVICES:
+        for svc in COMPUTE_CONTROLLER_SERVICES:
             self.assertIn(svc, result)
             self.assertEqual(expected, result[svc])
 
@@ -586,7 +618,7 @@ class TestConfigureInfraHosts(unittest.TestCase):
             }
         }
 
-        for svc in COMMON_HOST_SERVICES:
+        for svc in COMPUTE_CONTROLLER_SERVICES:
             self.assertIn(svc, result)
             self.assertEqual(expected, result[svc])
 
