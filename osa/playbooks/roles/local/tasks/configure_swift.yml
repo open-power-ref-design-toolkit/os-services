@@ -15,12 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- name: Configure Swift proxy is_metal value
-  replace:
-    dest: '/etc/openstack_deploy/env.d/swift.yml'
-    regexp: 'SWIFT_PROXY_IS_METAL_VALUE'
-    replace: "{{ 'swift-minimum-hardware' not in reference_architecture }}"
-
 - name: HA Proxy config for Swift standalone with separate internal and external IPs
   copy:
     src: swift_haproxy_diff_floaters.yml

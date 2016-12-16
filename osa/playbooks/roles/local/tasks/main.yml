@@ -16,3 +16,9 @@
 # limitations under the License.
 
 - include: configure_swift.yml
+
+- name: write container is_metal overrides
+  template:
+    src: container_is_metal_override.j2
+    dest: "/etc/openstack_deploy/env.d/{{ item.key }}-container.yml"
+  with_dict: "{{ container_is_metal_overrides }}"
