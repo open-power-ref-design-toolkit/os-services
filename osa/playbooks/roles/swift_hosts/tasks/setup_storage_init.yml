@@ -41,53 +41,53 @@
     slurp:
       src: /tmp/output.account.diskprep.sdname
     register: accountDiskPrep
-    when: account_devices is defined
+    when: account_devices|length > 0
 
   - name: Fetch accountDiskPrep.
     fetch:
       src: /tmp/output.account.diskprep
       dest: "{{ execute_dir }}/output.account.diskprep.{{ inventory_hostname }}"
       flat: yes
-    when: account_devices is defined
+    when: account_devices|length > 0
 
   - name: Print accountDiskPrep sdnames.
     debug:
       msg: "{{ accountDiskPrep.content | b64decode }}"
-    when: account_devices is defined
+    when: account_devices|length > 0
 
   - name: Read containerDiskPrep sdnames.
     slurp:
       src: /tmp/output.container.diskprep.sdname
     register: containerDiskPrep
-    when: container_devices is defined
+    when: container_devices|length > 0
 
   - name: Fetch containerDiskPrep.
     fetch:
       src: /tmp/output.container.diskprep
       dest: "{{ execute_dir }}/output.container.diskprep.{{ inventory_hostname }}"
       flat: yes
-    when: container_devices is defined
+    when: container_devices|length > 0
 
   - name: Print containerDiskPrep sdnames.
     debug:
       msg: "{{ containerDiskPrep.content | b64decode }}"
-    when: container_devices is defined
+    when: container_devices|length > 0
 
   - name: Read objectDiskPrep sdnames.
     slurp:
       src: /tmp/output.object.diskprep.sdname
     register: objectDiskPrep
-    when: object_devices is defined
+    when: object_devices|length > 0
 
   - name: Fetch objectDiskPrep.
     fetch:
       src: /tmp/output.object.diskprep
       dest: "{{ execute_dir }}/output.object.diskprep.{{ inventory_hostname }}"
       flat: yes
-    when: object_devices is defined
+    when: object_devices|length > 0
 
   - name: Print objectDiskPrep sdnames.
     debug:
       msg: "{{ objectDiskPrep.content | b64decode }}"
-    when: object_devices is defined
+    when: object_devices|length > 0
 
