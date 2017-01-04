@@ -1,0 +1,12 @@
+diff -Naur a/etc/ansible/roles/os_glance/defaults/main.yml b/etc/ansible/roles/os_glance/defaults/main.yml
+--- a/etc/ansible/roles/os_glance/defaults/main.yml	2017-01-04 10:09:22.982212578 -0600
++++ b/etc/ansible/roles/os_glance/defaults/main.yml	2017-01-04 10:13:55.707081675 -0600
+@@ -59,7 +59,7 @@
+   - cinder
+ glance_flavor: "{% if glance_default_store == 'rbd' %}keystone{% else %}keystone+cachemanagement{% endif %}"
+ glance_show_image_direct_url: "{{ glance_default_store == 'rbd' }}"
+-
++glance_show_multiple_locations: "{{ glance_default_store == 'rbd' }}"
+ 
+ ## API options
+ glance_enable_v1_api: True

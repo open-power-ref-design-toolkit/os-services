@@ -1,0 +1,11 @@
+diff -Naur a/etc/ansible/roles/os_glance/templates/glance-api.conf.j2 b/etc/ansible/roles/os_glance/templates/glance-api.conf.j2
+--- a/etc/ansible/roles/os_glance/templates/glance-api.conf.j2	2017-01-04 10:09:23.014228175 -0600
++++ b/etc/ansible/roles/os_glance/templates/glance-api.conf.j2	2017-01-04 10:13:55.891171362 -0600
+@@ -34,6 +34,7 @@
+ 
+ # defaults to true if RBD is used as default store
+ show_image_direct_url = {{ glance_show_image_direct_url }}
++show_multiple_locations = {{ glance_show_multiple_locations }}
+ 
+ [task]
+ task_executor = {{ glance_task_executor }}
