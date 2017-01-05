@@ -113,6 +113,7 @@
     - trove.conf
     - trove-conductor.conf
     - trove-taskmanager.conf
+    - trove-guestagent.conf
     - api-paste.ini
   tags:
    - conf-file

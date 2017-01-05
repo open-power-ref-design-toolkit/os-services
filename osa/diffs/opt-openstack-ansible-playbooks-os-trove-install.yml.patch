@@ -1,7 +1,7 @@
 diff -Naur a/opt/openstack-ansible/playbooks/os-trove-install.yml b/opt/openstack-ansible/playbooks/os-trove-install.yml
 --- a/opt/openstack-ansible/playbooks/os-trove-install.yml	1969-12-31 18:00:00.000000000 -0600
-+++ b/opt/openstack-ansible/playbooks/os-trove-install.yml	2016-11-17 19:45:21.556034970 -0600
-@@ -0,0 +1,160 @@
++++ b/opt/openstack-ansible/playbooks/os-trove-install.yml	2016-12-09 15:38:42.517308605 -0600
+@@ -0,0 +1,156 @@
 +---
 +# Copyright 2016 IBM Corp.
 +#
@@ -149,16 +149,12 @@ diff -Naur a/opt/openstack-ansible/playbooks/os-trove-install.yml b/opt/openstac
 +      trove_openstack_db_connection_string: "mysql+pymysql://{{ trove_galera_user }}:{{ trove_galera_password }}@{{ trove_galera_address }}/{{ trove_galera_database }}"
 +      trove_repo: https://git.openstack.org/openstack/trove.git
 +      trove_repo_branch: stable/mitaka
++      trove_rabbitmq_port: "{{ rabbitmq_port }}"
 +
 +  vars:
 +      is_metal: "{{ properties.is_metal|default(false) }}"
 +      trove_galera_address: "{{ internal_lb_vip_address }}"
-+      trove_galera_database: trove
-+      trove_galera_user: trove
-+      trove_rabbitmq_userid: trove
-+      trove_rabbitmq_vhost: /trove
 +      trove_rabbitmq_servers: "{{ rabbitmq_servers }}"
-+      trove_rabbitmq_port: "{{ rabbitmq_port }}"
 +      trove_rabbitmq_use_ssl: "{{ rabbitmq_use_ssl }}"
 +      internal_db_pkgs:
 +          - python-mysqldb
