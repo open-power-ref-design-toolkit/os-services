@@ -65,7 +65,8 @@ function append_disk_list
         by_pci=1
     fi
 
-    if [[ "$pci_device" == */dev/sd* ]]; then
+    if [[ "$pci_device" == */dev/sd* ]] ||
+       [[ "$pci_device" == */dev/vd* ]]; then
         by_disk_name=1
     fi
 
@@ -110,8 +111,9 @@ function adjust_disk_list
     fi
 
     # Initially those names may be sorted by pci-path but
-    # we want to sort them by sdX name.
-    cat ${prep_file} | grep "^sd" | uniq | sort >${sort_file}
+    # we want to sort them by sdX and vdX name.
+    cat ${prep_file} |  grep -E "^sd|^vd" | uniq | sort >${sort_file}
+
 }
 
 function set_disk_list_type
