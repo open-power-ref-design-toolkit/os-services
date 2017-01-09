@@ -59,13 +59,13 @@ fi
 # Install some prerequisite packages
 DISTO=`lsb_release -r | awk '{print $2}'`
 if [ $? != 0 ]; then
-    echo "Unsupported Linux distribution.  Must be Ubuntu 14.04"
+    echo "Unsupported Linux distribution.  Must be Ubuntu 16.04"
     exit 1
 fi
 
 type apt-get >/dev/null 2>&1
 if [ $? != 0 ]; then
-    echo "Unsupported Linux distribution.  Must be Ubuntu 14.04"
+    echo "Unsupported Linux distribution.  Must be Ubuntu 16.04"
     exit 1
 fi
 PCLD_DIR=`pwd`
