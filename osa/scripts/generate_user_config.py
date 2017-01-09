@@ -23,6 +23,7 @@ import yaml
 
 OSA_USER_CFG_FILE = 'openstack_user_config.yml'
 OSA_USER_VAR_HAPROXY = 'user_var_haproxy.yml'
+OSA_USER_VAR_RABBITMQ = 'user_var_rabbitmq.yml'
 OSA_USER_VAR_CEILOMETER = 'user_var_ceilometer.yml'
 OSA_USER_VAR_CEPH = 'user_var_ceph.yml'
 
@@ -743,6 +744,16 @@ class OSAFileGenerator(object):
             'nova_ceilometer_enabled': False,
         }
         self._dump_yml(settings, OSA_USER_VAR_CEILOMETER)
+
+    def generate_rabbitmq(self):
+        """Generate user variable file for rabbitmq."""
+        settings = {
+            # Disable rabbitmq management plugin by default
+            'rabbitmq_plugins': [{
+                'name': 'rabbitmq_management', 'state': 'disabled'
+            }]
+        }
+        self._dump_yml(settings, OSA_USER_VAR_RABBITMQ)
 
     def generate_ceph(self):
         """Generate user variable file for ceph."""
