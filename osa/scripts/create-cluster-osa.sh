@@ -16,6 +16,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 OSA_DIR="/opt/openstack-ansible"
+USER_VARIABLES_FILE="/etc/openstack_deploy/user_variables.yml"
 
 if [ "$1" == "--help" ]; then
     echo "Usage: create-cluster-osa.sh"
@@ -136,35 +137,38 @@ function rebuild_container {
     return 0
 }
 
+function configure_variable {
+    key=$1
+    value=$2
+    var_file=$3
+
+    pattern=`echo '^'$key`
+    if grep -q $pattern $var_file
+    then
+        sed -i "s/$pattern:.*/$key: $value/" $var_file
+    else
+        echo $key": "$value  >> $var_file
+    fi
+}
+
 cd ${OSA_DIR}
 
 # Apply host security hardening with openstack-ansible-security
 # This is applied as part of setup-hosts.yml
 if [[ "$DEPLOY_HARDENING" == "yes" ]]; then
     echo "Security hardening enabled"
-    if grep -q '^apply_security_hardening:' /etc/openstack_deploy/user_variables.yml
-    then
-        sed -i "s/^apply_security_hardening:.*/apply_security_hardening: true/" /etc/openstack_deploy/user_variables.yml
-    else
-        echo "apply_security_hardening: true" >> /etc/openstack_deploy/user_variables.yml
-    fi
+    configure_variable apply_security_hardening true $USER_VARIABLES_FILE
 else
     echo "Security hardening disabled"
-    if grep -q '^apply_security_hardening:' /etc/openstack_deploy/user_variables.yml
-    then
-        sed -i "s/^apply_security_hardening:.*/apply_security_hardening: false/" /etc/openstack_deploy/user_variables.yml
-    else
-        echo "apply_security_hardening: false" >> /etc/openstack_deploy/user_variables.yml
-    fi
+    configure_variable apply_security_hardening false $USER_VARIABLES_FILE
 fi
 
 # Disable apt cache proxy until the currently existing issues are fixed
-if grep -q '^repo_pkg_cache_enabled:' /etc/openstack_deploy/user_variables.yml
-then
-    sed -i "s/^repo_pkg_cache_enabled:.*/repo_pkg_cache_enabled: false/" /etc/openstack_deploy/user_variables.yml
-else
-    echo "repo_pkg_cache_enabled: false" >> /etc/openstack_deploy/user_variables.yml
-fi
+configure_variable repo_pkg_cache_enabled false $USER_VARIABLES_FILE
+
+# Set nova_console_type to novnc sothat deployed VM's console can be
+# accessed through vnc
+configure_variable nova_console_type novnc $USER_VARIABLES_FILE
 
 # Set password in file for named secret if it is not set in file and environment variable is set
 set_passwd /etc/openstack_deploy/user_secrets.yml keystone_auth_admin_password $ADMIN_PASSWORD
