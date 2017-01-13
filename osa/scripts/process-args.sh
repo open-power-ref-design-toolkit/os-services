@@ -16,6 +16,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+OSA_DIR="/opt/openstack-ansible"
+
 shopt -s nullglob
 set -o pipefail
 
@@ -50,7 +52,47 @@ function git-clone {
     popd >/dev/null 2>&1
     if [ $rc != 0 ]; then
         echo "Failed git $TARGET_DIR, rc=$rc"
-        exit 3
+        exit 99
+    fi
+}
+
+function run_project_script {
+    dir=$1
+    script=$2
+    args=$3
+
+    if [ ! -d "$dir" ]; then
+        echo "Run ./scripts/bootstrap-cluster first!!!  $dir code is missing"
+        return 1
+    fi
+    pushd $dir >/dev/null 2>&1
+    if [ -e "scripts/$script" ]; then
+        echo "Invoking scripts/$script $args"
+        scripts/$script $args
+        rc=$?
+        if [ $rc != 0 ]; then
+            echo "Failed scripts/$script, rc=$rc"
+            return 2
+        fi
+    elif [[ "$script" != "check"* ]]; then
+        echo "Failed required scripts/$script is missing!"
+        return 3
+    fi
+    popd >/dev/null 2>&1
+
+    return 0
+}
+
+function exit_on_error {
+    rc=$1
+    exitstatus=$2
+    msg=$3
+
+    if [ $rc != 0 ]; then
+        if [ -n "$msg" ]; then
+            echo $msg;
+        fi
+        exit $exitstatus
     fi
 }
 

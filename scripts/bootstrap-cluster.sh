@@ -104,32 +104,16 @@ else
 fi
 
 # Installs ansible and openstack-ansible
-pushd osa >/dev/null 2>&1
-echo "Invoking scripts/bootstrap-osa.sh"
-scripts/bootstrap-osa.sh $ARGS
-rc=$?
-if [ $rc != 0 ]; then
-    echo "Failed scripts/bootstrap-osa.sh, rc=$rc"
-    exit 2
-fi
-popd >/dev/null 2>&1
+run_project_script osa bootstrap-osa.sh $ARGS
+exit_on_error $? 2
 
 # Installs ceph and ceph-ansible
 if [[ "$DEPLOY_CEPH" == "yes" ]]; then
     if [ ! -d $PCLD_DIR/ceph-services ]; then
         git-clone $GIT_CEPH_URL $CEPH_TAG $PCLD_DIR/ceph-services
     fi
-    pushd ceph-services >/dev/null 2>&1
-    echo "Invoking scripts/bootstrap-ceph.sh"
-    scripts/bootstrap-ceph.sh $ARGS
-    rc=$?
-    if [ $rc != 0 ]; then
-        echo "Failed scripts/bootstrap-ceph.sh, rc=$rc"
-        echo "You may want to continue manually."
-        echo "cd ceph-services; ./scripts/bootstrap-ceph.sh"
-        exit 4
-    fi
-    popd >/dev/null 2>&1
+    run_project_script ceph-services bootstrap-ceph.sh $ARGS
+    exit_on_error $? 3 "You may want to continue manually\ncd ceph-services; ./scripts/bootstrap-ceph.sh"
 fi
 
 # Installs opsmgr
@@ -137,16 +121,8 @@ if [[ "$DEPLOY_OPSMGR" == "yes" ]]; then
     if [ ! -d $PCLD_DIR/opsmgr ]; then
         git-clone $GIT_OPSMGR_URL $OPSMGR_TAG $PCLD_DIR/opsmgr
     fi
-    pushd opsmgr >/dev/null 2>&1
-    echo "Invoking scripts/bootstrap-opsmgr.sh"
-    scripts/bootstrap-opsmgr.sh $ARGS
-    rc=$?
-    if [ $rc != 0 ]; then
-        echo "Failed scripts/bootstrap-opsmgr.sh, rc=$rc"
-        echo "You may want to continue manually.  cd opsmgr; ./scripts/bootstrap-opsmgr.sh"
-        exit 5
-    fi
-    popd >/dev/null 2>&1
+    run_project_script opsmgr bootstrap-opsmgr.sh $ARGS
+    exit_on_error $? 4 "You may want to continue manually\ncd opsmgr; ./scripts/bootstrap-opsmgr.sh"
 fi
 
 # Depending on your network bandwidth, some manual setup may be required to avoid download failures

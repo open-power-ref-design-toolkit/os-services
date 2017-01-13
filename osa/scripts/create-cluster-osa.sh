@@ -15,7 +15,6 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-OSA_DIR="/opt/openstack-ansible"
 USER_VARIABLES_FILE="/etc/openstack_deploy/user_variables.yml"
 
 if [ "$1" == "--help" ]; then

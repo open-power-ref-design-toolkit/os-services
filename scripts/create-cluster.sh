@@ -16,9 +16,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-# Note help text assumes the end user is invoking this script as Genesis is fully automated
-# Default value (yes) is reversed for Genesis
-
 if [ "$1" == "--help" ]; then
     echo "Usage: create-cluster.sh"
     echo ""
@@ -45,47 +42,31 @@ source osa/scripts/process-args.sh
 echo DEPLOY_CEPH=$DEPLOY_CEPH
 echo DEPLOY_OPSMGR=$DEPLOY_OPSMGR
 
-# Configure ceph-ansible.  Inventory is created during the bootstrap-ceph phase, so user can customize
+# Check openstack-ansible configuration as user may have introduced an error when customizing
+run_project_script osa check-osa.sh $ARGS
+exit_on_error $? 2
+
 if [ "$DEPLOY_CEPH" == "yes" ]; then
-    if [ ! -d ceph-services ]; then
-        echo "Run ./scripts/bootstrap-cluster first!!!  Ceph code is missing"
-        exit 2
-    fi
-    pushd ceph-services >/dev/null 2>&1
-    echo "Invoking scripts/create-cluster-ceph.sh"
-    scripts/create-cluster-ceph.sh $ARGS
-    rc=$?
-    if [ $rc != 0 ]; then
-        echo "Failed scripts/create-cluster-ceph.sh, rc=$rc"
-        exit 3
-    fi
-    popd >/dev/null 2>&1
+    run_project_script ceph-services check-ceph.sh $ARGS
+    exit_on_error $? 3
 fi
 
-# Configure openstack-ansible
-pushd osa >/dev/null 2>&1
-echo "Invoking scripts/create-cluster-osa.sh"
-scripts/create-cluster-osa.sh $ARGS
-rc=$?
-if [ $rc != 0 ]; then
-    echo "Failed scripts/create-cluster-osa.sh, rc=$rc"
-    exit 4
+if [ "$DEPLOY_OPSMGR" == "yes" ]; then
+    run_project_script opsmgr check-opsmgr.sh $ARGS
+    exit_on_error $? 4
 fi
-popd >/dev/null 2>&1
+
+# Configure ceph-ansible
+if [ "$DEPLOY_CEPH" == "yes" ]; then
+    run_project_script ceph-services create-cluster-ceph.sh $ARGS
+    exit_on_error $? 5
+fi
+
+run_project_script osa create-cluster-osa.sh $ARGS required
+exit_on_error $? 6
 
 # Configure opsmgr - ELK, Nagios, and Horizon extensions
 if [ "$DEPLOY_OPSMGR" == "yes" ]; then
-    if [ ! -d opsmgr ]; then
-        echo "Run ./scripts/bootstrap-cluster first!!!  Opsmgr code is missing"
-        exit 5
-    fi
-    pushd opsmgr >/dev/null 2>&1
-    echo "Invoking scripts/create-cluster-opsmgr.sh"
-    scripts/create-cluster-opsmgr.sh $ARGS
-    rc=$?
-    if [ $rc != 0 ]; then
-        echo "Failed scripts/create-cluster-opsmgr.sh, rc=$rc"
-        exit 6
-    fi
-    popd >/dev/null 2>&1
+    run_project_script opsmgr create-cluster-opsmgr.sh $ARGS
+    exit_on_error $? 7
 fi
