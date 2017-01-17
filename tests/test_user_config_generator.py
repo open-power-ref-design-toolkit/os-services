@@ -1318,6 +1318,43 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
             self.assertEqual(mtu, 9000,
                              'Network %s does not have the right MTU' % x)
 
+    def test_optional_networks(self):
+        # Verify the storage, vlan, and vxlan networks are optional.
+        # For non private-compute reference architectures
+        self.ofg.gen_dict = {
+            'internal-floating-ipaddr': '11.22.33.44/22',
+            'external-floating-ipaddr': '22.33.44.55/22',
+            'networks': {
+                'openstack-mgmt': {
+                    'bridge': 'br-mgmt',
+                    'eth-port': 'eth0',
+                    'mtu': 9000
+                },
+            },
+            'nodes': {
+                'controllers': [
+                    {
+                        'hostname': 'host1',
+                        'openstack-mgmt-addr': '11.22.33.44',
+                        'external1-addr': '55.66.77.88',
+                    },
+                    {
+                        'hostname': 'ignored',
+                        'openstack-mgmt-addr': 'ignored',
+                    }
+                ]
+            },
+            'reference-architecture': ['ceph-standalone']
+        }
+
+        self.ofg._configure_global_overrides()
+        result = self.ofg.user_config
+        overrides = result['global_overrides']
+        provider_networks = overrides['provider_networks']
+        self.assertEqual(len(provider_networks), 1)
+        self.assertEqual(provider_networks[0]['network']['container_bridge'],
+                         'br-mgmt')
+
 
 class TestConfigureComputeHosts(unittest.TestCase):
     def setUp(self):

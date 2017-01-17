@@ -20,6 +20,7 @@
   register: ssh_hostkeys
   ignore_errors: true
   with_inventory_hostnames: all
+  when: "{{ key in hostvars[item] }}"
 
 #- debug: var=ssh_hostkeys
 
@@ -29,6 +30,8 @@
     name: "{{ item.stderr.split(' ')[1].split(':')[0] }}"
     # stderr looks like '# ipaddr/hostname:22 SSH-2.0-...'
     key: "{{ item.stdout }}"
-  when: item.rc == 0
+  when:
+    - "{{ item.rc is defined }}"
+    - item.rc == 0
   with_items:
     - "{{ ssh_hostkeys.results }}"
