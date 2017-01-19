@@ -29,7 +29,7 @@ echo "infraNodes=$infraNodes"
 echo "allNodes=$allNodes"
 echo "GIT_MIRROR=$GIT_MIRROR"
 
-OSA_TAG=${OSA_TAG:-"14.0.3"}
+OSA_TAG=${OSA_TAG:-"14.0.5"}
 OSA_DIR="/opt/openstack-ansible"
 OSA_PLAYS="${OSA_DIR}/playbooks"
 
