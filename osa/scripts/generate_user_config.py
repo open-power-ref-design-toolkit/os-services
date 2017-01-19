@@ -227,24 +227,25 @@ class OSAFileGenerator(object):
             mgmt_network['host_bind_override'] = net_mgmt.get('bridge-port')
             mgmt_network['net_name'] = 'infra'
 
-        storage_network = {
-            'container_bridge': br_stg,
-            'container_type': 'veth',
-            'container_interface': 'eth2',
-            'ip_from_q': 'storage',
-            'type': 'raw',
-            'group_binds': [
-                'glance_api',
-                'cinder_api',
-                'cinder_volume',
-                'nova_compute',
-                'swift_proxy',
-            ],
-        }
-        if 'mtu' in net_stg:
-            storage_network['container_mtu'] = net_stg.get('mtu')
         networks.append({'network': mgmt_network})
-        networks.append({'network': storage_network})
+        if net_stg:
+            storage_network = {
+                'container_bridge': br_stg,
+                'container_type': 'veth',
+                'container_interface': 'eth2',
+                'ip_from_q': 'storage',
+                'type': 'raw',
+                'group_binds': [
+                    'glance_api',
+                    'cinder_api',
+                    'cinder_volume',
+                    'nova_compute',
+                    'swift_proxy',
+                ],
+            }
+            if 'mtu' in net_stg:
+                storage_network['container_mtu'] = net_stg.get('mtu')
+            networks.append({'network': storage_network})
 
         if PRIVATE_COMPUTE_CLOUD in ref_arch_list:
             vxlan_network = {

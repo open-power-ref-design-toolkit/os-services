@@ -53,6 +53,8 @@
       key: "openstack_stg_addr"
     - role: "known_hosts"
       key: "external1_addr"
+    - role: "known_hosts"
+      key: "ceph_public_storage_addr"
 
 # Perform all setup steps in parallel prior to the inventory update.
 - name: Swift setup storage
