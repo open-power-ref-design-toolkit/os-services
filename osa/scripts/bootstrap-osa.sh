@@ -205,13 +205,32 @@ if real_genesis_inventory_present; then
         popd >/dev/null 2>&1
     fi
 
-    # Validate domain specific settings in the inventory.
-    echo "Validate domain settings..."
-    pushd ${GENESIS_DIR} >/dev/null 2>&1
-    ./domain/scripts/validate_inventory.py --file /var/oprc/inventory.yml
+    # Clone openstack-recipes to access the config validation script.
+    if [ ! -d ${OS_RECIPES_DIR} ]; then
+        echo "Installing openstack-recipes..."
+        git clone ${GIT_OS_RECIPES_URL} ${OS_RECIPES_DIR}
+        if [ $? != 0 ]; then
+            echo "Manual retry procedure:"
+            echo "1) fix root cause of error if known"
+            echo "2) rm -rf ${GENESIS_DIR}"
+            echo "3) re-run command"
+            exit 1
+        fi
+
+        pushd ${OS_RECIPES_DIR} >/dev/null 2>&1
+        git checkout ${OS_RECIPES_TAG}
+        if [ $? != 0 ]; then
+            exit 1
+        fi
+        popd >/dev/null 2>&1
+    fi
+    # Validate the config sections of the inventory.
+    echo "Validate config ..."
+    pushd ${OS_RECIPES_DIR} >/dev/null 2>&1
+    ./scripts/validate_config.py --file /var/oprc/inventory.yml
     rc=$?
     if [ $rc != 0 ]; then
-        echo "${GENESIS_DIR}/domain/scripts/validate_inventory.py failed, rc=$rc"
+        echo "${OS_RECIPES_DIR}/scripts/validate_config.py failed, rc=$rc"
         exit 1
     fi
     popd >/dev/null 2>&1

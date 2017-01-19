@@ -17,18 +17,23 @@
 #    under the License.
 
 # User can override the git urls
+export GIT_OS_RECIPES_URL=${GIT_OS_RECIPES_URL:-"git://github.com/open-power-ref-design/openstack-recipes"}
 GIT_OPSMGR_URL=${GIT_OPSMGR_URL:-"git://github.com/open-power-ref-design/opsmgr"}
 GIT_CEPH_URL=${GIT_CEPH_URL:-"git://github.com/open-power-ref-design/ceph-services"}
 export GIT_GENESIS_URL=${GIT_GENESIS_URL:-"git://github.com/open-power-ref-design/cluster-genesis"}
 
 # User can override the revision of ulysses sub-projects by specifying a branch, tag, or commit
 source <(grep = subproject-requirements.txt)
+export OS_RECIPES_TAG=${OS_RECIPES_TAG:-$__os_recipes_tag}
 CEPH_TAG=${CEPH_TAG:-$__ceph_tag}
 OPSMGR_TAG=${OPSMGR_TAG:-$__opsmgr_tag}
 export GENESIS_TAG=${GENESIS_TAG:-$__genesis_tag}
 
 # User can override the location of the cluster-genesis project.
 export GENESIS_DIR=${GENESIS_DIR:-"/opt/cluster-genesis"}
+
+# User can override the location of the openstack-recipes project.
+export OS_RECIPES_DIR=${OS_RECIPES_DIR:-"/opt/openstack-recipes"}
 
 # Note help text assumes the end user is invoking this script as Genesis is fully automated
 # Default value (yes) is reversed for Genesis

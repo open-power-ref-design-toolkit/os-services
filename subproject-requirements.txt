@@ -2,3 +2,5 @@
 __ceph_tag=master
 __opsmgr_tag=master
 __genesis_tag=master
+__os_recipes_tag=master
+
