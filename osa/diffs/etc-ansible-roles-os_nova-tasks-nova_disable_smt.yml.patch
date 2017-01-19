@@ -1,0 +1,15 @@
+diff -Naur a/etc/ansible/roles/os_nova/tasks/nova_disable_smt.yml b/etc/ansible/roles/os_nova/tasks/nova_disable_smt.yml
+--- a/etc/ansible/roles/os_nova/tasks/nova_disable_smt.yml	2017-01-19 06:06:50.324090634 -0500
++++ b/etc/ansible/roles/os_nova/tasks/nova_disable_smt.yml	2017-01-19 06:06:28.736090248 -0500
+@@ -34,6 +34,11 @@
+   notify:
+     - Reload systemd daemon
+ 
++- name: Enable systemd service which disables smt
++  service: name=smt.service enabled=yes
++  when:
++    - ansible_service_mgr == 'systemd'
++
+ - name: Upstart script to disable SMT
+   copy:
+     src: "smt.conf"
