@@ -206,7 +206,13 @@ while [ "$done" == "False" ] && [ $i -lt 4 ]; do
         done="True"
         break
     fi
+
     failingContainer=`cat ~/setup-infrastructure.retry`
+    if [ $? != 0 ]; then
+        i=$((i+1))
+        continue
+    fi
+
     if [ "$failingContainer" == "$prevFailingContainer" ]; then
         echo "Failed setup-infrastructure.yml again with the same failures rc=$rc container=$failingContainer"
         exit 3
@@ -241,7 +247,7 @@ if [[ "$DEPLOY_AIO" == "yes" ]]; then
     ansible neutron_agent -m command \
         -a '/sbin/iptables -t mangle -A POSTROUTING -p tcp --sport 80 -j CHECKSUM --checksum-fill'
     ansible neutron_agent -m shell \
-        -a 'DEBIAN_FRONTEND=noninteractive apt-get install iptables-persistent'
+        -a 'DEBIAN_FRONTEND=noninteractive apt-get -qq -y install iptables-persistent'
 fi
 
 # Setup openstack
