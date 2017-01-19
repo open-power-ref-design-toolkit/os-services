@@ -1,0 +1,34 @@
+diff -Naur a/etc/ansible/roles/pip_install/tasks/pre_install.yml b/etc/ansible/roles/pip_install/tasks/pre_install.yml
+--- a/etc/ansible/roles/pip_install/tasks/pre_install.yml	2017-01-25 00:08:01.600975384 -0500
++++ b/etc/ansible/roles/pip_install/tasks/pre_install.yml	2017-01-25 00:07:19.436974630 -0500
+@@ -42,10 +42,25 @@
+     - ansible_pkg_mgr == 'apt'
+     - "ansible_date_time.epoch|float - apt_cache_stat.stat.mtime > {{cache_timeout}}"
+ 
++# Try installing apt packages. If this fails, retry after
++# updating apt
+ - name: Install apt packages
+   apt:
+     pkg: "{{ item }}"
+     state: "{{ pip_install_package_state }}"
++  register: install_pkgs_result
++  ignore_errors: yes
++  with_items: "{{ pip_install_distro_packages }}"
++  when:
++    - ansible_pkg_mgr == 'apt'
++
++# If installing apt packages failed earlier, retry after
++# updating apt cache
++- name: Retry installing apt packages, if failed earlier
++  apt:
++    pkg: "{{ item }}"
++    state: "{{ pip_install_package_state }}"
++    update_cache: yes
+   register: install_packages
+   until: install_packages|success
+   retries: 5
+@@ -53,3 +68,4 @@
+   with_items: "{{ pip_install_distro_packages }}"
+   when:
+     - ansible_pkg_mgr == 'apt'
++    - install_pkgs_result|failed

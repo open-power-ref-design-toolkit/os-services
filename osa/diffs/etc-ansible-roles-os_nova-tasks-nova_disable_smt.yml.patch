@@ -1,14 +1,18 @@
 diff -Naur a/etc/ansible/roles/os_nova/tasks/nova_disable_smt.yml b/etc/ansible/roles/os_nova/tasks/nova_disable_smt.yml
---- a/etc/ansible/roles/os_nova/tasks/nova_disable_smt.yml	2017-01-19 06:06:50.324090634 -0500
-+++ b/etc/ansible/roles/os_nova/tasks/nova_disable_smt.yml	2017-01-19 06:06:28.736090248 -0500
-@@ -34,6 +34,11 @@
+--- a/etc/ansible/roles/os_nova/tasks/nova_disable_smt.yml	2017-01-19 13:06:32.408540924 -0500
++++ b/etc/ansible/roles/os_nova/tasks/nova_disable_smt.yml	2017-01-19 13:06:02.812540395 -0500
+@@ -34,6 +34,15 @@
    notify:
      - Reload systemd daemon
  
 +- name: Enable systemd service which disables smt
-+  service: name=smt.service enabled=yes
++  service:
++    name: smt
++    enabled: yes
 +  when:
 +    - ansible_service_mgr == 'systemd'
++    - smt_disable_result.rc is defined
++    - smt_disable_result.rc == 0
 +
  - name: Upstart script to disable SMT
    copy:

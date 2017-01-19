@@ -1,0 +1,43 @@
+diff -Naur a/etc/ansible/roles/ceph_client/tasks/ceph_install_apt.yml b/etc/ansible/roles/ceph_client/tasks/ceph_install_apt.yml
+--- a/etc/ansible/roles/ceph_client/tasks/ceph_install_apt.yml	2017-01-25 00:07:59.036975339 -0500
++++ b/etc/ansible/roles/ceph_client/tasks/ceph_install_apt.yml	2017-01-25 00:05:42.008972888 -0500
+@@ -30,10 +30,29 @@
+   tags:
+   - ceph-apt-packages
+ 
++# Try installing ceph packages. If this fails, retry after
++# updating apt
+ - name: Install ceph packages
+   apt:
+     name: '{{ item.1 }}'
+     state: "{{ ceph_client_package_state }}"
++  register: install_pkgs_result
++  ignore_errors: yes
++  with_subelements:
++  - "{{ ceph_components }}"
++  - package
++  when:
++    - inventory_hostname in groups[item.0.component]
++  notify:
++  - Restart os services
++
++# If installing ceph packages failed earlier, retry after
++# updating apt cache
++- name: Retry installing ceph packages, if failed earlier
++  apt:
++    name: '{{ item.1 }}'
++    state: "{{ ceph_client_package_state }}"
++    update_cache: yes
+   register: install_packages
+   until: install_packages|success
+   retries: 5
+@@ -41,6 +60,8 @@
+   with_subelements:
+   - "{{ ceph_components }}"
+   - package
+-  when: inventory_hostname in groups[item.0.component]
++  when:
++    - inventory_hostname in groups[item.0.component]
++    - install_pkgs_result|failed
+   notify:
+   - Restart os services

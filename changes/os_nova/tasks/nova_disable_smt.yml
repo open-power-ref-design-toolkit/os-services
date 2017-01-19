@@ -35,9 +35,13 @@
     - Reload systemd daemon
 
 - name: Enable systemd service which disables smt
-  service: name=smt.service enabled=yes
+  service:
+    name: smt
+    enabled: yes
   when:
     - ansible_service_mgr == 'systemd'
+    - smt_disable_result.rc is defined
+    - smt_disable_result.rc == 0
 
 - name: Upstart script to disable SMT
   copy:
