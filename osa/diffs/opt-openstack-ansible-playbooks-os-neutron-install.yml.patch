@@ -1,10 +1,10 @@
 diff -Naur a/opt/openstack-ansible/playbooks/os-neutron-install.yml b/opt/openstack-ansible/playbooks/os-neutron-install.yml
---- a/opt/openstack-ansible/playbooks/os-neutron-install.yml	2016-12-09 01:05:04.154555927 -0600
-+++ b/opt/openstack-ansible/playbooks/os-neutron-install.yml	2016-12-09 01:04:25.723700360 -0600
-@@ -100,6 +100,20 @@
-         - not is_metal | bool
-       tags:
-         - always
+--- a/opt/openstack-ansible/playbooks/os-neutron-install.yml	2017-01-21 12:25:28.255586767 -0500
++++ b/opt/openstack-ansible/playbooks/os-neutron-install.yml	2017-01-21 12:25:04.163586336 -0500
+@@ -19,6 +19,33 @@
+   max_fail_percentage: 20
+   user: root
+   pre_tasks:
 +    - name: Update the sysctl conf to disable ipv6
 +      sysctl:
 +        name: "{{ item.key }}"
@@ -18,7 +18,36 @@ diff -Naur a/opt/openstack-ansible/playbooks/os-neutron-install.yml b/opt/openst
 +        - { key: 'net.ipv6.conf.lo.disable_ipv6', value: 1 }
 +      tags:
 +        - disable_ipv6
-+
-   roles:
-     - role: "os_neutron"
-       neutron_venv_tag: "{{ openstack_release }}"
++    # Add a startup script for neutron related containers so that
++    # ipv6 gets disabled even after restart of containers
++    - name: Script to reload sysctl configuration in container
++      copy:
++        content: |
++          #!/usr/bin/env bash
++          set -e -x
++          sysctl -p
++        dest: "/usr/local/bin/reload-sysctl-conf.sh"
++        mode: "0755"
++      when:
++        - not is_metal | bool
++      tags:
++        - disable_ipv6
+     - include: common-tasks/os-lxc-container-setup.yml
+       static: no
+       vars:
+@@ -28,11 +55,15 @@
+             mount_path: "/lib/modules"
+         extra_container_config:
+           - "lxc.cgroup.devices.allow=a *:* rmw"
++          - "lxc.hook.start = /usr/local/bin/reload-sysctl-conf.sh"
+         extra_container_config_no_restart:
+           - "lxc.start.order=79"
+       when: inventory_hostname in groups['neutron_agent']
+     - include: common-tasks/os-lxc-container-setup.yml
+       static: no
++      vars:
++        extra_container_config:
++          - "lxc.hook.start = /usr/local/bin/reload-sysctl-conf.sh"
+       when: inventory_hostname not in groups['neutron_agent']
+     - include: common-tasks/rabbitmq-vhost-user.yml
+       static: no
