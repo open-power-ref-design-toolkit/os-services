@@ -291,3 +291,26 @@ the rings, and push these changes out to the cluster::
   $ cd /opt/openstack-ansible/playbooks
   $ openstack-ansible os-swift-sync.yml --skip-tags swift-key,swift-key-distribute
 
+CPU Performance Governor Tuning
+-------------------------------
+
+The POWER 8 processor has different performance modes for the processor. The performance
+modes control how the system  scales CPU frequency according to load in order to
+save power.
+
+In certain situations where there is not adequate load on the systems the cpu frequency
+can be scaled back resulting in lower Swift performance. To prevent this one can put the
+system into "performance" mode. This will run the cpu clocks at the max at all time.
+To go back to the scaling mode one can put the system in "ondemand" mode.
+
+To check the current mode use this command:
+"cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"
+
+To put the system in performance mode use this command:
+"echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor >/dev/null"
+
+To put the system in ondemand mode use this command:
+"echo ondemand | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor >/dev/null"
+
+To check current realtime cpu frequency use this command:
+"cat /proc/cpuinfo | grep -i clock"
