@@ -1,0 +1,12 @@
+diff -Naur a/opt/openstack-ansible/tests/roles/bootstrap-host/tasks/prepare_aio_config.yml b/opt/openstack-ansible/tests/roles/bootstrap-host/tasks/prepare_aio_config.yml
+--- a/opt/openstack-ansible/tests/roles/bootstrap-host/tasks/prepare_aio_config.yml	2017-01-25 11:49:44.717728247 -0500
++++ b/opt/openstack-ansible/tests/roles/bootstrap-host/tasks/prepare_aio_config.yml	2017-01-25 11:36:01.997713535 -0500
+@@ -90,7 +90,7 @@
+ 
+ - name: Set repo_build_pip_extra_indexes fact
+   set_fact:
+-    repo_build_pip_extra_indexes: "[\"{{ fastest_wheel_mirror.stdout }}\"]"
++    repo_build_pip_extra_indexes: "{{ fastest_wheel_mirror.stdout_lines }}"
+   when: not pip_conf_file.stat.exists
+ 
+ - name: Check whether the host has a git cache
