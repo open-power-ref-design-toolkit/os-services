@@ -21,15 +21,14 @@ SCRIPTS_DIR=$(readlink -ne $SCRIPTS_DIR)
 source $SCRIPTS_DIR/process-args.sh
 
 OSA_FILES_WITH_GIT_URLS="/opt/openstack-ansible/ansible-role-requirements.yml \
-    /opt/openstack-ansible/playbooks/defaults/repo_packages/openstack_services.yml \
-    /opt/openstack-ansible/playbooks/defaults/repo_packages/openstack_other.yml"
+    /opt/openstack-ansible/playbooks/defaults/repo_packages/openstack_services.yml"
 
 echo "DEPLOY_AIO=$DEPLOY_AIO"
 echo "infraNodes=$infraNodes"
 echo "allNodes=$allNodes"
 echo "GIT_MIRROR=$GIT_MIRROR"
 
-OSA_TAG=${OSA_TAG:-"14.0.5"}
+OSA_TAG=${OSA_TAG:-"14.0.6"}
 OSA_DIR="/opt/openstack-ansible"
 OSA_PLAYS="${OSA_DIR}/playbooks"
 
@@ -113,7 +112,31 @@ if [ ! -d /opt/openstack-ansible ]; then
     fi
     # An openstack-ansible script is invoked below to install ansible
     rm -rf /etc/ansible
-    INSTALL=True
+    #INSTALL=True
+
+    # Apply patches to /opt/openstack-ansible so that bootstrap-ansible.sh
+    # related patches are applied before bootstrap-ansible.sh is run.
+    if [ -d $PCLD_DIR/diffs ]; then
+
+        echo "Applying patches to /opt/openstack-ansible"
+        pushd / >/dev/null 2>&1
+
+        for f in ${PCLD_DIR}/diffs/opt-openstack-ansible-*.patch; do
+            patch -N -p1 < $f
+            rc=$?
+            if [ $rc != 0 ]; then
+                echo "Applying patches to /opt/openstack-ansible failed, rc=$rc"
+                echo "Patch $f could not be applied"
+                echo "Manual retry procedure:"
+                echo "1) fix patch $f"
+                echo "2) rm -rf /opt/openstack-ansible"
+                echo "3) re-run command"
+                exit 1
+            fi
+        done
+
+        popd >/dev/null 2>&1
+    fi
 fi
 
 # Install ansible
@@ -155,15 +178,17 @@ if [ $rc != 0 ]; then
     exit 1
 fi
 
-# Apply patches iff osa is installed above.  Code is intended to be reentrant
+# Apply patches iff ansible is installed above.  Code is intended to be reentrant
 if [ "$INSTALL" == "True" ] && [ -d $PCLD_DIR/diffs ]; then
-    # Copy configuration files before patches are applied, so that patches may be provided for configuration files
+    # Copy configuration files before patches are applied, so that
+    # patches may be provided for configuration files
     cp -R /opt/openstack-ansible/etc/openstack_deploy /etc
 
-    echo "Applying patches"
+    PATCHES=`find ${PCLD_DIR}/diffs/ ! -name '*opt-openstack-ansible-*' -type f`
+    echo "Applying other patches"
     pushd / >/dev/null 2>&1
 
-    for f in ${PCLD_DIR}/diffs/*.patch; do
+    for f in $PATCHES; do
         patch -N -p1 < $f
         rc=$?
         if [ $rc != 0 ]; then
