@@ -1,6 +1,6 @@
 # The default branch, release tag, or commit to be cloned
 __ceph_tag=master
 __opsmgr_tag=master
-__genesis_tag=master
+__genesis_tag=release-1.0
 __os_recipes_tag=master
 
