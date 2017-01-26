@@ -33,5 +33,7 @@
   when:
     - "{{ item.rc is defined }}"
     - item.rc == 0
+    - "{{ item.stdout is defined }}"
+    - item.stdout
   with_items:
     - "{{ ssh_hostkeys.results }}"
