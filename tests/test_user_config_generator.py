@@ -1724,6 +1724,9 @@ class TestCreateUserConfig(unittest.TestCase):
 class TestGenerateHAProxy(unittest.TestCase):
 
     networks = {
+        'external1': {
+            'eth-port': 'eth10'
+        },
         'openstack-mgmt': {
             'bridge': 'br-mgmt',
             'eth-port': 'eth10'

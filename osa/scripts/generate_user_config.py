@@ -729,7 +729,11 @@ class OSAFileGenerator(object):
         networks = self.gen_dict.get('networks', None)
         mgmt_network = networks.get('openstack-mgmt', None)
         bridge = mgmt_network.get('bridge', None)
-        eth_intf = mgmt_network.get('eth-port', None)
+        extern1_network = networks.get('external1', None)
+        if extern1_network is None:
+            eth_intf = mgmt_network.get('eth-port', None)
+        else:
+            eth_intf = extern1_network.get('eth-port', None)
         settings = {
             'haproxy_keepalived_external_vip_cidr': external_vip,
             'haproxy_keepalived_internal_vip_cidr': internal_vip,
