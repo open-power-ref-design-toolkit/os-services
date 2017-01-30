@@ -1,0 +1,12 @@
+diff -Naur a/etc/ansible/roles/os_trove/tasks/trove_install.yml b/etc/ansible/roles/os_trove/tasks/trove_install.yml
+--- a/etc/ansible/roles/os_trove/tasks/trove_install.yml	2017-01-30 06:50:40.255617110 -0500
++++ b/etc/ansible/roles/os_trove/tasks/trove_install.yml	2017-01-29 12:11:51.229205763 -0500
+@@ -45,7 +45,7 @@
+ 
+ - name: Install required pip packages
+   pip:
+-    name: "{{ trove_requires_pip_packages }}"
++    name: "{{ trove_requires_pip_packages | join(' ') }}"
+     state: "{{ trove_pip_package_state }}"
+     extra_args: >-
+       {{ (pip_install_upper_constraints is defined) | ternary('--constraint ' + pip_install_upper_constraints | default(''),'') }}

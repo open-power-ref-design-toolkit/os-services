@@ -19,4 +19,6 @@ trove_rabbitmq_userid: trove
 trove_rabbitmq_vhost: /trove
 trove_galera_database: trove
 trove_galera_user: trove
-
+cinder_service_port: 8776
+swift_proxy_port: "8080"
+horizon_enable_trove_ui: True
