@@ -1,6 +1,6 @@
 diff -Naur a/etc/ansible/roles/os_trove/defaults/main.yml b/etc/ansible/roles/os_trove/defaults/main.yml
---- a/etc/ansible/roles/os_trove/defaults/main.yml	2017-01-30 06:50:40.251617048 -0500
-+++ b/etc/ansible/roles/os_trove/defaults/main.yml	2017-01-30 00:18:53.426265740 -0500
+--- a/etc/ansible/roles/os_trove/defaults/main.yml	2017-02-01 06:39:18.319163686 -0500
++++ b/etc/ansible/roles/os_trove/defaults/main.yml	2017-02-01 06:27:29.808363080 -0500
 @@ -54,7 +54,7 @@
  trove_service_adminurl: "{{ trove_service_adminuri_proto }}://{{ internal_lb_vip_address }}:{{ trove_service_port }}/v1.0/%(tenant_id)s"
  trove_auth_url: "{{ keystone_service_internalurl }}"
@@ -23,3 +23,10 @@ diff -Naur a/etc/ansible/roles/os_trove/defaults/main.yml b/etc/ansible/roles/os
  
  trove_pip_packages:
    - MySQL-python
+@@ -148,6 +148,8 @@
+   - trove
+   - python-troveclient
+   - python-memcached
++  - os-client-config
++  - shade
+ 

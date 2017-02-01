@@ -22,3 +22,7 @@ trove_galera_user: trove
 cinder_service_port: 8776
 swift_proxy_port: "8080"
 horizon_enable_trove_ui: True
+trove_infra_net_type: flat
+trove_infra_net_phys_net: infra
+trove_infra_subnet_cidr: "{{ container_cidr }}"
+

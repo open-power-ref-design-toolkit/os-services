@@ -117,7 +117,7 @@
 - name: os_trove
   scm: git
   src: https://git.openstack.org/openstack/openstack-ansible-os_trove
-  version: 8aa416f385f387eacf6dc34665aa0197bcd6f2f2
+  version: 17ce2cd1fe6da6ba163b3637e6a949d77caabcf4
 - name: plugins
   scm: git
   src: https://git.openstack.org/openstack/openstack-ansible-plugins
