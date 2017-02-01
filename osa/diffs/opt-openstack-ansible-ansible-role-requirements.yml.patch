@@ -1,6 +1,6 @@
 diff -Naur a/opt/openstack-ansible/ansible-role-requirements.yml b/opt/openstack-ansible/ansible-role-requirements.yml
---- a/opt/openstack-ansible/ansible-role-requirements.yml	2017-01-30 06:50:31.095475155 -0500
-+++ b/opt/openstack-ansible/ansible-role-requirements.yml	2017-01-30 01:07:08.127802352 -0500
+--- a/opt/openstack-ansible/ansible-role-requirements.yml	2017-02-01 06:30:28.567089070 -0500
++++ b/opt/openstack-ansible/ansible-role-requirements.yml	2017-02-01 05:56:42.316194421 -0500
 @@ -114,6 +114,10 @@
    scm: git
    src: https://git.openstack.org/openstack/openstack-ansible-os_tempest
@@ -8,7 +8,7 @@ diff -Naur a/opt/openstack-ansible/ansible-role-requirements.yml b/opt/openstack
 +- name: os_trove
 +  scm: git
 +  src: https://git.openstack.org/openstack/openstack-ansible-os_trove
-+  version: 8aa416f385f387eacf6dc34665aa0197bcd6f2f2
++  version: 17ce2cd1fe6da6ba163b3637e6a949d77caabcf4
  - name: plugins
    scm: git
    src: https://git.openstack.org/openstack/openstack-ansible-plugins
