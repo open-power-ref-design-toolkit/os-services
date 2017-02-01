@@ -93,16 +93,19 @@ https://bugs.launchpad.net/open-power-ref-design
 Related projects
 ----------------
 
-::
+The following project provides recipes for the delivery of compelling cloud based offerings
+that are specially built for OpenPOWER servers.  In general, users should read this project first:
 
-    > cluster-genesis
-    > ceph-services
-    > opsmgr
+    - `openstack-recipes <https://github.com/open-power-ref-design/openstack-recipes>`_
 
-For information about Database as a Service (OpenStack Trove) see:
+Here, you will find information about:
 
-    `Database as a Service <README-dbaas.rst>`_
+    - `Private cloud w/ and w/o Swift Object Storage <https://github.com/open-power-ref-design/openstack-recipes/blob/master/README.rst>`_
+    - `Database as a Service (OpenStack Trove) <https://github.com/open-power-ref-design/openstack-recipes/blob/master/README-dbaas.rst>`_
+    - `Standalone Swift Clusters (OpenStack Swift) <https://github.com/open-power-ref-design/openstack-recipes/blob/master/README-swift.rst>`_
 
-For information about Object Storage (OpenStack Swift) see:
+The following projects provides services that are used as major building blocks in recipes:
 
-    `Object Storage <README-swift.rst>`_
+    - `cluster-genesis <https://github.com/open-power-ref-design/cluster-genesis>`_
+    - `ceph-services <https://github.com/open-power-ref-design/ceph-services>`_
+    - `opsmgr <https://github.com/open-power-ref-design/opsmgr>`_
