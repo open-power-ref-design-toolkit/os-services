@@ -1,6 +1,14 @@
 diff -Naur a/etc/ansible/roles/os_glance/templates/glance-api.conf.j2 b/etc/ansible/roles/os_glance/templates/glance-api.conf.j2
---- a/etc/ansible/roles/os_glance/templates/glance-api.conf.j2	2017-01-04 10:09:23.014228175 -0600
-+++ b/etc/ansible/roles/os_glance/templates/glance-api.conf.j2	2017-01-04 10:13:55.891171362 -0600
+--- a/etc/ansible/roles/os_glance/templates/glance-api.conf.j2	2017-01-30 02:19:27.984841166 -0500
++++ b/etc/ansible/roles/os_glance/templates/glance-api.conf.j2	2017-01-30 01:34:09.240792551 -0500
+@@ -1,6 +1,6 @@
+ # {{ ansible_managed }}
+ 
+-{% set _api_threads = ansible_processor_vcpus|default(2) // 2 %}
++{% set _api_threads = [ansible_processor_vcpus|default(2) // 2, glance_api_threads_max] | min %}
+ {% set api_threads = _api_threads if _api_threads > 0 else 1 %}
+ 
+ [DEFAULT]
 @@ -34,6 +34,7 @@
  
  # defaults to true if RBD is used as default store

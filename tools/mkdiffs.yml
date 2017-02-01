@@ -80,6 +80,16 @@ projects:
     target_location: /etc/ansible/roles/os_trove
     src_location: os_trove
   - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-os_cinder
+    branch: 14.0.6
+    target_location: /etc/ansible/roles/os_cinder
+    src_location: os_cinder
+  - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-os_neutron
+    branch: 14.0.6
+    target_location: /etc/ansible/roles/os_neutron
+    src_location: os_neutron
+  - project:
     git: https://git.openstack.org/openstack/openstack-ansible-pip_install
     branch: 14.0.6
     target_location: /etc/ansible/roles/pip_install

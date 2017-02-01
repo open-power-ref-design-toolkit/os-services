@@ -1,6 +1,14 @@
 diff -Naur a/etc/ansible/roles/os_heat/templates/heat.conf.j2 b/etc/ansible/roles/os_heat/templates/heat.conf.j2
---- a/etc/ansible/roles/os_heat/templates/heat.conf.j2	2017-01-23 00:54:56.965935822 -0500
-+++ b/etc/ansible/roles/os_heat/templates/heat.conf.j2	2017-01-23 00:53:27.425934221 -0500
+--- a/etc/ansible/roles/os_heat/templates/heat.conf.j2	2017-01-30 02:19:33.884841271 -0500
++++ b/etc/ansible/roles/os_heat/templates/heat.conf.j2	2017-01-30 02:18:56.796840608 -0500
+@@ -1,6 +1,6 @@
+ # {{ ansible_managed }}
+ 
+-{% set _api_threads = ansible_processor_vcpus|default(2) // 2 %}
++{% set _api_threads = [ansible_processor_vcpus|default(2) // 2, heat_api_threads_max] | min %}
+ {% set api_threads = _api_threads if _api_threads > 0 else 1 %}
+ 
+ [DEFAULT]
 @@ -66,6 +66,11 @@
  [oslo_messaging_rabbit]
  rabbit_use_ssl = {{ rabbitmq_use_ssl }}

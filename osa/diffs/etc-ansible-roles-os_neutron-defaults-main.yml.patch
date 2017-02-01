@@ -1,0 +1,13 @@
+diff -Naur a/etc/ansible/roles/os_neutron/defaults/main.yml b/etc/ansible/roles/os_neutron/defaults/main.yml
+--- a/etc/ansible/roles/os_neutron/defaults/main.yml	2017-01-30 02:19:37.068841328 -0500
++++ b/etc/ansible/roles/os_neutron/defaults/main.yml	2017-01-30 01:56:10.404816175 -0500
+@@ -450,6 +450,9 @@
+ # in templates/dhcp_agent.ini.j2 for num_sync_threads.
+ # neutron_num_sync_threads: 4
+ 
++## Cap the maximun number of threads / workers when a user value is unspecified.
++neutron_api_threads_max: 16
++
+ ## RPC
+ neutron_rpc_backend: rabbit
+ neutron_rpc_thread_pool_size: 64

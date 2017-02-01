@@ -145,6 +145,9 @@ glance_image_cache_max_size: 10737418240
 # compute the number of api workers to use.
 # glance_registry_workers: 16
 
+## Cap the maximun number of threads / workers when a user value is unspecified.
+glance_api_threads_max: 16
+
 glance_task_executor: taskflow
 glance_digest_algorithm: sha256
 glance_http_keepalive: True
