@@ -1725,28 +1725,97 @@ class TestGenerateHAProxy(unittest.TestCase):
 
     networks = {
         'external1': {
-            'eth-port': 'eth10'
+            'eth-port': 'eth10',
+            'addr': '2.3.4.0/22'
         },
         'openstack-mgmt': {
             'bridge': 'br-mgmt',
-            'eth-port': 'eth10'
+            'eth-port': 'eth11'
         }
     }
+
+    networks_bonded = dict(networks)
+    networks_bonded.update({
+        'external-bond0': {
+            'bond': 'osbond0',
+            'addr': '5.6.7.0/22'
+        }
+    })
 
     def test_generate(self, mock_dump):
         ofg = guc.OSAFileGenerator('input-file', 'output-dir')
         ofg.gen_dict = {
-            'internal-floating-ipaddr': '1.2.3.4/22',
-            'external-floating-ipaddr': '2.3.4.5/22',
+            'internal-floating-ipaddr': '1.2.3.4',
+            'external-floating-ipaddr': '2.3.4.5',
             'networks': self.networks,
         }
 
         ofg.generate_haproxy()
 
         expected = {
-            'haproxy_keepalived_external_vip_cidr': '2.3.4.5/22',
-            'haproxy_keepalived_internal_vip_cidr': '1.2.3.4/22',
+            'haproxy_keepalived_external_vip_cidr': '2.3.4.5',
+            'haproxy_keepalived_internal_vip_cidr': '1.2.3.4',
             'haproxy_keepalived_external_interface': 'eth10',
+            'haproxy_keepalived_internal_interface': 'br-mgmt',
+        }
+        mock_dump.assert_called_once_with(expected, 'user_var_haproxy.yml')
+
+    def test_generate_with_bonded_networks(self, mock_dump):
+        ofg = guc.OSAFileGenerator('input-file', 'output-dir')
+        ofg.gen_dict = {
+            'internal-floating-ipaddr': '1.2.3.4',
+            'external-floating-ipaddr': '5.6.7.8',
+            'networks': self.networks_bonded,
+        }
+
+        ofg.generate_haproxy()
+
+        expected = {
+            'haproxy_keepalived_external_vip_cidr': '5.6.7.8',
+            'haproxy_keepalived_internal_vip_cidr': '1.2.3.4',
+            'haproxy_keepalived_external_interface': 'osbond0',
+            'haproxy_keepalived_internal_interface': 'br-mgmt',
+        }
+        mock_dump.assert_called_once_with(expected, 'user_var_haproxy.yml')
+
+    def test_generate_without_matching_network(self, mock_dump):
+        """ external-floating-ipaddr not matching with any
+            network addr from self.networks_bonded.
+        """
+        ofg = guc.OSAFileGenerator('input-file', 'output-dir')
+        ofg.gen_dict = {
+            'internal-floating-ipaddr': '1.2.3.4',
+            'external-floating-ipaddr': '3.6.9.3',  # not matching
+            'networks': self.networks_bonded,
+        }
+
+        ofg.generate_haproxy()
+
+        expected = {
+            'haproxy_keepalived_external_vip_cidr': '3.6.9.3',
+            'haproxy_keepalived_internal_vip_cidr': '1.2.3.4',
+            'haproxy_keepalived_external_interface': 'eth11',
+            'haproxy_keepalived_internal_interface': 'br-mgmt',
+        }
+        mock_dump.assert_called_once_with(expected, 'user_var_haproxy.yml')
+
+    def test_generate_ignore_cidr_prefix(self, mock_dump):
+        """ Veify that the cidr prefix in external-floating-ipaddr
+            is ignored.
+        """
+        ofg = guc.OSAFileGenerator('input-file', 'output-dir')
+        ofg.gen_dict = {
+            'internal-floating-ipaddr': '1.2.3.4',
+            'external-floating-ipaddr': '5.6.7.8/22',
+            'networks': self.networks_bonded,
+        }
+
+        ofg.generate_haproxy()
+
+        expected = {
+            'haproxy_keepalived_external_vip_cidr': '5.6.7.8',
+            'haproxy_keepalived_internal_vip_cidr': '1.2.3.4',
+            'haproxy_keepalived_external_interface': 'osbond0',
             'haproxy_keepalived_internal_interface': 'br-mgmt',
         }
         mock_dump.assert_called_once_with(expected, 'user_var_haproxy.yml')
@@ -1764,7 +1833,7 @@ class TestGenerateHAProxy(unittest.TestCase):
         expected = {
             'haproxy_keepalived_external_vip_cidr': 'N/A',
             'haproxy_keepalived_internal_vip_cidr': 'N/A',
-            'haproxy_keepalived_external_interface': 'eth10',
+            'haproxy_keepalived_external_interface': None,
             'haproxy_keepalived_internal_interface': 'br-mgmt',
         }
         mock_dump.assert_called_once_with(expected, 'user_var_haproxy.yml')

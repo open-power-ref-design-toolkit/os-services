@@ -20,6 +20,7 @@ import os
 import signal
 import sys
 import yaml
+import netaddr
 
 OSA_USER_CFG_FILE = 'openstack_user_config.yml'
 OSA_USER_VAR_HAPROXY = 'user_var_haproxy.yml'
@@ -722,22 +723,56 @@ class OSAFileGenerator(object):
 
         self._dump_yml(self.user_config, OSA_USER_CFG_FILE)
 
+    def get_network_interface(self, net_details):
+        """Find network interface from the given network details."""
+
+        port_keys = ['bond', 'eth-port']
+        ext_intf = None
+        for port_key in port_keys:
+            intf = net_details.get(port_key, None)
+            if intf:
+                ext_intf = intf
+                break
+
+        return ext_intf
+
+    def find_external_interface(self, ext_floating_ip, networks):
+        """Find external interface based on the network address that matches
+           external-floating-ipaddr.
+           If not found, return the management network interface.
+        """
+        if ext_floating_ip == 'N/A':
+            return None
+
+        for net, net_details in networks.iteritems():
+            if 'addr' in net_details:
+                # Check if matching
+                if (netaddr.IPAddress(ext_floating_ip) in
+                   netaddr.IPSet([net_details['addr']])):
+                    ext_intf = self.get_network_interface(net_details)
+                    return ext_intf
+
+        mgmt_network = networks.get('openstack-mgmt', None)
+        ext_intf = mgmt_network.get('eth-port', None)
+
+        return ext_intf
+
     def generate_haproxy(self):
         """Generate user variable file for HAProxy."""
         external_vip = self.gen_dict.get('external-floating-ipaddr', 'N/A')
+        if external_vip != 'N/A' and '/' in external_vip:
+            # remove cidr prefix, if exists
+            external_vip = external_vip.split('/')[0]
+
         internal_vip = self.gen_dict.get('internal-floating-ipaddr', 'N/A')
         networks = self.gen_dict.get('networks', None)
         mgmt_network = networks.get('openstack-mgmt', None)
         bridge = mgmt_network.get('bridge', None)
-        extern1_network = networks.get('external1', None)
-        if extern1_network is None:
-            eth_intf = mgmt_network.get('eth-port', None)
-        else:
-            eth_intf = extern1_network.get('eth-port', None)
+        ext_intf = self.find_external_interface(external_vip, networks)
         settings = {
             'haproxy_keepalived_external_vip_cidr': external_vip,
             'haproxy_keepalived_internal_vip_cidr': internal_vip,
-            'haproxy_keepalived_external_interface': eth_intf,
+            'haproxy_keepalived_external_interface': ext_intf,
             'haproxy_keepalived_internal_interface': bridge,
         }
         self._dump_yml(settings, OSA_USER_VAR_HAPROXY)
