@@ -76,7 +76,7 @@ projects:
     src_location: os_horizon
   - project:
     git: https://git.openstack.org/openstack/openstack-ansible-os_trove
-    branch: 15.0.0.0b3
+    branch: 15.0.0.0rc1
     target_location: /etc/ansible/roles/os_trove
     src_location: os_trove
   - project:
