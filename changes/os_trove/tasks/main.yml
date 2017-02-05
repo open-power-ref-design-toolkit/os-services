@@ -50,6 +50,12 @@
     - trove-install
 
 - include: add_infra_net.yml
+
+- include: trove_diskreorder_patch.yml
+  when: inventory_hostname in groups['trove_taskmanager']
+  tags:
+    - trove-diskreorder-patch
+
 - include: trove_db_setup.yml
   when: inventory_hostname == groups['trove_conductor'][0]
   tags:
