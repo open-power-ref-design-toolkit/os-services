@@ -1,0 +1,15 @@
+diff -Naur a/etc/ansible/roles/os_trove/tasks/trove_diskreorder_patch.yml b/etc/ansible/roles/os_trove/tasks/trove_diskreorder_patch.yml
+--- a/etc/ansible/roles/os_trove/tasks/trove_diskreorder_patch.yml	1969-12-31 18:00:00.000000000 -0600
++++ b/etc/ansible/roles/os_trove/tasks/trove_diskreorder_patch.yml	2017-02-05 10:15:24.381717910 -0600
+@@ -0,0 +1,11 @@
++---
++
++- name: Apply disk reorder patch
++  patch:
++    src: "files/trove-diskreorder.patch"
++    basedir: "/openstack/venvs/trove-{{ trove_venv_tag }}"
++    strip: 4
++  notify:
++    - Restart trove taskmanager service
++  tags:
++    - apply_trove_patch
