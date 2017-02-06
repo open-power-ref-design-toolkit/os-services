@@ -142,6 +142,23 @@ function mkListsUnique {
     fi
 }
 
+# Finds whether the string given represents positive value like
+# (y, yes, true) allowing both lower and upper case words
+function is_positive {
+    if [[ -n "$1" ]]; then
+        VAR=`echo $1 | tr '[:upper:]' '[:lower:]'`
+        case "$VAR" in
+            y | yes | true)
+                return 0  # true
+            ;;
+            *)
+                return 1  # false
+        esac
+    else
+        return 1  # false
+    fi
+}
+
 if [[ $EUID -ne 0 ]]; then
     echo "This script must run as root."
     exit 1
