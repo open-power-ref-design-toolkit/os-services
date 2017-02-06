@@ -46,18 +46,18 @@ echo DEPLOY_OPSMGR=$DEPLOY_OPSMGR
 run_project_script osa check-osa.sh $ARGS
 exit_on_error $? 2
 
-if [ "$DEPLOY_CEPH" == "yes" ]; then
+if is_positive $DEPLOY_CEPH; then
     run_project_script ceph-services check-ceph.sh $ARGS
     exit_on_error $? 3
 fi
 
-if [ "$DEPLOY_OPSMGR" == "yes" ]; then
+if is_positive $DEPLOY_OPSMGR; then
     run_project_script opsmgr check-opsmgr.sh $ARGS
     exit_on_error $? 4
 fi
 
 # Configure ceph-ansible
-if [ "$DEPLOY_CEPH" == "yes" ]; then
+if is_positive $DEPLOY_CEPH; then
     run_project_script ceph-services create-cluster-ceph.sh $ARGS
     exit_on_error $? 5
 fi
@@ -66,7 +66,7 @@ run_project_script osa create-cluster-osa.sh $ARGS required
 exit_on_error $? 6
 
 # Configure opsmgr - ELK, Nagios, and Horizon extensions
-if [ "$DEPLOY_OPSMGR" == "yes" ]; then
+if is_positive $DEPLOY_OPSMGR; then
     run_project_script opsmgr create-cluster-opsmgr.sh $ARGS
     exit_on_error $? 7
 fi

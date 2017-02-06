@@ -113,7 +113,7 @@ run_project_script osa bootstrap-osa.sh $ARGS
 exit_on_error $? 2
 
 # Installs ceph and ceph-ansible
-if [[ "$DEPLOY_CEPH" == "yes" ]]; then
+if is_positive $DEPLOY_CEPH; then
     if [ ! -d $PCLD_DIR/ceph-services ]; then
         git-clone $GIT_CEPH_URL $CEPH_TAG $PCLD_DIR/ceph-services
     fi
@@ -122,7 +122,7 @@ if [[ "$DEPLOY_CEPH" == "yes" ]]; then
 fi
 
 # Installs opsmgr
-if [[ "$DEPLOY_OPSMGR" == "yes" ]]; then
+if is_positive $DEPLOY_OPSMGR; then
     if [ ! -d $PCLD_DIR/opsmgr ]; then
         git-clone $GIT_OPSMGR_URL $OPSMGR_TAG $PCLD_DIR/opsmgr
     fi
