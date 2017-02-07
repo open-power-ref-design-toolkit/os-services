@@ -2,8 +2,7 @@ os-services
 ===========
 
 This project uses the OpenStack Ansible (OSA) project as a base for deploying an
-OpenStack cluster on Ubuntu 16.04. It is assumed the cluster controllers are x86
-nodes and the compute nodes are ppc64le. All nodes are pre-conditioned by the
+OpenStack cluster on Ubuntu 16.04. All nodes are pre-conditioned by the
 cluster-genesis project which orchestrates the overall install and configuration
 process for the cluster.
 
