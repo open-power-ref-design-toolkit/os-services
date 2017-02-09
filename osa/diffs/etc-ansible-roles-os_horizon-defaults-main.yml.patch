@@ -1,6 +1,6 @@
 diff -Naur a/etc/ansible/roles/os_horizon/defaults/main.yml b/etc/ansible/roles/os_horizon/defaults/main.yml
---- a/etc/ansible/roles/os_horizon/defaults/main.yml	2017-01-30 12:52:10.674001838 -0500
-+++ b/etc/ansible/roles/os_horizon/defaults/main.yml	2017-01-30 12:50:53.692827893 -0500
+--- a/etc/ansible/roles/os_horizon/defaults/main.yml	2017-02-09 01:27:50.696235306 -0500
++++ b/etc/ansible/roles/os_horizon/defaults/main.yml	2017-02-09 01:22:15.144229305 -0500
 @@ -31,10 +31,15 @@
  magnum_dashboard_git_repo: https://git.openstack.org/openstack/magnum-ui
  magnum_dashboard_git_install_branch: stable/newton
@@ -17,16 +17,27 @@ diff -Naur a/etc/ansible/roles/os_horizon/defaults/main.yml b/etc/ansible/roles/
  
  # Name of the virtual env to deploy into
  horizon_venv_tag: untagged
-@@ -162,6 +167,8 @@
+@@ -102,6 +107,9 @@
+ # horizon_wsgi_processes: 4
+ # horizon_wsgi_threads: 4
+ 
++## Cap the maximun number of threads / workers when a user value is unspecified.
++horizon_wsgi_threads_max: 16
++
+ ## Horizon SSL
+ horizon_ssl_cert: /etc/ssl/certs/horizon.pem
+ horizon_ssl_key: /etc/ssl/private/horizon.key
+@@ -162,6 +170,9 @@
  ## Sahara UI Panel
  horizon_enable_sahara_ui: False
  
++## Trove UI Panel
 +horizon_enable_trove_ui: False
 +
  ## Neutron features to enable
  horizon_enable_neutron_lbaas: False
  horizon_enable_neutron_fwaas: False
-@@ -250,6 +257,7 @@
+@@ -250,6 +261,7 @@
    - python-memcached
    - python-keystoneclient
    - sahara_dashboard

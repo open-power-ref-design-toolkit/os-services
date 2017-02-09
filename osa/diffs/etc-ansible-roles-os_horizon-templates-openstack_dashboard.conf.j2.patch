@@ -1,0 +1,11 @@
+diff -Naur a/etc/ansible/roles/os_horizon/templates/openstack_dashboard.conf.j2 b/etc/ansible/roles/os_horizon/templates/openstack_dashboard.conf.j2
+--- a/etc/ansible/roles/os_horizon/templates/openstack_dashboard.conf.j2	2017-02-09 01:27:50.708235306 -0500
++++ b/etc/ansible/roles/os_horizon/templates/openstack_dashboard.conf.j2	2017-02-09 01:22:35.452229669 -0500
+@@ -1,6 +1,6 @@
+ # {{ ansible_managed }}
+ 
+-{% set _wsgi_threads = ansible_processor_vcpus | default(2) // 2 %}
++{% set _wsgi_threads = [ansible_processor_vcpus | default(2) // 2, horizon_wsgi_threads_max] | min %}
+ {% set wsgi_threads = _wsgi_threads if _wsgi_threads > 0 else 1 %}
+ 
+ {% if not horizon_external_ssl | bool %}

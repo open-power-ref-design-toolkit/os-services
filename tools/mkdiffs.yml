@@ -90,6 +90,31 @@ projects:
     target_location: /etc/ansible/roles/os_neutron
     src_location: os_neutron
   - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-os_ceilometer
+    branch: 14.0.6
+    target_location: /etc/ansible/roles/os_ceilometer
+    src_location: os_ceilometer
+  - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-os_horizon
+    branch: 14.0.6
+    target_location: /etc/ansible/roles/os_horizon
+    src_location: os_horizon
+  - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-repo_server
+    branch: 14.0.6
+    target_location: /etc/ansible/roles/repo_server
+    src_location: repo_server
+  - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-os_keystone
+    branch: 14.0.6
+    target_location: /etc/ansible/roles/os_keystone
+    src_location: os_keystone
+  - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-galera_server
+    branch: 14.0.6
+    target_location: /etc/ansible/roles/galera_server
+    src_location: galera_server
+  - project:
     git: https://git.openstack.org/openstack/openstack-ansible-pip_install
     branch: 14.0.6
     target_location: /etc/ansible/roles/pip_install

@@ -1,0 +1,14 @@
+diff -Naur a/etc/ansible/roles/galera_server/defaults/main.yml b/etc/ansible/roles/galera_server/defaults/main.yml
+--- a/etc/ansible/roles/galera_server/defaults/main.yml	2017-02-09 17:35:42.780060632 -0600
++++ b/etc/ansible/roles/galera_server/defaults/main.yml	2017-02-09 17:26:50.362555608 -0600
+@@ -69,7 +69,9 @@
+ galera_wsrep_address: "{{ ansible_host }}"
+ galera_wsrep_cluster_address: "{% if galera_cluster_members | length > 1 %}{% for host in galera_cluster_members %}{{ hostvars[host]['ansible_host'] }}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}"
+ galera_wsrep_node_incoming_address: "{{ galera_wsrep_address }}"
+-galera_wsrep_slave_threads: "{{ (ansible_processor_vcpus | int > 0) | ternary (ansible_processor_vcpus, 2) }}"
++## Cap the maximun number of threads / workers when a user value is unspecified.
++galera_wsrep_threads_max: 16
++galera_wsrep_slave_threads: "{{ [ansible_processor_vcpus|default(2) // 2, galera_wsrep_threads_max] | min }}"
+ galera_wsrep_retry_autocommit: 3
+ galera_wsrep_debug: 0
+ galera_wsrep_sst_method: xtrabackup-v2

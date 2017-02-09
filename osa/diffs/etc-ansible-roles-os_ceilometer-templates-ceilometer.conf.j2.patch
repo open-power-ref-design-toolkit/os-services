@@ -1,0 +1,11 @@
+diff -Naur a/etc/ansible/roles/os_ceilometer/templates/ceilometer.conf.j2 b/etc/ansible/roles/os_ceilometer/templates/ceilometer.conf.j2
+--- a/etc/ansible/roles/os_ceilometer/templates/ceilometer.conf.j2	2017-02-09 01:13:30.440219923 -0500
++++ b/etc/ansible/roles/os_ceilometer/templates/ceilometer.conf.j2	2017-02-09 00:27:25.120170475 -0500
+@@ -1,6 +1,6 @@
+ #{{ ansible_managed}}
+ 
+-{% set _workers = ansible_processor_vcpus|default(2) // 2 %}
++{% set _workers = [ansible_processor_vcpus|default(2) // 2, ceilometer_api_threads_max] | min %}
+ {% set workers = _workers if _workers > 0 else 1 %}
+ 
+ [DEFAULT]
