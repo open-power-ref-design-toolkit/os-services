@@ -46,13 +46,42 @@
   notify:
   - Restart os services
 
+# This tries to reload the UCA since it maybe corrupt and the source of the errors
+- name: Reload UCA
+  shell: |
+    # Loop until these three files are present:
+    # ubuntu-cloud.archive.canonical.com_ubuntu_dists_xenial-updates_newton_main_binary-ppc64el_Packages
+    # ubuntu-cloud.archive.canonical.com_ubuntu_dists_xenial-updates_newton_Release
+    # ubuntu-cloud.archive.canonical.com_ubuntu_dists_xenial-updates_newton_Release.gpg
+
+    APT_DIR='/var/lib/apt/lists'
+    UCA_FILES_PAT='ubuntu-cloud.archive.canonical.com_ubuntu_dists_*-updates_*_*'
+    FIND_CMD="find $APT_DIR -name $UCA_FILES_PAT"
+
+    FILE_COUNT=$($FIND_CMD | wc -w)
+    if [ $FILE_COUNT -gt 0 ]; then
+      while [ $FILE_COUNT -lt 3 ]; do
+        echo "Sleep"
+        sleep 120
+        echo "Remove existing files."
+        rm $APT_DIR/$UCA_FILES_PAT
+        echo "Update apt."
+        apt-get update
+        FILE_COUNT=$($FIND_CMD | wc -w)
+      done
+    fi
+  args:
+    executable: /bin/bash
+  when:
+    - install_pkgs_result is defined
+    - install_pkgs_result|failed
+
 # If installing ceph packages failed earlier, retry after
 # updating apt cache
 - name: Retry installing ceph packages, if failed earlier
   apt:
     name: '{{ item.1 }}'
     state: "{{ ceph_client_package_state }}"
-    update_cache: yes
   register: install_packages
   until: install_packages|success
   retries: 5

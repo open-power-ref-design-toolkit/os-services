@@ -1,7 +1,7 @@
 diff -Naur a/etc/ansible/roles/pip_install/tasks/pre_install.yml b/etc/ansible/roles/pip_install/tasks/pre_install.yml
---- a/etc/ansible/roles/pip_install/tasks/pre_install.yml	2017-01-25 00:08:01.600975384 -0500
-+++ b/etc/ansible/roles/pip_install/tasks/pre_install.yml	2017-01-25 00:07:19.436974630 -0500
-@@ -42,10 +42,25 @@
+--- a/etc/ansible/roles/pip_install/tasks/pre_install.yml	2017-02-08 07:48:46.168116240 -0600
++++ b/etc/ansible/roles/pip_install/tasks/pre_install.yml	2017-02-08 07:47:38.289931432 -0600
+@@ -42,10 +42,54 @@
      - ansible_pkg_mgr == 'apt'
      - "ansible_date_time.epoch|float - apt_cache_stat.stat.mtime > {{cache_timeout}}"
  
@@ -17,17 +17,46 @@ diff -Naur a/etc/ansible/roles/pip_install/tasks/pre_install.yml b/etc/ansible/r
 +  when:
 +    - ansible_pkg_mgr == 'apt'
 +
++# This tries to reload the UCA since it maybe corrupt and the source of the errors
++- name: Reload UCA
++  shell: |
++    # Loop until these three files are present:
++    # ubuntu-cloud.archive.canonical.com_ubuntu_dists_xenial-updates_newton_main_binary-ppc64el_Packages
++    # ubuntu-cloud.archive.canonical.com_ubuntu_dists_xenial-updates_newton_Release
++    # ubuntu-cloud.archive.canonical.com_ubuntu_dists_xenial-updates_newton_Release.gpg
++
++    APT_DIR='/var/lib/apt/lists'
++    UCA_FILES_PAT='ubuntu-cloud.archive.canonical.com_ubuntu_dists_*-updates_*_*'
++    FIND_CMD="find $APT_DIR -name $UCA_FILES_PAT"
++
++    FILE_COUNT=$($FIND_CMD | wc -w)
++    if [ $FILE_COUNT -gt 0 ]; then
++      while [ $FILE_COUNT -lt 3 ]; do
++        echo "Sleep"
++        sleep 120
++        echo "Remove existing files."
++        rm $APT_DIR/$UCA_FILES_PAT
++        echo "Update apt."
++        apt-get update
++        FILE_COUNT=$($FIND_CMD | wc -w)
++      done
++    fi
++  args:
++    executable: /bin/bash
++  when:
++    - ansible_pkg_mgr == 'apt'
++    - install_pkgs_result|failed
++
 +# If installing apt packages failed earlier, retry after
 +# updating apt cache
 +- name: Retry installing apt packages, if failed earlier
 +  apt:
 +    pkg: "{{ item }}"
 +    state: "{{ pip_install_package_state }}"
-+    update_cache: yes
    register: install_packages
    until: install_packages|success
    retries: 5
-@@ -53,3 +68,4 @@
+@@ -53,3 +97,4 @@
    with_items: "{{ pip_install_distro_packages }}"
    when:
      - ansible_pkg_mgr == 'apt'
