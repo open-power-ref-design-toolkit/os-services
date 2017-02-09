@@ -219,6 +219,14 @@ neutron_services:
    config_options: "--config-file {{ neutron_conf_dir }}/neutron.conf --config-file {{ neutron_conf_dir }}/metering_agent.ini --log-file=/var/log/neutron/neutron-metering-agent.log"
    config_overrides: "{{ neutron_metering_agent_ini_overrides }}"
    config_type: "ini"
+   # Other agents will use neutron_plugins[neutron_plugin_type].driver_interface
+   # for the interface_driver, but that uses a stevedore alias. Metering agent
+   # hasn't been updated to use stevedore alises so that fails. To work around
+   # the problem until metering agent is updated, we should use the full
+   # module.class path to the interface driver.
+   # TODO(hughsaunders): switch back to stevedore when
+   # https://review.openstack.org/#/c/419881/ merges and is backported.
+   interface_driver: neutron.agent.linux.interface.BridgeInterfaceDriver
  neutron-l3-agent:
    group: neutron_l3_agent
    service_name: neutron-l3-agent
