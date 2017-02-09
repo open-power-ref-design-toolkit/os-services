@@ -1,0 +1,13 @@
+diff -Naur a/etc/ansible/roles/repo_server/defaults/main.yml b/etc/ansible/roles/repo_server/defaults/main.yml
+--- a/etc/ansible/roles/repo_server/defaults/main.yml	2017-02-09 01:13:32.892219967 -0500
++++ b/etc/ansible/roles/repo_server/defaults/main.yml	2017-02-09 01:07:33.056213532 -0500
+@@ -17,6 +17,9 @@
+ # compute the number of api workers to use.
+ # repo_nginx_threads: 16
+ 
++## Cap the maximun number of threads / workers when a user value is unspecified.
++repo_api_threads_max: 16
++
+ ## APT Cache Options
+ cache_timeout: 600
+ 
