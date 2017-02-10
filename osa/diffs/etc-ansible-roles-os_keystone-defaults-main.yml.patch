@@ -1,0 +1,14 @@
+diff -Naur a/etc/ansible/roles/os_keystone/defaults/main.yml b/etc/ansible/roles/os_keystone/defaults/main.yml
+--- a/etc/ansible/roles/os_keystone/defaults/main.yml	2017-02-09 17:35:41.356109691 -0600
++++ b/etc/ansible/roles/os_keystone/defaults/main.yml	2017-02-09 17:33:18.129052693 -0600
+@@ -178,7 +178,9 @@
+ keystone_apache_servertokens: "Prod"
+ keystone_apache_serversignature: "Off"
+ keystone_wsgi_threads: 1
+-keystone_wsgi_processes: "{{ (ansible_processor_vcpus | int > 0) | ternary (ansible_processor_vcpus, 1) * 2}}"
++## Cap the maximun number of processes when a user value is unspecified.
++keystone_wsgi_processes_max: 32
++keystone_wsgi_processes: "{{ [ansible_processor_vcpus|default(2) * 2, keystone_wsgi_processes_max] | min }}"
+ 
+ ## Apache MPM tunables
+ keystone_httpd_mpm_backend: event

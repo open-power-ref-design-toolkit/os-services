@@ -64,6 +64,9 @@ trove_profiler_enabled: false
 # trove_api_workers: 16
 # trove_api_workers: 16
 
+## Cap the maximun number of threads / workers when a user value is unspecified.
+trove_api_threads_max: 16
+
 # Name of the virtual env to deploy into
 trove_venv_tag: untagged
 trove_bin: "/openstack/venvs/trove-{{ trove_venv_tag }}/bin"
@@ -88,7 +91,9 @@ trove_apache_log_level: info
 trove_apache_servertokens: "Prod"
 trove_apache_serversignature: "Off"
 trove_wsgi_threads: 1
-trove_wsgi_processes: "{{ ansible_processor_vcpus | default (1) * 2 }}"
+## Cap the maximun number of threads / workers when a user value is unspecified.
+trove_wsgi_processes_max: 32
+trove_wsgi_processes: "{{ [ansible_processor_vcpus|default(1) * 2, trove_wsgi_processes_max] | min }}"
 
 # set trove_ssl to true to enable SSL configuration on the trove containers
 trove_ssl: false
