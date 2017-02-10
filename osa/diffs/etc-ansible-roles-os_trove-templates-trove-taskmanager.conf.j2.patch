@@ -1,0 +1,47 @@
+diff -Naur a/etc/ansible/roles/os_trove/templates/trove-taskmanager.conf.j2 b/etc/ansible/roles/os_trove/templates/trove-taskmanager.conf.j2
+--- a/etc/ansible/roles/os_trove/templates/trove-taskmanager.conf.j2	2017-02-10 11:31:34.726439281 -0600
++++ b/etc/ansible/roles/os_trove/templates/trove-taskmanager.conf.j2	2017-02-10 10:57:12.000000000 -0600
+@@ -26,7 +26,7 @@
+ mount_point = /var/lib/mysql
+ volume_time_out=30
+ server_delete_time_out=480
+-use_nova_server_config_drive = False
++use_nova_server_config_drive = True
+ taskmanager_manager=trove.taskmanager.manager.Manager
+ exists_notification_transformer = trove.extensions.mgmt.instances.models.NovaNotificationTransformer
+ exists_notification_ticks = 30
+@@ -47,8 +47,8 @@
+ dns_service_type = dns
+ 
+ # Neutron
+-network_driver = trove.network.nova.NovaNetwork
+-default_neutron_networks =
++network_driver = trove.network.neutron.NeutronDriver
++default_neutron_networks = {{ trove_infra_net_id }}
+ 
+ # Nova
+ nova_compute_url = {{ trove_nova_compute_url }}
+@@ -78,11 +78,11 @@
+ pydev_debug = disabled
+ 
+ # ================= Guestagent related ========================
+-#guest_config = /etc/trove/trove-guestagent.conf
++guest_config = /etc/trove/trove-guestagent.conf
+ # Use 'guest_info = /etc/guest_info' for pre-Kilo compatibility
+-#guest_info = guest_info.conf
++guest_info = guest_info.conf
+ # Use 'injected_config_location = /etc/trove' for pre-Kilo compatibility
+-#injected_config_location = /etc/trove/conf.d
++injected_config_location = /etc/trove/conf.d
+ #cloudinit_location = /etc/trove/cloudinit
+ 
+ [database]
+@@ -105,7 +105,7 @@
+ [redis]
+ tcp_ports = 6379
+ # redis uses local storage
+-volume_support = False
++volume_support = True
+ # default device_path = None
+ 
+ [cassandra]

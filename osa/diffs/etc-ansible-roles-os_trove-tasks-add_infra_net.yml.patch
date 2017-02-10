@@ -1,7 +1,7 @@
 diff -Naur a/etc/ansible/roles/os_trove/tasks/add_infra_net.yml b/etc/ansible/roles/os_trove/tasks/add_infra_net.yml
---- a/etc/ansible/roles/os_trove/tasks/add_infra_net.yml	1969-12-31 19:00:00.000000000 -0500
-+++ b/etc/ansible/roles/os_trove/tasks/add_infra_net.yml	2017-02-01 05:57:23.276818553 -0500
-@@ -0,0 +1,65 @@
+--- a/etc/ansible/roles/os_trove/tasks/add_infra_net.yml	1969-12-31 18:00:00.000000000 -0600
++++ b/etc/ansible/roles/os_trove/tasks/add_infra_net.yml	2017-02-10 11:00:24.000000000 -0600
+@@ -0,0 +1,82 @@
 +---
 +# Copyright 2016 IBM Corp.
 +#
@@ -66,4 +66,21 @@ diff -Naur a/etc/ansible/roles/os_trove/tasks/add_infra_net.yml b/etc/ansible/ro
 +  run_once: true
 +  tags:
 +    - infra-net
-+ 
++
++- name: Get trove infra net id
++  os_networks_facts:
++    cloud: default
++    validate_certs: False
++    wait: yes
++    name: trove_infra_net
++  run_once: true
++  tags:
++    - infra-net
++
++- name: Save trove infra net id
++  set_fact:
++    trove_infra_net_id: "{{ openstack_networks[0].id }}"
++  run_once: true
++  tags:
++    - infra-net
++

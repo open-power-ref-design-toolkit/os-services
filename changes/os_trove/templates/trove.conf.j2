@@ -55,8 +55,8 @@ nova_proxy_admin_pass = {{ trove_service_password }}
 nova_proxy_admin_tenant_name = {{ trove_service_project_name }}
 
 # Neutron
-network_driver = trove.network.nova.NovaNetwork
-default_neutron_networks =
+network_driver = trove.network.neutron.NeutronDriver
+default_neutron_networks = {{ trove_infra_net_id }}
 
 # Taskmanager queue name
 taskmanager_queue = taskmanager
@@ -126,7 +126,7 @@ ignore_dbs = mysql, information_schema, performance_schema
 [redis]
 tcp_ports = 6379
 #redis uses local storage
-volume_support = False
+volume_support = True
 # default device_path = None
 
 [cassandra]

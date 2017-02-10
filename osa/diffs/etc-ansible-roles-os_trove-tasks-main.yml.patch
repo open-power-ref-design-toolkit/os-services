@@ -1,12 +1,19 @@
 diff -Naur a/etc/ansible/roles/os_trove/tasks/main.yml b/etc/ansible/roles/os_trove/tasks/main.yml
---- a/etc/ansible/roles/os_trove/tasks/main.yml	2017-02-05 10:15:57.208721887 -0600
-+++ b/etc/ansible/roles/os_trove/tasks/main.yml	2017-02-05 10:15:28.669587670 -0600
-@@ -49,6 +49,13 @@
+--- a/etc/ansible/roles/os_trove/tasks/main.yml	2017-02-10 11:31:34.726439281 -0600
++++ b/etc/ansible/roles/os_trove/tasks/main.yml	2017-02-10 11:00:03.000000000 -0600
+@@ -35,6 +35,8 @@
    tags:
      - trove-install
  
 +- include: add_infra_net.yml
 +
+ - include: trove_post_install.yml
+   tags:
+     - trove-install
+@@ -49,6 +51,11 @@
+   tags:
+     - trove-install
+ 
 +- include: trove_diskreorder_patch.yml
 +  when: inventory_hostname in groups['trove_taskmanager']
 +  tags:

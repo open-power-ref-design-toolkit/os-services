@@ -62,4 +62,21 @@
   run_once: true
   tags:
     - infra-net
- 
+
+- name: Get trove infra net id
+  os_networks_facts:
+    cloud: default
+    validate_certs: False
+    wait: yes
+    name: trove_infra_net
+  run_once: true
+  tags:
+    - infra-net
+
+- name: Save trove infra net id
+  set_fact:
+    trove_infra_net_id: "{{ openstack_networks[0].id }}"
+  run_once: true
+  tags:
+    - infra-net
+
