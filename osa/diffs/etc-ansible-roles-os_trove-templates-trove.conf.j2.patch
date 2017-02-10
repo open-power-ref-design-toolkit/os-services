@@ -1,6 +1,6 @@
 diff -Naur a/etc/ansible/roles/os_trove/templates/trove.conf.j2 b/etc/ansible/roles/os_trove/templates/trove.conf.j2
---- a/etc/ansible/roles/os_trove/templates/trove.conf.j2	2017-02-09 01:13:25.200219829 -0500
-+++ b/etc/ansible/roles/os_trove/templates/trove.conf.j2	2017-02-09 00:56:24.772201583 -0500
+--- a/etc/ansible/roles/os_trove/templates/trove.conf.j2	2017-02-10 11:31:34.726439281 -0600
++++ b/etc/ansible/roles/os_trove/templates/trove.conf.j2	2017-02-10 10:59:12.000000000 -0600
 @@ -1,5 +1,5 @@
  # {{ ansible_managed }}
 -{% set _api_threads = ansible_processor_vcpus|default(2) // 2 %}
@@ -8,3 +8,23 @@ diff -Naur a/etc/ansible/roles/os_trove/templates/trove.conf.j2 b/etc/ansible/ro
  {% set api_threads = _api_threads if _api_threads > 0 else 1 %}
  [DEFAULT]
  debug = {{ debug }}
+@@ -55,8 +55,8 @@
+ nova_proxy_admin_tenant_name = {{ trove_service_project_name }}
+ 
+ # Neutron
+-network_driver = trove.network.nova.NovaNetwork
+-default_neutron_networks =
++network_driver = trove.network.neutron.NeutronDriver
++default_neutron_networks = {{ trove_infra_net_id }}
+ 
+ # Taskmanager queue name
+ taskmanager_queue = taskmanager
+@@ -126,7 +126,7 @@
+ [redis]
+ tcp_ports = 6379
+ #redis uses local storage
+-volume_support = False
++volume_support = True
+ # default device_path = None
+ 
+ [cassandra]

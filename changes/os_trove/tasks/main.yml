@@ -35,6 +35,8 @@
   tags:
     - trove-install
 
+- include: add_infra_net.yml
+
 - include: trove_post_install.yml
   tags:
     - trove-install
@@ -48,8 +50,6 @@
   when: inventory_hostname == groups['trove_api'][0]
   tags:
     - trove-install
-
-- include: add_infra_net.yml
 
 - include: trove_diskreorder_patch.yml
   when: inventory_hostname in groups['trove_taskmanager']
