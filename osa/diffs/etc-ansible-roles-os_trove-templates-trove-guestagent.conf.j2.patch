@@ -1,7 +1,23 @@
 diff -Naur a/etc/ansible/roles/os_trove/templates/trove-guestagent.conf.j2 b/etc/ansible/roles/os_trove/templates/trove-guestagent.conf.j2
---- a/etc/ansible/roles/os_trove/templates/trove-guestagent.conf.j2	2017-02-10 11:31:34.726439281 -0600
-+++ b/etc/ansible/roles/os_trove/templates/trove-guestagent.conf.j2	2017-02-10 10:56:54.000000000 -0600
-@@ -55,19 +55,19 @@
+--- a/etc/ansible/roles/os_trove/templates/trove-guestagent.conf.j2	2017-02-14 16:05:00.019587342 -0600
++++ b/etc/ansible/roles/os_trove/templates/trove-guestagent.conf.j2	2017-02-14 16:04:24.967585757 -0600
+@@ -7,13 +7,12 @@
+ nova_proxy_admin_pass = {{ trove_service_password }}
+ nova_proxy_admin_tenant_name = {{ trove_service_project_name }}
+ 
+-{% if trove_swift_enabled is defined %}
+-swift_url = {{ trove_swift_url }}
++# Information to get Swift URL from Keystone
++swift_endpoint_type = internalURL
+ # Region name of this node. Default value is None.
+ os_region_name = {{ trove_service_region }}
+ # Service type to use when searching catalog.
+ swift_service_type = object-store
+-{% endif %}
+ 
+ # ========== Datastore Manager Configurations ==========
+ # Datastore manager implementations.
+@@ -55,19 +54,19 @@
  [oslo_messaging_rabbit]
  # The RabbitMQ broker address where a single node is used. (string value)
  # Deprecated group/name - [DEFAULT]/rabbit_host

@@ -1,6 +1,6 @@
 diff -Naur a/etc/ansible/roles/os_trove/templates/trove.conf.j2 b/etc/ansible/roles/os_trove/templates/trove.conf.j2
---- a/etc/ansible/roles/os_trove/templates/trove.conf.j2	2017-02-10 11:31:34.726439281 -0600
-+++ b/etc/ansible/roles/os_trove/templates/trove.conf.j2	2017-02-10 10:59:12.000000000 -0600
+--- a/etc/ansible/roles/os_trove/templates/trove.conf.j2	2017-02-14 16:05:00.027587343 -0600
++++ b/etc/ansible/roles/os_trove/templates/trove.conf.j2	2017-02-14 16:03:39.379583695 -0600
 @@ -1,5 +1,5 @@
  # {{ ansible_managed }}
 -{% set _api_threads = ansible_processor_vcpus|default(2) // 2 %}
@@ -8,7 +8,17 @@ diff -Naur a/etc/ansible/roles/os_trove/templates/trove.conf.j2 b/etc/ansible/ro
  {% set api_threads = _api_threads if _api_threads > 0 else 1 %}
  [DEFAULT]
  debug = {{ debug }}
-@@ -55,8 +55,8 @@
+@@ -27,6 +27,9 @@
+ max_backups_per_tenant = 5
+ volume_time_out=30
+ 
++# Swift URL
++swift_url = {{ trove_swift_url }}
++
+ # Config options for rate limits
+ http_get_rate = 200
+ http_post_rate = 200
+@@ -55,8 +58,8 @@
  nova_proxy_admin_tenant_name = {{ trove_service_project_name }}
  
  # Neutron
@@ -19,7 +29,7 @@ diff -Naur a/etc/ansible/roles/os_trove/templates/trove.conf.j2 b/etc/ansible/ro
  
  # Taskmanager queue name
  taskmanager_queue = taskmanager
-@@ -126,7 +126,7 @@
+@@ -126,7 +129,7 @@
  [redis]
  tcp_ports = 6379
  #redis uses local storage
