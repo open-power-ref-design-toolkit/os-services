@@ -1,0 +1,14 @@
+
+The database as a service recipe requires you to take a manual step
+after deploying the OpenStack services and before you proceed to build
+a disk image.
+
+Please attach to the utility container and run the following commands:
+
+$ . /root/openrc
+$ neutron subnet-update --no-gateway trove_infra_subnet
+
+To attach to the utility container, login to a controller node and
+run the following command:
+
+$ sudo lxc-attach -n $(sudo lxc-ls --filter=utility)
