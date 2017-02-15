@@ -7,13 +7,12 @@ nova_proxy_admin_user = {{ trove_service_user_name }}
 nova_proxy_admin_pass = {{ trove_service_password }}
 nova_proxy_admin_tenant_name = {{ trove_service_project_name }}
 
-{% if trove_swift_enabled is defined %}
-swift_url = {{ trove_swift_url }}
+# Information to get Swift URL from Keystone
+swift_endpoint_type = internalURL
 # Region name of this node. Default value is None.
 os_region_name = {{ trove_service_region }}
 # Service type to use when searching catalog.
 swift_service_type = object-store
-{% endif %}
 
 # ========== Datastore Manager Configurations ==========
 # Datastore manager implementations.
