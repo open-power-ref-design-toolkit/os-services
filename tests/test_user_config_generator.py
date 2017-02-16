@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2016, IBM US, Inc.
+# Copyright 2016, 2017 IBM US, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -252,6 +252,40 @@ class TestOFGBasics(unittest.TestCase):
 
         mock_open.assert_called_once_with('output-dir/filename', 'w')
 
+    def test_get_controllers(self):
+        ofg = guc.OSAFileGenerator('input-file', 'output-dir')
+
+        # Test controllers node template
+        inv = {'nodes': {'controllers': ['n1', 'n2', 'n3', 'n4']}}
+        ofg.gen_dict = inv
+        ret = ofg._get_controllers()
+        self.assertItemsEqual(ret, ['n1', 'n2', 'n3', 'n4'])
+
+        # Test nodes with controller role
+        inv = {'nodes': {'other': ['n1', 'n2', 'n3', 'n4']},
+               'node-templates': {'other': {'roles': ['controller']}}}
+        ofg.gen_dict = inv
+        ret = ofg._get_controllers()
+        self.assertItemsEqual(ret, ['n1', 'n2', 'n3', 'n4'])
+
+        # Test both controllers node template and controller role name
+        inv = {'nodes': {'controllers': ['n1', 'n2', 'n3', 'n4'],
+                         'other': ['n5', 'n6']},
+               'node-templates': {'other': {'roles': ['controller']},
+                                  'controllers': {}}}
+        ofg.gen_dict = inv
+        ret = ofg._get_controllers()
+        self.assertItemsEqual(ret, ['n1', 'n2', 'n3', 'n4', 'n5', 'n6'])
+
+        # Test controllers node template with controller role
+        inv = {'nodes': {'controllers': ['n1', 'n2', 'n3', 'n4'],
+                         'other': ['n5', 'n6']},
+               'node-templates': {'other': {'roles': ['controller']},
+                                  'controllers': {'roles': ['controller']}}}
+        ofg.gen_dict = inv
+        ret = ofg._get_controllers()
+        self.assertItemsEqual(ret, ['n1', 'n2', 'n3', 'n4', 'n5', 'n6'])
+
 
 class TestCIDRNetworks(unittest.TestCase):
     def setUp(self):
@@ -468,6 +502,63 @@ class TestConfigureInfraHosts(unittest.TestCase):
             },
             'host2': {
                 'ip': '55.66.77.88',
+            }
+        }
+
+        for svc in COMPUTE_CONTROLLER_SERVICES:
+            self.assertIn(svc, result)
+            self.assertEqual(expected, result[svc])
+
+    def test_controller_converged_nodes_with_roles(self):
+        self.ofg.gen_dict = {
+            'node-templates': {
+                'converged-node': {
+                    'roles': [
+                        'controller',   # testing this here
+                        'compute'
+                    ]
+                }
+            },
+            'nodes': {
+                'controllers': [
+                    {
+                        'hostname': 'host1',
+                        'openstack-mgmt-addr': '11.22.33.44',
+                    },
+                    {
+                        'hostname': 'host2',
+                        'openstack-mgmt-addr': '55.66.77.88',
+                    }
+                ],
+                'converged-node': [
+                    {
+                        'hostname': 'host3',
+                        'openstack-mgmt-addr': '12.22.32.42',
+                    },
+                    {
+                        'hostname': 'host4',
+                        'openstack-mgmt-addr': '52.62.72.82',
+                    }
+                ]
+            },
+            'reference-architecture': ['private-compute-cloud']
+        }
+
+        self.ofg._configure_infra_hosts()
+        result = self.ofg.user_config
+
+        expected = {
+            'host1': {
+                'ip': '11.22.33.44',
+            },
+            'host2': {
+                'ip': '55.66.77.88',
+            },
+            'host3': {
+                'ip': '12.22.32.42',
+            },
+            'host4': {
+                'ip': '52.62.72.82',
             }
         }
 
@@ -1388,6 +1479,55 @@ class TestConfigureComputeHosts(unittest.TestCase):
         self.assertIn('host2', compute_hosts)
         self.assertEqual({'ip': '55.66.77.88'}, compute_hosts['host2'])
 
+    def test_converged_nodes_with_roles(self):
+        self.ofg.gen_dict = {
+            'node-templates': {
+                'converged-node': {
+                    'roles': [
+                        'controller',
+                        'compute'     # testing this here
+                    ]
+                }
+            },
+            'nodes': {
+                'compute': [
+                    {
+                        'hostname': 'host1',
+                        'openstack-mgmt-addr': '11.22.33.44',
+                    },
+                    {
+                        'hostname': 'host2',
+                        'openstack-mgmt-addr': '55.66.77.88',
+                    }
+                ],
+                'converged-node': [
+                    {
+                        'hostname': 'host3',
+                        'openstack-mgmt-addr': '12.22.32.42',
+                    },
+                    {
+                        'hostname': 'host4',
+                        'openstack-mgmt-addr': '52.62.72.82',
+                    }
+                ]
+            },
+            'reference-architecture': ['private-compute-cloud']
+        }
+
+        self.ofg._configure_compute_hosts()
+        result = self.ofg.user_config
+
+        self.assertIn('compute_hosts', result)
+        compute_hosts = result['compute_hosts']
+        self.assertIn('host1', compute_hosts)
+        self.assertEqual({'ip': '11.22.33.44'}, compute_hosts['host1'])
+        self.assertIn('host2', compute_hosts)
+        self.assertEqual({'ip': '55.66.77.88'}, compute_hosts['host2'])
+        self.assertIn('host3', compute_hosts)
+        self.assertEqual({'ip': '12.22.32.42'}, compute_hosts['host3'])
+        self.assertIn('host4', compute_hosts)
+        self.assertEqual({'ip': '52.62.72.82'}, compute_hosts['host4'])
+
     def test_ref_arch_not_found(self):
         self.ofg.gen_dict = {
             'nodes': {
@@ -1474,6 +1614,44 @@ class TestConfigureComputeHosts(unittest.TestCase):
             }
         }
         self.assertEqual(expected, compute_hosts)
+
+    def test_get_compute_hosts(self):
+        ofg = guc.OSAFileGenerator('input-file', 'output-dir')
+
+        # Test compute node template
+        inv = {'nodes': {'compute': ['n1', 'n2', 'n3', 'n4']},
+               'reference-architecture': ['private-compute-cloud']}
+        ofg.gen_dict = inv
+        ret = ofg._get_compute_hosts()
+        self.assertItemsEqual(ret, ['n1', 'n2', 'n3', 'n4'])
+
+        # Test nodes with compute role
+        inv = {'nodes': {'other': ['n1', 'n2', 'n3', 'n4']},
+               'node-templates': {'other': {'roles': ['compute']}},
+               'reference-architecture': ['private-compute-cloud']}
+        ofg.gen_dict = inv
+        ret = ofg._get_compute_hosts()
+        self.assertItemsEqual(ret, ['n1', 'n2', 'n3', 'n4'])
+
+        # Test both compute node template and compute role name
+        inv = {'nodes': {'compute': ['n1', 'n2', 'n3', 'n4'],
+                         'other': ['n5', 'n6']},
+               'node-templates': {'other': {'roles': ['compute']},
+                                  'compute': {}},
+               'reference-architecture': ['private-compute-cloud']}
+        ofg.gen_dict = inv
+        ret = ofg._get_compute_hosts()
+        self.assertItemsEqual(ret, ['n1', 'n2', 'n3', 'n4', 'n5', 'n6'])
+
+        # Test compute node template with compute role
+        inv = {'nodes': {'compute': ['n1', 'n2', 'n3', 'n4'],
+                         'other': ['n5', 'n6']},
+               'node-templates': {'other': {'roles': ['compute']},
+                                  'compute': {'roles': ['compute']}},
+               'reference-architecture': ['private-compute-cloud']}
+        ofg.gen_dict = inv
+        ret = ofg._get_compute_hosts()
+        self.assertItemsEqual(ret, ['n1', 'n2', 'n3', 'n4', 'n5', 'n6'])
 
 
 class TestConfigureStorageHosts(unittest.TestCase):
@@ -1854,9 +2032,9 @@ class TestGenerateCeilometer(unittest.TestCase):
         mock_dump.assert_called_once_with(expected, 'user_var_ceilometer.yml')
 
 
-@mock.patch.object(guc.OSAFileGenerator, '_dump_yml')
 class TestGenerateCeph(unittest.TestCase):
 
+    @mock.patch.object(guc.OSAFileGenerator, '_dump_yml')
     def test_generate(self, mock_dump):
         ofg = guc.OSAFileGenerator('input-file', 'output-dir')
         ofg.gen_dict = {
@@ -1887,6 +2065,7 @@ class TestGenerateCeph(unittest.TestCase):
         }
         mock_dump.assert_called_once_with(expected, 'user_var_ceph.yml')
 
+    @mock.patch.object(guc.OSAFileGenerator, '_dump_yml')
     def test_generate_no_nodes(self, mock_dump):
         ofg = guc.OSAFileGenerator('input-file', 'output-dir')
         # ofg.gen_dict is empty
@@ -1897,6 +2076,7 @@ class TestGenerateCeph(unittest.TestCase):
         ofg.generate_ceph()
         self.assertEqual(0, mock_dump.call_count)
 
+    @mock.patch.object(guc.OSAFileGenerator, '_dump_yml')
     def test_generate_no_arch(self, mock_dump):
         ofg = guc.OSAFileGenerator('input-file', 'output-dir')
         ofg.gen_dict = {
@@ -1906,6 +2086,7 @@ class TestGenerateCeph(unittest.TestCase):
         ofg.generate_ceph()
         self.assertEqual(0, mock_dump.call_count)
 
+    @mock.patch.object(guc.OSAFileGenerator, '_dump_yml')
     def test_generate_no_controllers(self, mock_dump):
         ofg = guc.OSAFileGenerator('input-file', 'output-dir')
         # ofg.gen_dict is empty
@@ -1927,6 +2108,7 @@ class TestGenerateCeph(unittest.TestCase):
 
         self.assertEqual(0, mock_dump.call_count)
 
+    @mock.patch.object(guc.OSAFileGenerator, '_dump_yml')
     def test_generate_no_storage(self, mock_dump):
         ofg = guc.OSAFileGenerator('input-file', 'output-dir')
         # ofg.gen_dict is empty
@@ -1957,6 +2139,50 @@ class TestGenerateCeph(unittest.TestCase):
             ]
         }
         mock_dump.assert_called_once_with(expected, 'user_var_ceph.yml')
+
+    def test_get_ceph_monitors(self):
+        ofg = guc.OSAFileGenerator('input-file', 'output-dir')
+        # Test backward compatibility with controllers template
+        inv = {'nodes': {'controllers': ['n1', 'n2', 'n3', 'n4']}}
+        ofg.gen_dict = inv
+        ret = ofg._get_ceph_monitors()
+        self.assertItemsEqual(ret, ['n1', 'n2', 'n3', 'n4'])
+
+        # Test node template with ceph-monitor role
+        inv = {'nodes': {'random': ['n1', 'n2', 'n3', 'n4'],
+                         'other': ['n5']},
+               'node-templates': {'random': {'roles': ['ceph-monitor']},
+                                  'other': {}}}
+        ofg.gen_dict = inv
+        ret = ofg._get_ceph_monitors()
+        self.assertItemsEqual(ret, ['n1', 'n2', 'n3', 'n4'])
+
+        # Test ceph-monitor template with ceph-monitor role
+        inv = {'nodes': {'ceph-monitor': ['n1', 'n2', 'n3', 'n4'],
+                         'other': ['n5']},
+               'node-templates': {'ceph-monitor': {'roles': ['ceph-monitor']},
+                                  'other': {}}}
+        ofg.gen_dict = inv
+        ret = ofg._get_ceph_monitors()
+        self.assertItemsEqual(ret, ['n1', 'n2', 'n3', 'n4'])
+
+        # Test controllers template with ceph-monitor role
+        inv = {'nodes': {'controllers': ['n1', 'n2', 'n3', 'n4'],
+                         'other': ['n5']},
+               'node-templates': {'controllers': {'roles': ['ceph-monitor']},
+                                  'other': {}}}
+        ofg.gen_dict = inv
+        ret = ofg._get_ceph_monitors()
+        self.assertItemsEqual(ret, ['n1', 'n2', 'n3', 'n4'])
+
+        # Test controller without ceph-monitor role
+        inv = {'nodes': {'controllers': ['n1', 'n2', 'n3', 'n4'],
+                         'other': ['n5']},
+               'node-templates': {'controllers': {'roles': ['controllers']},
+                                  'other': {'roles': ['ceph-monitor']}}}
+        ofg.gen_dict = inv
+        ret = ofg._get_ceph_monitors()
+        self.assertItemsEqual(ret, ['n5'])
 
 
 class TestConfigureSwift(unittest.TestCase):
@@ -2279,6 +2505,63 @@ class TestConfigureSwift(unittest.TestCase):
                           {'name': 'f',
                            'groups': ['default']}]
         self.assertEqual(swift_vars['drives'], expected_disks)
+
+    def test_get_swift_proxy_hosts(self):
+        # Test without Swift in ref arch
+        inv = {'reference-architecture': ['something'],
+               'nodes': {'a': ['node1']}}
+        self.ofg.gen_dict = inv
+        ret = self.ofg._get_swift_proxy_hosts()
+        self.assertEqual(0, len(ret))
+
+        # Test with a swift-proxy template
+        inv = {'reference-architecture': ['swift'],
+               'nodes': {'swift-proxy': ['n1', 'n2', 'n3']}}
+        self.ofg.gen_dict = inv
+        ret = self.ofg._get_swift_proxy_hosts()
+        self.assertItemsEqual(ret, ['n1', 'n2', 'n3'])
+
+        # Test with controller template without swift min hardware
+        # in the reference architecture
+        inv = {'reference-architecture': ['swift'],
+               'nodes': {'swift-proxy': ['n1', 'n2', 'n3'],
+                         'controllers': ['n4']}}
+        self.ofg.gen_dict = inv
+        ret = self.ofg._get_swift_proxy_hosts()
+        self.assertItemsEqual(ret, ['n1', 'n2', 'n3'])
+
+        # Test with controller template with swift min hardware
+        # in the reference architecture
+        inv = {'reference-architecture': ['swift', 'swift-minimum-hardware'],
+               'nodes': {'controllers': ['n4']}}
+        self.ofg.gen_dict = inv
+        ret = self.ofg._get_swift_proxy_hosts()
+        self.assertItemsEqual(ret, ['n4'])
+
+        # Test node template with swift-proxy role
+        inv = {'reference-architecture': ['swift'],
+               'nodes': {'random': ['n4', 'n5', 'n6', 'n7']},
+               'node-templates': {'random': {'roles': ['swift-proxy']}}}
+        self.ofg.gen_dict = inv
+        ret = self.ofg._get_swift_proxy_hosts()
+        self.assertItemsEqual(ret, ['n4', 'n5', 'n6', 'n7'])
+
+        # Test with swift-proxy template with swift-proxy role
+        inv = {'reference-architecture': ['swift'],
+               'nodes': {'swift-proxy': ['n4', 'n5', 'n6', 'n7']},
+               'node-templates': {'swift-proxy': {'roles': ['swift-proxy']}}}
+        self.ofg.gen_dict = inv
+        ret = self.ofg._get_swift_proxy_hosts()
+        self.assertItemsEqual(ret, ['n4', 'n5', 'n6', 'n7'])
+
+        # Test with swift min hardware and non-controller template with
+        # controller role
+        inv = {'reference-architecture': ['swift'],
+               'nodes': {'random': ['n4', 'n5', 'n6', 'n7']},
+               'node-templates': {'random': {'roles': ['controller']}}}
+        ret = self.ofg._get_swift_proxy_hosts()
+        self.assertItemsEqual(ret, ['n4', 'n5', 'n6', 'n7'])
+
 
 if __name__ == '__main__':
     unittest.main()
