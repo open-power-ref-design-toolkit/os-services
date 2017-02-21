@@ -92,8 +92,9 @@ https://bugs.launchpad.net/open-power-ref-design
 Related projects
 ----------------
 
-The following project provides recipes for the delivery of compelling cloud based offerings
-that are specially built for OpenPOWER servers.  In general, users should read this project first:
+The following project provides recipes for the delivery of compelling cloud based
+offerings that are specially built for OpenPOWER servers.  In general, users should
+read this project first:
 
     - `openstack-recipes <https://github.com/open-power-ref-design/openstack-recipes>`_
 
@@ -103,7 +104,8 @@ Here, you will find information about:
     - `Database as a Service (OpenStack Trove) <https://github.com/open-power-ref-design/openstack-recipes/blob/master/README-dbaas.rst>`_
     - `Standalone Swift Clusters (OpenStack Swift) <https://github.com/open-power-ref-design/openstack-recipes/blob/master/README-swift.rst>`_
 
-The following projects provides services that are used as major building blocks in recipes:
+The following projects provides services that are used as major building blocks in
+recipes:
 
     - `cluster-genesis <https://github.com/open-power-ref-design/cluster-genesis>`_
     - `ceph-services <https://github.com/open-power-ref-design/ceph-services>`_
