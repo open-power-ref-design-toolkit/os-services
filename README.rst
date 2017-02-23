@@ -92,11 +92,11 @@ https://bugs.launchpad.net/open-power-ref-design
 Related projects
 ----------------
 
-OpenStack based recipes for OpenPOWER servers are located here:
+Recipes for OpenPOWER servers are located here:
 
-    - `openstack-recipes <https://github.com/open-power-ref-design/>`_
+    - `Recipe directory <https://github.com/open-power-ref-design/>`_
 
-Here, you will find information about:
+Here, you will find several OpenStack based recipes:
 
     - `Private cloud w/ and w/o Swift Object Storage <https://github.com/open-power-ref-design/private-compute-cloud/blob/master/README.rst>`_
     - `Database as a Service (OpenStack Trove) <https://github.com/open-power-ref-design/dbaas/blob/master/README.rst>`_
