@@ -54,8 +54,8 @@ Debugging hints
 The os-services project clones the projects associated with the DEPLOY_XXX environment
 variables. The location of these projects can be externally specified as shown below::
 
-    > export GIT_CEPH_URL=git://github.com/open-power-ref-design/ceph-services.git
-    > export GIT_OPSMGR_URL=git://github.com/open-power-ref-design/opsmgr.git
+    > export GIT_CEPH_URL=git://github.com/open-power-ref-design-toolkit/ceph-services.git
+    > export GIT_OPSMGR_URL=git://github.com/open-power-ref-design-toolkit/opsmgr.git
 
 The release tag or branch may be set via the following variables::
 
@@ -92,21 +92,20 @@ https://bugs.launchpad.net/open-power-ref-design
 Related projects
 ----------------
 
-The following project provides recipes for the delivery of compelling cloud based
-offerings that are specially built for OpenPOWER servers.  In general, users should
-read this project first:
+OpenStack based recipes for OpenPOWER servers are located here:
 
-    - `openstack-recipes <https://github.com/open-power-ref-design/openstack-recipes>`_
+    - `openstack-recipes <https://github.com/open-power-ref-design/>`_
 
 Here, you will find information about:
 
-    - `Private cloud w/ and w/o Swift Object Storage <https://github.com/open-power-ref-design/openstack-recipes/blob/master/README.rst>`_
-    - `Database as a Service (OpenStack Trove) <https://github.com/open-power-ref-design/openstack-recipes/blob/master/README-dbaas.rst>`_
-    - `Standalone Swift Clusters (OpenStack Swift) <https://github.com/open-power-ref-design/openstack-recipes/blob/master/README-swift.rst>`_
+    - `Private cloud w/ and w/o Swift Object Storage <https://github.com/open-power-ref-design/private-compute-cloud/blob/master/README.rst>`_
+    - `Database as a Service (OpenStack Trove) <https://github.com/open-power-ref-design/dbaas/blob/master/README-dbaas.rst>`_
+    - `Standalone Swift Clusters (OpenStack Swift) <https://github.com/open-power-ref-design/standalone-swift/blob/master/README-swift.rst>`_
+    - `Standalone Ceph Clusters <https://github.com/open-power-ref-design/standalone-ceph/blob/master/README-swift.rst>`_
 
 The following projects provides services that are used as major building blocks in
 recipes:
 
-    - `cluster-genesis <https://github.com/open-power-ref-design/cluster-genesis>`_
-    - `ceph-services <https://github.com/open-power-ref-design/ceph-services>`_
-    - `opsmgr <https://github.com/open-power-ref-design/opsmgr>`_
+    - `cluster-genesis <https://github.com/open-power-ref-design-toolkit/cluster-genesis>`_
+    - `ceph-services <https://github.com/open-power-ref-design-toolkit/ceph-services>`_
+    - `opsmgr <https://github.com/open-power-ref-design-toolkit/opsmgr>`_
