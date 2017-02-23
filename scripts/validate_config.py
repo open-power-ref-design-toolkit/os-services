@@ -26,10 +26,6 @@ COMPUTE = 'private-compute-cloud'
 BASE_ARCHS = {SWIFT, COMPUTE, CEPH}
 
 
-class UnsupportedConfig(Exception):
-    pass
-
-
 def validate(file_path):
     try:
         inventory = _load_yml(file_path)
@@ -144,46 +140,150 @@ def validate_ceph(inventory):
         # Nothing to validate.  No ref archs that use Ceph.
         return
 
+    roles_to_templates = _get_roles_to_templates(inventory)
+    _validate_ceph_node_templates(roles_to_templates)
+    _validate_ceph_networks(inventory, roles_to_templates)
+    _validate_ceph_devices(inventory, roles_to_templates)
+
+
+def _validate_ceph_node_templates(roles_to_templates):
+    if not roles_to_templates.get('ceph-monitor'):
+        msg = ('The configuration must either have a node template named '
+               '\'controllers\' or one node template which has the '
+               'ceph-monitor role.')
+        raise UnsupportedConfig(msg)
+
+    if not roles_to_templates.get('ceph-osd'):
+        msg = ('The configuration must either have a node template named '
+               '\'ceph-osd\' or one node template which has the '
+               'ceph-osd role.')
+        raise UnsupportedConfig(msg)
+
+
+def _validate_ceph_networks(config, roles_to_templates):
     # Validate that the network used for Ceph public storage exists
+    reference_architecture = config.get('reference-architecture')
     required_net = None
     if CEPH in reference_architecture:
         required_net = 'ceph-public-storage'
     elif COMPUTE:
         required_net = 'openstack-stg'
 
-    if required_net not in inventory['networks']:
+    if required_net not in config['networks']:
         msg = ('The required Ceph storage network %s is '
                'missing.' % required_net)
         raise UnsupportedConfig(msg)
 
-    # validate that the controllers and ceph-osd node templates
+    # validate that the ceph monitor node templates
     # have the network
-    for template in ('controllers', 'ceph-osd'):
-        nets = inventory['node-templates'][template]['networks']
+    for template in roles_to_templates['ceph-monitor']:
+        nets = template['networks']
         if required_net not in nets:
-            msg = 'The node template %(template)s is missing network %(net)s'
-            raise UnsupportedConfig(msg % {'template': template,
-                                           'net': required_net})
+            msg = ('The ceph-monitor and/or controller node template(s)'
+                   ' are missing network %(net)s')
+            raise UnsupportedConfig(msg % {'net': required_net})
+    # validate that the ceph osd node templates
+    # have the network
+    for template in roles_to_templates['ceph-osd']:
+        nets = template['networks']
+        if required_net not in nets:
+            msg = ('The ceph osd node template(s)'
+                   ' are missing network %(net)s')
+            raise UnsupportedConfig(msg % {'net': required_net})
 
-    # Validate osd-devices is in domain-settings on the osd node template
-    osd_template = inventory['node-templates']['ceph-osd']
-    if not osd_template.get('domain-settings', {}).get('osd-devices'):
-        msg = 'The ceph-osd node template is missing the osd-devices list.'
-        raise UnsupportedConfig(msg)
+
+def _validate_ceph_devices(config, roles_to_templates):
+
+    osd_templates = roles_to_templates.get('ceph-osd')
+    for template in osd_templates:
+        # Validate osd-devices is in domain-settings on the osd node template
+        if not template.get('domain-settings', {}).get('osd-devices'):
+            msg = 'A Ceph OSD node template is missing the osd-devices list.'
+            raise UnsupportedConfig(msg)
+    if len(osd_templates) > 1:
+        # Validate that the osd-device lists match between the templates
+        _validate_devices_lists(osd_templates, 'osd-devices')
+
+        # If any node template has journal devices, validate that all have
+        # journal devices.
+        templates_with_journals = []
+        for template in osd_templates:
+            if 'journal-devices' in template.get('domain-settings', {}):
+                templates_with_journals.append(template)
+        if templates_with_journals and (len(templates_with_journals) !=
+                                        len(osd_templates)):
+            msg = ('When one Ceph OSD node template is specifying journal '
+                   'devices, all Ceph OSD node templates must specify them.')
+            raise UnsupportedConfig(msg)
+
+        if templates_with_journals:
+            _validate_devices_lists(osd_templates, 'journal-devices')
 
 
-def validate_ops_mgr(inventory):
+def _get_roles_to_templates(config):
+    # Get a map of roles to node-templates
+    # This includes the backward compatible support for role being the
+    # template name and controller nodes being ceph-monitors.
+
+    def add_template(role, template, the_map):
+        templates = the_map.get(role)
+        if not templates:
+            templates = []
+            the_map[role] = templates
+        if template not in templates:
+            templates.append(template)
+
+    roles_to_templates = {}
+    for name, template in config['node-templates'].iteritems():
+        # Add the template by name
+        add_template(name, template, roles_to_templates)
+        if name == 'controllers':
+            # Add as ceph-monitor role
+            add_template('ceph-monitor', template, roles_to_templates)
+
+        if 'roles' in template:
+            for role in template['roles']:
+                add_template(role, template, roles_to_templates)
+
+    return roles_to_templates
+
+
+def _validate_devices_lists(osd_templates, device_key):
+    """
+    Validates the device lists on the OSD templates.
+    The journal device lists must match across the templates.
+    The osd device lists must match across the templates.
+    """
+
+    def checkEqual(iterator):
+        try:
+            iterator = iter(iterator)
+            first = next(iterator)
+            return all(first == rest for rest in iterator)
+        except StopIteration:
+            return True
+
+    are_equal = checkEqual(iter([tmpl['domain-settings'][device_key]
+                                 for tmpl in osd_templates]))
+    if not are_equal:
+        msg = ('The device list %(list_name)s does not contain the same '
+               'set of devices across all of '
+               'the OSD nodes.') % {'list_name': device_key}
+        raise InvalidDeviceList(msg)
+
+
+def validate_ops_mgr(config):
     # Require that every node-template be connected to the openstack-mgmt
     # network
     required_net = 'openstack-mgmt'
-    if required_net not in inventory['networks']:
+    if required_net not in config['networks']:
         msg = ('The required openstack-mgmt network %s is '
                'missing.' % required_net)
         raise UnsupportedConfig(msg)
 
     # validate that the controllers and ceph-osd node templates
     # have the network
-    for template_name, template in inventory.get('node-templates').iteritems():
+    for template_name, template in config.get('node-templates').iteritems():
         nets = template['networks']
         if required_net not in nets:
             msg = 'The node template %(template)s is missing network %(net)s'
@@ -222,3 +322,11 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+class UnsupportedConfig(Exception):
+    pass
+
+
+class InvalidDeviceList(Exception):
+    pass
