@@ -33,7 +33,7 @@ if [ ! -e scripts/bootstrap-cluster.sh ]; then
     echo "This script must be run in root directory of the project.  ie. /root/os-services"
     exit 1
 fi
-PCLD_DIR=`pwd`
+export TOP_PCLD_DIR=`pwd`
 
 # Save command arguments as source script parses command arguments using optind
 ARGS=$@
