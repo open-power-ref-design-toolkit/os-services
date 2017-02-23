@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import os
 from os import path
 import sys
@@ -255,11 +256,27 @@ class TestValidateConfig(unittest.TestCase):
         ceph.assert_called_once_with(load.return_value)
         opsmgr.assert_called_once_with(load.return_value)
 
-    def test_validate_ceph(self):
+    @mock.patch.object(test_mod, '_get_roles_to_templates')
+    @mock.patch.object(test_mod, '_validate_ceph_node_templates')
+    @mock.patch.object(test_mod, '_validate_ceph_networks')
+    @mock.patch.object(test_mod, '_validate_ceph_devices')
+    def test_validate_ceph(self, devices, networks, templates, get_r2t):
         # Validate without ceph-standalone or private compute
         config = {'reference-architecture': ['swift']}
         test_mod.validate_ceph(config)
+        self.assertEqual(get_r2t.call_count, 0)
+        self.assertEqual(templates.call_count, 0)
+        self.assertEqual(networks.call_count, 0)
+        self.assertEqual(devices.call_count, 0)
 
+        config = {'reference-architecture': ['private-compute-cloud']}
+        test_mod.validate_ceph(config)
+        get_r2t.assert_called_once_with(config)
+        templates.assert_called_once_with(get_r2t.return_value)
+        networks.assert_called_once_with(config, get_r2t.return_value)
+        devices.assert_called_once_with(config, get_r2t.return_value)
+
+    def test_validate_ceph_networks(self):
         # Test valid network configurations
         valid_combos = {test_mod.CEPH: 'ceph-public-storage',
                         test_mod.COMPUTE: 'openstack-stg'}
@@ -268,10 +285,12 @@ class TestValidateConfig(unittest.TestCase):
                           'ceph-osd': {'networks': [net],
                                        'domain-settings': {
                                            'osd-devices': ['a']}}}
+            role_to_template = {'ceph-osd': [node_templ['ceph-osd']],
+                                'ceph-monitor': [node_templ['controllers']]}
             config = {'reference-architecture': [arch],
                       'networks': {net: {}},
                       'node-templates': node_templ}
-            test_mod.validate_ceph(config)
+            test_mod._validate_ceph_networks(config, role_to_template)
 
         # Test bad network configurations
         bad_combos = {test_mod.CEPH: 'external',
@@ -281,52 +300,197 @@ class TestValidateConfig(unittest.TestCase):
                           'ceph-osd': {'networks': [net],
                                        'domain-settings': {
                                            'osd-devices': ['a']}}}
+            role_to_template = {'ceph-osd': [node_templ['ceph-osd']],
+                                'ceph-monitor': [node_templ['controllers']]}
             config = {'reference-architecture': [arch],
                       'networks': {net: {}},
                       'node-templates': node_templ}
             self.assertRaisesRegexp(test_mod.UnsupportedConfig,
                                     'Ceph storage network',
-                                    test_mod.validate_ceph,
-                                    config)
+                                    test_mod._validate_ceph_networks,
+                                    config, role_to_template)
 
-        # Test when the network exists but appropriate node templates
-        # don't have it.
+        # Test when the network exists but ceph monitor
+        # node templates don't have it
         for arch, net in valid_combos.iteritems():
             node_templ = {'controllers': {'networks': ['somenet']},
                           'ceph-osd': {'networks': ['somenet'],
                                        'domain-settings': {
                                            'osd-devices': ['a']}}}
+            role_to_template = {'ceph-osd': [node_templ['ceph-osd']],
+                                'ceph-monitor': [node_templ['controllers']]}
             config = {'reference-architecture': [arch],
                       'networks': {net: {}},
                       'node-templates': node_templ}
             self.assertRaisesRegexp(test_mod.UnsupportedConfig,
-                                    'is missing network',
-                                    test_mod.validate_ceph,
-                                    config)
+                                    'are missing network',
+                                    test_mod._validate_ceph_networks,
+                                    config, role_to_template)
+        # Test when the network exists but ceph osd
+        # node templates don't have it
+        for arch, net in valid_combos.iteritems():
+            node_templ = {'controllers': {'networks': [net]},
+                          'ceph-osd': {'networks': ['somenet'],
+                                       'domain-settings': {
+                                           'osd-devices': ['a']}}}
+            role_to_template = {'ceph-osd': [node_templ['ceph-osd']],
+                                'ceph-monitor': [node_templ['controllers']]}
+            config = {'reference-architecture': [arch],
+                      'networks': {net: {}},
+                      'node-templates': node_templ}
+            self.assertRaisesRegexp(test_mod.UnsupportedConfig,
+                                    'are missing network',
+                                    test_mod._validate_ceph_networks,
+                                    config, role_to_template)
 
-        # Test missing device list
-        net = 'ceph-public-storage'
+    def test_validate_ceph_node_templates(self):
+        # Test good case with ceph-monitor and ceph-osd
+        roles_to_templates = {'ceph-osd': 'a',
+                              'ceph-monitor': 'b'}
+
+        test_mod._validate_ceph_node_templates(roles_to_templates)
+        roles_to_templates.pop('ceph-monitor')
+        self.assertRaisesRegexp(test_mod.UnsupportedConfig,
+                                'ceph-monitor',
+                                test_mod._validate_ceph_node_templates,
+                                roles_to_templates)
+
+        roles_to_templates['ceph-monitor'] = 'a'
+        roles_to_templates.pop('ceph-osd')
+        self.assertRaisesRegexp(test_mod.UnsupportedConfig,
+                                'ceph-osd',
+                                test_mod._validate_ceph_node_templates,
+                                roles_to_templates)
+
+    def test_validate_ceph_devices(self):
+        # Test missing device list in the backward compatible,
+        # single ceph-osd template path
         arch = test_mod.CEPH
-        node_templ = {'controllers': {'networks': [net]},
-                      'ceph-osd': {'networks': [net],
-                                   'domain-settings': {
-                                       'osd-devices': []}}}
+        node_templ = {'ceph-osd': {'domain-settings': {'osd-devices': []}}}
+        role_to_template = {'ceph-osd': [node_templ['ceph-osd']]}
         config = {'reference-architecture': [arch],
-                  'networks': {net: {}},
                   'node-templates': node_templ}
         self.assertRaisesRegexp(test_mod.UnsupportedConfig,
                                 'missing the osd-devices',
-                                test_mod.validate_ceph,
-                                config)
+                                test_mod._validate_ceph_devices,
+                                config, role_to_template)
 
         node_templ['ceph-osd']['domain-settings'].pop('osd-devices')
         self.assertRaisesRegexp(test_mod.UnsupportedConfig,
                                 'missing the osd-devices',
-                                test_mod.validate_ceph,
-                                config)
+                                test_mod._validate_ceph_devices,
+                                config, role_to_template)
 
         node_templ['ceph-osd'].pop('domain-settings')
         self.assertRaisesRegexp(test_mod.UnsupportedConfig,
                                 'missing the osd-devices',
-                                test_mod.validate_ceph,
-                                config)
+                                test_mod._validate_ceph_devices,
+                                config, role_to_template)
+        # Test when multiple node templates have journal devices
+
+        templates = {'t1': {'domain-settings': {'journal-devices': ['a'],
+                                                'osd-devices': ['b']}},
+                     't2': {'domain-settings': {'journal-devices': ['a'],
+                                                'osd-devices': ['b']}},
+                     't3': {'domain-settings': {'journal-devices': ['a'],
+                                                'osd-devices': ['b']}},
+                     't4': {'domain-settings': {'journal-devices': ['a'],
+                                                'osd-devices': ['b']}}}
+        config['node-templates'] = templates
+        role_to_template = {'ceph-osd': [templ for templ in
+                                         templates.values()]}
+        test_mod._validate_ceph_devices(config, role_to_template)
+
+        # Test when one template doesn't have journal devices but another does
+        templates['t2']['domain-settings'].pop('journal-devices')
+        self.assertRaisesRegexp(test_mod.UnsupportedConfig,
+                                'specifying journal devices, all Ceph',
+                                test_mod._validate_ceph_devices,
+                                config, role_to_template)
+
+    def test_get_roles_to_templates(self):
+        # Test backward compatible for ceph monitor
+        config = {'node-templates': {'controllers': {},
+                                     'something': {},
+                                     'another-thing': {}}}
+        r2t = test_mod._get_roles_to_templates(config)
+        self.assertItemsEqual(['controllers', 'something', 'another-thing',
+                               'ceph-monitor'], r2t.keys())
+
+        # Test roles
+        nt = {'a': {'roles': ['1', '2', '3']},
+              'b': {'roles': ['1', '4']},
+              'c': {'roles': ['3']}}
+        config = {'node-templates': nt}
+        expected = {'1': [nt['a'], nt['b']],
+                    '2': [nt['a']],
+                    '3': [nt['a'], nt['c']],
+                    '4': [nt['b']],
+                    'a': [nt['a']],
+                    'b': [nt['b']],
+                    'c': [nt['c']]}
+        r2t = test_mod._get_roles_to_templates(config)
+        self.assertEqual(expected.keys(), r2t.keys())
+        for key, value in expected.iteritems():
+            ret_value = r2t[key]
+            self.assertItemsEqual(value, ret_value,
+                                  'For template %s' % key)
+
+        # Test when a node template has a role that matches its name
+        mon = 'ceph-monitor'
+        config = {'node-templates': {'controllers': {},
+                                     'ceph-monitor': {'roles': [mon]},
+                                     'ceph-osd': {'roles': ['ceph-osd']}}}
+        r2t = test_mod._get_roles_to_templates(config)
+        self.assertItemsEqual(['controllers', 'ceph-monitor', 'ceph-osd'],
+                              r2t.keys())
+        self.assertEqual(2, len(r2t.get('ceph-monitor')))
+        self.assertEqual(1, len(r2t.get('ceph-osd')))
+
+    def test_validate_devices_lists(self):
+        devices = ['/dev/sde',
+                   '/dev/sdf',
+                   '/dev/sdg',
+                   '/dev/sdh',
+                   '/dev/sdi']
+        dk = 'device_key'
+        # Test where the lists are equal
+        osd_tmpls = [{'domain-settings': {dk: devices}}]
+        osd_tmpls.append({'domain-settings': {dk: copy.deepcopy(devices)}})
+        osd_tmpls.append({'domain-settings': {dk: copy.deepcopy(devices)}})
+        osd_tmpls.append({'domain-settings': {dk: copy.deepcopy(devices)}})
+        test_mod._validate_devices_lists(osd_tmpls, dk)
+
+        # Test where one list on one host is shorter
+        osd_tmpls = [{'domain-settings': {dk: devices}}]
+        osd_tmpls.append({'domain-settings': {dk: copy.deepcopy(devices)}})
+        osd_tmpls.append({'domain-settings': {dk: copy.deepcopy(devices)}})
+        devices2 = devices[:-2]
+        osd_tmpls.append({'domain-settings': {dk: copy.deepcopy(devices2)}})
+        osd_tmpls.append({'domain-settings': {dk: copy.deepcopy(devices)}})
+
+        self.assertRaises(test_mod.InvalidDeviceList,
+                          test_mod._validate_devices_lists, osd_tmpls, dk)
+
+        # Test where one of the lists is longer
+        osd_tmpls = [{'domain-settings': {dk: devices}}]
+        osd_tmpls.append({'domain-settings': {dk: copy.deepcopy(devices)}})
+        osd_tmpls.append({'domain-settings': {dk: copy.deepcopy(devices)}})
+        devices2 = copy.deepcopy(devices).append('somethingMore')
+        osd_tmpls.append({'domain-settings': {dk: copy.deepcopy(devices2)}})
+        osd_tmpls.append({'domain-settings': {dk: copy.deepcopy(devices)}})
+
+        self.assertRaises(test_mod.InvalidDeviceList,
+                          test_mod._validate_devices_lists, osd_tmpls, dk)
+
+        # Test where one of the lists has a different value
+        osd_tmpls = [{'domain-settings': {dk: devices}}]
+        osd_tmpls.append({'domain-settings': {dk: copy.deepcopy(devices)}})
+        osd_tmpls.append({'domain-settings': {dk: copy.deepcopy(devices)}})
+        devices2 = copy.deepcopy(devices)
+        devices2[4] = '/different'
+        osd_tmpls.append({'domain-settings': {dk: copy.deepcopy(devices2)}})
+        osd_tmpls.append({'domain-settings': {dk: copy.deepcopy(devices)}})
+
+        self.assertRaises(test_mod.InvalidDeviceList,
+                          test_mod._validate_devices_lists, osd_tmpls, dk)
