@@ -206,6 +206,10 @@ if [ "$INSTALL" == "True" ] && [ -d $PCLD_DIR/diffs ]; then
     popd >/dev/null 2>&1
 fi
 
+# Validate the config now that yaml and python dependencies are installed
+# and before the config/inventory is used.
+validate_config
+
 # Translate cluster-genesis inventory into OpenStack parameters
 if real_genesis_inventory_present; then
     echo "Found cluster-genesis inventory"
@@ -228,15 +232,6 @@ if real_genesis_inventory_present; then
             exit 1
         fi
         popd >/dev/null 2>&1
-    fi
-
-    # Validate the config sections of the inventory.
-    echo "Validate config ..."
-    ${TOP_PCLD_DIR}/scripts/validate_config.py --file /var/oprc/inventory.yml
-    rc=$?
-    if [ $rc != 0 ]; then
-        echo "${OS_RECIPES_DIR}/scripts/validate_config.py failed, rc=$rc"
-        exit 1
     fi
 
     # Call the pre-deploy playbook to do additional pre-OSA prep.

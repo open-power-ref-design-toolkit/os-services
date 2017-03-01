@@ -56,7 +56,6 @@ if [ ! -e scripts/bootstrap-cluster.sh ]; then
     exit 1
 fi
 
-# Install some prerequisite packages
 DISTO=`lsb_release -r | awk '{print $2}'`
 if [ $? != 0 ]; then
     echo "Unsupported Linux distribution.  Must be Ubuntu 16.04"
@@ -77,6 +76,7 @@ source osa/scripts/process-args.sh
 echo DEPLOY_CEPH=$DEPLOY_CEPH
 echo DEPLOY_OPSMGR=$DEPLOY_OPSMGR
 
+# Install some prerequisite packages
 apt-get -qq update
 apt-get -qq -y install build-essential libssl-dev libffi-dev python-dev \
     python3-dev bridge-utils debootstrap ifenslave ifenslave-2.6 lsof lvm2 \
