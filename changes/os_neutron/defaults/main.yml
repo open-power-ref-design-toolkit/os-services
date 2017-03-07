@@ -480,11 +480,6 @@ neutron_service_in_ldap: false
 # neutron_local_ip is used for the VXLAN local tunnel endpoint
 neutron_local_ip: 127.0.0.1
 
-# Toggle the use of Ubuntu Cloud Archive
-neutron_uca_enable: True
-# Ubuntu Cloud Archive mirror URL
-uca_apt_repo_url: "http://ubuntu-cloud.archive.canonical.com/ubuntu"
-
 # When running in an AIO, we need to implement an iptables rule in any
 # neutron_agent containers to that ensure instances can communicate with
 # the neutron metadata service. This is necessary because in an AIO

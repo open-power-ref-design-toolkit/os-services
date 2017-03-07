@@ -1,8 +1,8 @@
 diff -Naur a/opt/openstack-ansible/global-requirement-pins.txt b/opt/openstack-ansible/global-requirement-pins.txt
---- a/opt/openstack-ansible/global-requirement-pins.txt	2017-02-01 06:39:04.862958517 -0500
-+++ b/opt/openstack-ansible/global-requirement-pins.txt	2017-02-01 06:26:11.419167663 -0500
+--- a/opt/openstack-ansible/global-requirement-pins.txt	2017-03-07 02:19:31.305339347 -0500
++++ b/opt/openstack-ansible/global-requirement-pins.txt	2017-03-07 02:13:15.785332632 -0500
 @@ -12,3 +12,4 @@
  pip==9.0.1
- setuptools==32.3.1
+ setuptools==33.1.1
  wheel==0.29.0
 +os-client-config>=1.22.0

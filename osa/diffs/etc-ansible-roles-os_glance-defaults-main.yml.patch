@@ -1,16 +1,7 @@
 diff -Naur a/etc/ansible/roles/os_glance/defaults/main.yml b/etc/ansible/roles/os_glance/defaults/main.yml
---- a/etc/ansible/roles/os_glance/defaults/main.yml	2017-01-30 02:19:27.984841166 -0500
-+++ b/etc/ansible/roles/os_glance/defaults/main.yml	2017-01-30 01:31:54.772790146 -0500
-@@ -59,7 +59,7 @@
-   - cinder
- glance_flavor: "{% if glance_default_store == 'rbd' %}keystone{% else %}keystone+cachemanagement{% endif %}"
- glance_show_image_direct_url: "{{ glance_default_store == 'rbd' }}"
--
-+glance_show_multiple_locations: "{{ glance_default_store == 'rbd' }}"
- 
- ## API options
- glance_enable_v1_api: True
-@@ -145,6 +145,9 @@
+--- a/etc/ansible/roles/os_glance/defaults/main.yml	2017-03-02 10:44:42.850156598 -0500
++++ b/etc/ansible/roles/os_glance/defaults/main.yml	2017-03-02 10:44:17.146156138 -0500
+@@ -146,6 +146,9 @@
  # compute the number of api workers to use.
  # glance_registry_workers: 16
  

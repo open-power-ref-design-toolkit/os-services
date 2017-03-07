@@ -1,22 +1,7 @@
 diff -Naur a/etc/ansible/roles/os_neutron/defaults/main.yml b/etc/ansible/roles/os_neutron/defaults/main.yml
---- a/etc/ansible/roles/os_neutron/defaults/main.yml	2017-02-08 17:17:27.017853351 -0600
-+++ b/etc/ansible/roles/os_neutron/defaults/main.yml	2017-02-08 17:15:43.749229727 -0600
-@@ -219,6 +219,14 @@
-    config_options: "--config-file {{ neutron_conf_dir }}/neutron.conf --config-file {{ neutron_conf_dir }}/metering_agent.ini --log-file=/var/log/neutron/neutron-metering-agent.log"
-    config_overrides: "{{ neutron_metering_agent_ini_overrides }}"
-    config_type: "ini"
-+   # Other agents will use neutron_plugins[neutron_plugin_type].driver_interface
-+   # for the interface_driver, but that uses a stevedore alias. Metering agent
-+   # hasn't been updated to use stevedore alises so that fails. To work around
-+   # the problem until metering agent is updated, we should use the full
-+   # module.class path to the interface driver.
-+   # TODO(hughsaunders): switch back to stevedore when
-+   # https://review.openstack.org/#/c/419881/ merges and is backported.
-+   interface_driver: neutron.agent.linux.interface.BridgeInterfaceDriver
-  neutron-l3-agent:
-    group: neutron_l3_agent
-    service_name: neutron-l3-agent
-@@ -450,6 +458,9 @@
+--- a/etc/ansible/roles/os_neutron/defaults/main.yml	2017-03-02 06:30:09.277883485 -0500
++++ b/etc/ansible/roles/os_neutron/defaults/main.yml	2017-03-02 06:28:05.441881271 -0500
+@@ -458,6 +458,9 @@
  # in templates/dhcp_agent.ini.j2 for num_sync_threads.
  # neutron_num_sync_threads: 4
  

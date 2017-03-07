@@ -1,6 +1,6 @@
 diff -Naur a/etc/ansible/roles/os_glance/templates/glance-api.conf.j2 b/etc/ansible/roles/os_glance/templates/glance-api.conf.j2
---- a/etc/ansible/roles/os_glance/templates/glance-api.conf.j2	2017-01-30 02:19:27.984841166 -0500
-+++ b/etc/ansible/roles/os_glance/templates/glance-api.conf.j2	2017-01-30 01:34:09.240792551 -0500
+--- a/etc/ansible/roles/os_glance/templates/glance-api.conf.j2	2017-03-02 10:44:42.850156598 -0500
++++ b/etc/ansible/roles/os_glance/templates/glance-api.conf.j2	2017-03-02 05:48:29.101838778 -0500
 @@ -1,6 +1,6 @@
  # {{ ansible_managed }}
  
@@ -9,11 +9,3 @@ diff -Naur a/etc/ansible/roles/os_glance/templates/glance-api.conf.j2 b/etc/ansi
  {% set api_threads = _api_threads if _api_threads > 0 else 1 %}
  
  [DEFAULT]
-@@ -34,6 +34,7 @@
- 
- # defaults to true if RBD is used as default store
- show_image_direct_url = {{ glance_show_image_direct_url }}
-+show_multiple_locations = {{ glance_show_multiple_locations }}
- 
- [task]
- task_executor = {{ glance_task_executor }}
