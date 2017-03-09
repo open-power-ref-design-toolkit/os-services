@@ -26,6 +26,14 @@ COMPUTE = 'private-compute-cloud'
 BASE_ARCHS = {SWIFT, COMPUTE, CEPH}
 
 
+class UnsupportedConfig(Exception):
+    pass
+
+
+class InvalidDeviceList(Exception):
+    pass
+
+
 def validate(file_path):
     try:
         inventory = _load_yml(file_path)
@@ -322,11 +330,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-class UnsupportedConfig(Exception):
-    pass
-
-
-class InvalidDeviceList(Exception):
-    pass
