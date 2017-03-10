@@ -1,0 +1,159 @@
+{% load i18n sizeformat parse_date %}
+
+<div class="detail">
+   <br />
+   <div class="panel-group" id="section1">
+      <div class="panel panel-default">
+         <div class="panel-heading">
+            <h4 class="panel-title">
+               <a data-toggle="collapse" href="#tg1_tasks" id="tg1">
+                  {% block tg1_icon %}
+                     <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/move_24.png">
+                  {% endblock %}
+
+                  &nbsp;Life-cycle Management:  Deploy and maintain instances
+               </a>
+            </h4>
+         </div>
+         <div class=" panel-collapse collapse in" id="tg1_tasks">
+            <a id="tg1_taskLink1"  href="/project/database/launch_instance" class="ajax-modal" style="width:auto;display:inline-block;">
+               <div id="tg1_task1_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
+                  <table>
+                     <tr>
+                        <td align='center'>
+                           {% block tg1_t1_icon %}
+                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/deploy_64.png">
+                           {% endblock %}
+                           <p style="text-align:left; line-height:1;">Launch Instance
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+            </a>
+            <a id="tg1_taskLink2"  href="/project/database/restart_instance" class="ajax-modal" style="width:auto;display:inline-block">
+               <div id="tg1_task2_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
+                  <table cellpadding="10"
+                     <tr>
+                        <td align='center'>
+                           {% block tg1_t2_icon %}
+                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/insert_64.png">
+                           {% endblock %}
+                           <p style="text-align:left; line-height:1;">Restart Instance
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+            </a>
+
+            <a id="tg1_taskLink3"  href="/project/database/resize_instance" class="ajax-modal" style="width:auto;display:inline-block">
+               <div id="tg1_task3_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
+                  <table cellpadding="10">
+                     <tr>
+                        <td align='center'>
+                           {% block tg1_t3_icon %}
+                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/run_64.png">
+                           {% endblock %}
+                           <p style="text-align:left; line-height:1;">Resize Instance
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+            </a>
+
+            <a id="tg1_taskLink4"  href="/project/database/resize_volume" class="ajax-modal" style="width:auto;display:inline-block">
+               <div id="tg1_task4_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
+                  <table cellpadding="10">
+                     <tr>
+                        <td align='center'>
+                           {% block tg1_t4_icon %}
+                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/speaker_64.png">
+                           {% endblock %}
+                           <p style="text-align:left; line-height:1;">Resize Volume
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+            </a>
+
+            <a id="tg1_taskLink5"  href="/project/database/delete_instance" class="ajax-modal" style="width:auto;display:inline-block">
+               <div id="tg1_task5_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
+                  <table cellpadding="10">
+                     <tr>
+                        <td align='center'>
+                           {% block tg1_t5_icon %}
+                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/trash_64.png">
+                           {% endblock %}
+                           <p style="text-align:left; line-height:1;">Delete Instance
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+            </a>
+
+
+         </div>
+      </div>
+   </div>
+   <br />
+   <br />
+
+   <div class="panel-group" id="section2">
+      <div class="panel panel-default">
+         <div class="panel-heading">
+            <h4 class="panel-title">
+               <a data-toggle="collapse" href="#tg2_tasks" id="tg2">
+                  {% block tg2_icon %}
+                     <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/save_24.png">
+                  {% endblock %}
+
+                  &nbsp;Availability:  Actions related to backup and recovery
+               </a>
+            </h4>
+         </div>
+         <div class=" panel-collapse collapse in" id="tg2_tasks">
+            <a id="tg2_taskLink1"  href="/project/database/create_backup" class="ajax-modal" style="width:auto;display:inline-block;">
+               <div id="tg2_task1_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
+                  <table cellpadding="10">
+                     <tr>
+                        <td align='center'>
+                           {% block tg2_t1_icon %}
+                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/venn-diagram_64.png">
+                           {% endblock %}
+                           <p style="text-align:left; line-height:1;">Create Backup
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+            </a>
+            <a id="tg2_taskLink2"  href="/project/database/restore_from_backup" class="ajax-modal" style="width:auto;display:inline-block">
+               <div id="tg2_task2_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
+                  <table cellpadding="10">
+                     <tr>
+                        <td align='center'>
+                           {% block tg2_t2_icon %}
+                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/restore_64.png">
+                           {% endblock %}
+                           <p style="text-align:left; line-height:1;">Restore from Backup
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+            </a>
+            <a id="tg2_taskLink3"  href="/project/database/delete_backup" class="ajax-modal" style="width:auto;display:inline-block">
+               <div id="tg2_task3_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
+                  <table cellpadding="10">
+                     <tr>
+                        <td align='center'>
+                           {% block tg2_t3_icon %}
+                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/trash_64.png">
+                           {% endblock %}
+                           <p style="text-align:left; line-height:1;">Delete Backup
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+            </a>
+         </div>
+      </div>
+   </div>
+</div>
