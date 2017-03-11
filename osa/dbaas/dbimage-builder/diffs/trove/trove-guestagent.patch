@@ -1,0 +1,223 @@
+diff --git a/integration/scripts/files/elements/ubuntu-trusty-guest/extra-data.d/70-trove-guestagent b/integration/scripts/files/elements/ubuntu-trusty-guest/extra-data.d/70-trove-guestagent
+new file mode 100755
+index 0000000..85233a9
+--- /dev/null
++++ b/integration/scripts/files/elements/ubuntu-trusty-guest/extra-data.d/70-trove-guestagent
+@@ -0,0 +1,20 @@
++#!/bin/bash
++
++set -e
++set -o xtrace
++
++# CONTEXT: HOST prior to IMAGE BUILD as SCRIPT USER
++# PURPOSE: stages the trove github repo and trove guestagent conf so that
++#          these items can be placed in the image so that systemd does not
++#          rsync them from a controller
++
++source $_LIB/die
++
++[ -n "$TMP_HOOKS_PATH" ] || die "Temp hook path not set"
++
++[ -n "${HOST_USERNAME}" ] || die "HOST_USERNAME needs to be set to the user for the current user on the host"
++[ -n "${PATH_TROVE}" ] || die "PATH_TROVE needs to be set to the path to the trove directory on the trovestack host"
++
++cp /home/${HOST_USERNAME}/trove-guestagent.conf ${TMP_HOOKS_PATH}
++cp -r ${PATH_TROVE} ${TMP_HOOKS_PATH}
++
+diff --git a/integration/scripts/files/elements/ubuntu-trusty-guest/install.d/20-etc b/integration/scripts/files/elements/ubuntu-trusty-guest/install.d/20-etc
+index 8ac19f7..77d8e1a 100755
+--- a/integration/scripts/files/elements/ubuntu-trusty-guest/install.d/20-etc
++++ b/integration/scripts/files/elements/ubuntu-trusty-guest/install.d/20-etc
+@@ -4,5 +4,5 @@
+ # PURPOSE: take "staged" trove-guest.conf file and put it in the init directory on guest image
+ 
+ dd if=/tmp/in_target.d/trove-guest.conf of=/etc/init/trove-guest.conf
+-
++chmod a+r /etc/init/trove-guest.conf
+ 
+diff --git a/integration/scripts/files/elements/ubuntu-trusty-guest/install.d/70-trove-guestagent b/integration/scripts/files/elements/ubuntu-trusty-guest/install.d/70-trove-guestagent
+new file mode 100755
+index 0000000..980e2e2
+--- /dev/null
++++ b/integration/scripts/files/elements/ubuntu-trusty-guest/install.d/70-trove-guestagent
+@@ -0,0 +1,44 @@
++#!/bin/bash
++
++# CONTEXT: GUEST during CONSTRUCTION as ROOT
++# PURPOSE: Place "staged" trove-guestagent code in the user account
++#          where upstart expects it in order to avoid downloading it
++#          when the service is started.  The code is installed under
++#          the ubuntu account which is created by script 50-user, so
++#          this script is given a higher sequence number, 70-trove.
++
++set -e
++set -o xtrace
++set -x
++
++TMP_HOOKS_PATH=/tmp/in_target.d
++
++apt-get -y install git build-essential libxml2-dev libxslt1-dev libmysqlclient-dev \
++    python-dev python-setuptools python-pip python-pexpect python-pymysql
++
++# Copy in the trove stack
++cp -r $TMP_HOOKS_PATH/trove /home/$GUEST_USERNAME
++
++# Install trove
++pushd /home/${GUEST_USERNAME}/trove
++pip install -r requirements.txt
++python setup.py install
++popd
++apt-get -y install percona-xtrabackup
++
++# Create the log directories.  Both in case user does not update conf file
++mkdir -p /var/log/trove $GUEST_LOGDIR
++chown -R $GUEST_USERNAME:root /var/log/trove $GUEST_LOGDIR
++chmod -R g+w /var/log/trove $GUEST_LOGDIR
++
++# Copy the trove-guestagent.conf from the controller
++mkdir -p /etc/trove/conf.d
++cp $TMP_HOOKS_PATH/trove-guestagent.conf /etc/trove/conf.d
++chown -R $GUEST_USERNAME:root /etc/trove
++chmod -R g+w /etc/trove/
++
++# Set a sentinel file to avoid rsync calls in systemd
++touch /home/$GUEST_USERNAME/trove-installed
++chown -R $GUEST_USERNAME:root /home/$GUEST_USERNAME/trove /home/$GUEST_USERNAME/trove-installed
++chmod -R g+w /home/$GUEST_USERNAME/trove /home/$GUEST_USERNAME/trove-installed
++
+diff --git a/integration/scripts/files/elements/ubuntu-xenial-guest/extra-data.d/70-trove-guestagent b/integration/scripts/files/elements/ubuntu-xenial-guest/extra-data.d/70-trove-guestagent
+new file mode 100755
+index 0000000..85233a9
+--- /dev/null
++++ b/integration/scripts/files/elements/ubuntu-xenial-guest/extra-data.d/70-trove-guestagent
+@@ -0,0 +1,20 @@
++#!/bin/bash
++
++set -e
++set -o xtrace
++
++# CONTEXT: HOST prior to IMAGE BUILD as SCRIPT USER
++# PURPOSE: stages the trove github repo and trove guestagent conf so that
++#          these items can be placed in the image so that systemd does not
++#          rsync them from a controller
++
++source $_LIB/die
++
++[ -n "$TMP_HOOKS_PATH" ] || die "Temp hook path not set"
++
++[ -n "${HOST_USERNAME}" ] || die "HOST_USERNAME needs to be set to the user for the current user on the host"
++[ -n "${PATH_TROVE}" ] || die "PATH_TROVE needs to be set to the path to the trove directory on the trovestack host"
++
++cp /home/${HOST_USERNAME}/trove-guestagent.conf ${TMP_HOOKS_PATH}
++cp -r ${PATH_TROVE} ${TMP_HOOKS_PATH}
++
+diff --git a/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/20-etc b/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/20-etc
+index 1a35015..125d919 100755
+--- a/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/20-etc
++++ b/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/20-etc
+@@ -1,10 +1,5 @@
+ #!/bin/sh
+-
+ # CONTEXT: GUEST during CONSTRUCTION as ROOT
+-# PURPOSE: take "staged" trove-guest.conf file and put it in the init directory on guest image
++# PURPOSE: Place the "staged" trove-guestagent.conf file in the guest image
+ 
+ dd if=/tmp/in_target.d/trove-guest.service of=/etc/systemd/system/trove-guest.service
+-
+-systemctl enable trove-guest.service
+-
+-
+diff --git a/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/70-trove-guestagent b/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/70-trove-guestagent
+new file mode 100755
+index 0000000..6f61733
+--- /dev/null
++++ b/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/70-trove-guestagent
+@@ -0,0 +1,46 @@
++#!/bin/bash
++
++# CONTEXT: GUEST during CONSTRUCTION as ROOT
++# PURPOSE: Place "staged" trove-guestagent code in the user account
++#          where systemd expects it in order to avoid downloading it
++#          when the service is started.  The code is installed under
++#          the ubuntu account which is created by script 50-user, so
++#          this script is given a higher sequence number, 70-trove.
++
++set -e
++set -o xtrace
++set -x
++
++TMP_HOOKS_PATH=/tmp/in_target.d
++
++apt-get -y install git build-essential libxml2-dev libxslt1-dev libmysqlclient-dev \
++    python-dev python-setuptools python-pip python-pexpect python-pymysql
++
++# Copy in the trove stack
++cp -r $TMP_HOOKS_PATH/trove /home/$GUEST_USERNAME
++
++# Install trove
++pushd /home/${GUEST_USERNAME}/trove
++pip install -r requirements.txt
++python setup.py install
++popd
++apt-get -y install percona-xtrabackup
++
++# Create the log directories.  Both in case user does not update conf file
++mkdir -p /var/log/trove $GUEST_LOGDIR
++chown -R $GUEST_USERNAME:root /var/log/trove $GUEST_LOGDIR
++chmod -R g+w /var/log/trove $GUEST_LOGDIR
++
++# Copy the trove-guestagent.conf from the controller
++mkdir -p /etc/trove/conf.d
++cp $TMP_HOOKS_PATH/trove-guestagent.conf /etc/trove/conf.d
++chown -R $GUEST_USERNAME:root /etc/trove
++chmod -R g+w /etc/trove/
++
++# Set a sentinel file to avoid rsync calls in systemd
++touch /home/$GUEST_USERNAME/trove-installed
++chown -R $GUEST_USERNAME:root /home/$GUEST_USERNAME/trove /home/$GUEST_USERNAME/trove-installed
++chmod -R g+w /home/$GUEST_USERNAME/trove /home/$GUEST_USERNAME/trove-installed
++
++systemctl enable trove-guest.service
++
+diff --git a/integration/scripts/files/trove-guest.systemd.conf b/integration/scripts/files/trove-guest.systemd.conf
+index 47bc2cf..ff999f3 100644
+--- a/integration/scripts/files/trove-guest.systemd.conf
++++ b/integration/scripts/files/trove-guest.systemd.conf
+@@ -2,28 +2,27 @@
+ Description=Trove Guest
+ After=syslog.target
+ After=network.target
++After=ssh.target
+ 
+ [Service]
+ Type=simple
+ User=GUEST_USERNAME
+ Group=GUEST_USERNAME
+ 
+-ExecStartPre=/bin/bash -c "sudo mkdir -p GUEST_LOGDIR ; sudo chown GUEST_USERNAME:root GUEST_LOGDIR"
++# Create default log directory if it doesn't exist
++ExecStartPre=/usr/bin/sudo /bin/bash -c "mkdir -p /var/log/trove && chown GUEST_USERNAME:root /var/log/trove && chmod ug+rw,o+r /var/log/trove"
+ 
+-# If ~/trove-installed does not exist, copy the trove source from
+-# the user's development environment, then touch the sentinel file
+-ExecStartPre=/bin/bash -c "test -d /home/GUEST_USERNAME/trove-installed || sudo -u GUEST_USERNAME rsync -e 'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' -avz --exclude='.*' HOST_SCP_USERNAME@CONTROLLER_IP:PATH_TROVE/ /home/GUEST_USERNAME/trove && touch /home/GUEST_USERNAME/trove-installed"
+-
+-# If /etc/trove does not exist, create it and then copy the trove-guestagent.conf
+-# from /etc/trove on the user's development environment,
+-ExecStartPre=/bin/bash -c "test -d /etc/trove/conf.d || sudo mkdir -p /etc/trove/conf.d && sudo -u GUEST_USERNAME rsync -e 'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' -avz --exclude='.*' HOST_SCP_USERNAME@CONTROLLER_IP:/etc/trove/trove-guestagent.conf ~GUEST_USERNAME/ && sudo mv ~GUEST_USERNAME/trove-guestagent.conf /etc/trove/conf.d/trove-guestagent.conf"
+-
+-ExecStartPre=/bin/bash -c "sudo chown -R GUEST_USERNAME:root /etc/trove"
++# guest_info is injected.  Make sure all files are readable
++ExecStartPre=/usr/bin/sudo /bin/bash -c "test ! -d /etc/trove || chown -R GUEST_USERNAME:root /etc/trove && chmod -R ug+rw,o+r /etc/trove"
+ 
+ ExecStart=/home/GUEST_USERNAME/trove/contrib/trove-guestagent --config-dir=/etc/trove/conf.d
+ 
+ # Give a reasonable amount of time for the server to start up/shut down
++Restart=on-failure
+ TimeoutSec=300
++TimeoutStopSec=15
++
++LimitNOFILE=65535
+ 
+ # PgSql doesn't play nice with PrivateTmp
+ PrivateTmp=false

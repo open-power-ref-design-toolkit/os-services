@@ -1,0 +1,54 @@
+---
+
+# This task is invoked during the invocation of the playbook below:
+#
+# ansible-playbook -i host_file dbimage-make.yml -u ubuntu -c ssh
+#
+# This is invoked on a controller node as ubuntu and then
+# becomes root before any of these tasks are run
+
+- name: Get controller's public key
+  slurp:
+    src: "~/.ssh/id_rsa.pub"
+  register: public_key
+  failed_when: false
+
+- name: Set controller's public key
+  set_fact:
+    controller_pub_key: "{{ public_key.content | b64decode }}"
+  when: public_key | success
+
+- name: Get trove container name
+  shell: /usr/bin/lxc-ls --filter trove_taskmanager_container
+  register: trove_container
+
+- name: fetch trove files
+  fetch:
+    src: "/var/lib/lxc/{{ trove_container.stdout }}/rootfs/etc/trove/trove-guestagent.conf"
+    dest: "{{ src_trove }}/trove-guestagent.conf"
+    flat: yes
+
+- name: Get openstack venv from trove container
+  find:
+    paths: "/var/lib/lxc/{{ trove_container.stdout }}/rootfs/openstack/venvs"
+    file_type: directory
+    patterns: "trove-*"
+    use_regex: false
+  register: findrc
+
+- name: Set trove venv token
+  set_fact:
+    trove_venv: "{{ findrc['files'][0]['path'] | basename }}"
+  when: findrc['files']
+
+- debug: var=trove_venv
+
+# Get cloud users key from Nova
+
+- name: Set clouduser public key
+  set_fact:
+    clouduser_pub_key: "{{ public_key.content | b64decode }}"
+  when:
+   - cloudUser
+   - public_key | success
+
