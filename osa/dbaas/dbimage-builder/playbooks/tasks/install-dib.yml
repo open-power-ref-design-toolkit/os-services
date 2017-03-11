@@ -1,0 +1,169 @@
+---
+
+# This task is invoked during the invocation of the playbook below:
+#
+# ansible-playbook -i host_file dbimage-make.yml -u ubuntu -c ssh
+#
+# This is invoked on dibvm under the ubuntu user
+
+- name: Clean environment
+  file:
+    path: "{{ item }}"
+    state: absent
+  when: clean_environment
+  become: true
+  with_items:
+    - "{{ dib_home }}/bin"
+    - "{{ dib_home }}/tools"
+    - "{{ dib_home }}/trove"
+    - "{{ dib_home }}/elements"
+    - "{{ dib_home }}/dibuser"
+    - "{{ dib_home }}/img"
+    - "{{ dib_home }}/log"
+    - "{{ dib_home }}/pkg"
+
+- name: Copy files from deployer to dibvm
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ dib_home }}"
+    mode: "{{ item.mode }}"
+  with_items:
+    - { src: "{{ src_trove }}/", mode: "0644" }
+    - { src: "{{ src_home }}/bin", mode: "0755" }
+    - { src: "{{ baseDir }}/elements", mode: "0755" }
+
+- name: Create log directory for diskimage-builder
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+  with_items:
+    - "{{ dib_home }}/log"
+    - "{{ dib_home }}/img"
+    - "{{ dib_home }}/dibuser"
+    - "{{ dib_home }}/pkg"
+
+- name: Copy user provided package to dibvm
+  copy:
+    src: "{{ pkg }}"
+    dest: "{{ dib_home }}/pkg"
+  when: "{{ pkg }}"
+
+- name: Create key for dibUser in alternate location
+  command: "ssh-keygen -t rsa -f ~/dibuser/id_rsa -N ''"
+  args:
+    creates: "{{ dib_home }}/dibuser/id_rsa"
+
+- name: Set path to public key
+  set_fact:
+    dib_pub_key: "{{ dib_home }}/dibuser/id_rsa.pub"
+
+- name: Set authorized key for dibuser in alternate location
+  authorized_key:
+    user: "{{ dibUser }}"
+    state: present
+    key: "{{ lookup('file', dib_pub_key) }}"
+    path: "{{ dib_home }}/dibuser/authorized_keys"
+    manage_dir: false
+
+- name: Set authorized key for deployer in alternate location
+  authorized_key:
+    user: "{{ dibUser }}"
+    state: present
+    key: "{{ hostvars[groups['deployer'][0]].deployer_pub_key }}"
+    path: "{{ dib_home }}/dibuser/authorized_keys"
+    manage_dir: false
+  when: hostvars[groups['deployer'][0]].deployer_pub_key
+
+- name: Set authorized key for controller in alternate location
+  authorized_key:
+    user: "{{ dibUser }}"
+    state: present
+    key: "{{ hostvars[groups['controller'][0]].controller_pub_key }}"
+    path: "{{ dib_home }}/dibuser/authorized_keys"
+    manage_dir: false
+  when: hostvars[ groups['controller'][0]].controller_pub_key
+
+- name: Set authorized key for clouduser in alternate location
+  authorized_key:
+    user: "{{ dibUser }}"
+    state: present
+    key: "{{ hostvars[groups['controller'][0]].clouduser_pub_key }}"
+    path: "{{ dib_home }}/dibuser/authorized_keys"
+    manage_dir: false
+  when:
+    - cloudUser
+    - hostvars[groups['controller'][0]].clouduser_pub_key is defined
+
+- name: Get diskimage-builder (vers="{{ dib_version }}")
+  git:
+    repo: https://git.openstack.org/openstack/diskimage-builder.git
+    dest: "{{ dib_home }}/tools/diskimage-builder"
+    version: "{{ dib_version }}"
+  retries: 3
+  delay: 15
+
+- name: Get trove integration (vers="{{ trove_integration_version }}")
+  git:
+    repo: https://git.openstack.org/openstack/trove.git
+    dest: "{{ dib_home }}/tools/trove"
+    version: "{{ trove_integration_version }}"
+  retries: 3
+  delay: 15
+
+- name: Get trove ("{{ trove_version }}") for guest image
+  shell: "cp -r {{ dib_home }}/tools/trove {{ dib_home }}; cd ~/trove; git checkout {{ trove_version }}"
+
+- name: Get tripleo-image-elements (vers="{{ tripleo_image_elements_version }}")
+  git:
+    repo: https://git.openstack.org/openstack/tripleo-image-elements.git
+    dest: "{{ dib_home }}/tools/tripleo-image-elements"
+    version: "{{ tripleo_image_elements_version }}"
+  retries: 3
+  delay: 15
+
+- name: Apply diskimage-builder patches
+  patch:
+    src: "{{ item }}"
+    basedir: "{{ dib_home }}/tools/diskimage-builder"
+    strip: 1
+  when: "{{ src_dib_diffs }}"
+  with_items:
+    - "{{ src_dib_diffs | default('') }}"
+
+- name: Apply trove integration patches
+  patch:
+    src: "{{ item }}"
+    basedir: "{{ dib_home }}/tools/trove"
+    strip: 1
+  when: "{{ src_trove_diffs }}"
+  with_items:
+    - "{{ src_trove_diffs | default('') }}"
+
+- name: Apply tripleo patches
+  patch:
+    src: "{{ item }}"
+    basedir: "{{ dib_home }}/tools/tripleo-image-elements"
+    strip: 1
+  when: "{{ src_tripleo_diffs }}"
+  with_items:
+    - "{{ src_tripleo_diffs | default('') }}"
+
+- name: Make new elements runnable
+  file:
+    path: "{{ dib_home }}/tools/trove/integration/scripts/files/elements/{{ item }}"
+    state: directory
+    mode: "a+x"
+    recurse: yes
+  when: "{{ src_trove_diffs }}"
+  with_items:
+    - ubuntu-xenial-guest/extra-data.d/
+    - ubuntu-xenial-guest/install.d/
+    - ubuntu-trusty-guest/extra-data.d/
+    - ubuntu-trusty-guest/install.d/
+
+- name: Configure diskimage-builder
+  pip:
+    requirements: "{{ dib_home }}/tools/diskimage-builder/requirements.txt"
+  register: dibrc
+  become: yes
