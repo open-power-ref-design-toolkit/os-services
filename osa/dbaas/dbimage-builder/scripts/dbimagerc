@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+#
+# Copyright 2017 IBM Corp.
+#
+# All Rights Reserved.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
+# Run dbimage-make.sh remote from controller node.  A hostname may be
+# provided if it is resolvable via DNS
+
+#export DBIMAGE_CONTROLLER_IP=
+
+# These are translated into arguments to the ansible commands.  If the
+# prompt option is set, the user will be prompted each time that the
+# ansible playbook command tries to connect to the controller.  This
+# happens a couple of times.  An alternative is to use the password
+# and ssh key environment variables below.
+
+#export DBIMAGE_CTRL_SSH_PROMPT=yes
+#export DBIMAGE_ANSIBLE_DEBUG=yes
+
+# If dbimage-make.sh is installed on a server in the control plane, then
+# neither the DBIMAGE_CTRL_PASSWD nor the DBIMAGE_CTRL_PRIVATE_SSH_KEY
+# environment variables needs to be set.  Otherwise one of them must be
+# set, unless the user manually establishes ssh access to the controller
+# prior to running this tool.
+
+#export DBIMAGE_CTRL_PASSWD=
+#export DBIMAGE_CTRL_PRIVATE_SSH_KEY=~/.ssh/<ctrl_rsa>
+
+# If dbimage-make.sh is installed on the same server where the guest image is
+# built, then neither the DBIMAGE_DIB_PASSWD nor the DBIMAGE_DIB_PRIVATE_SSH_KEY
+# environment variables needs to be set.  Otherwise one of them must be set,
+# unless the user manually establishes ssh access to the dibvm prior to
+# running this tool.
+
+#export DBIMAGE_DIB_PASSWD=
+#export DBIMAGE_DIB_PRIVATE_SSH_KEY=~/.ssh/<dibvm_rsa>
+
+# Request a cross-distro build.  This is an argument to diskimage-builder
+
+#export DIB_RELEASE=xenial
+
+# A component of the virtual guest image name as uploaded to Glance
+
+#export DBIMAGE_SOURCE=-dib

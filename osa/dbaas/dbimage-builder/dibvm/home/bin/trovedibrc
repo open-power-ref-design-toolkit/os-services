@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+#
+# Copyright 2017 IBM Corp.
+#
+# All Rights Reserved.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
+export SERVICE_TYPE=${SERVICE_TYPE:-"redis"}
+export CONTROLLER_IP=${CONTROLLER_IP:-"localhost"}
+export DATASTORE_PKG_LOCATION=${DATASTORE_PKG_LOCATION:-"$HOME/pkg"}
+export QEMU_IMG_OPTIONS=${QEMU_IMG_OPTIONS:-""}
+
+export HOST_USERNAME=$USER
+export HOST_SCP_USERNAME=ubuntu    # @CONTROLLER_ID, must be set, but never used
+export GUEST_USERNAME=$USER
+export TROVESTACK_SCRIPTS=$HOME/tools/trove/integration/scripts
+export PATH_TROVE=$HOME/trove
+export ESCAPED_PATH_TROVE="${PATH_TROVE//\//\\/}"
+export SSH_DIR="/home/$USER/dibuser"
+export GUEST_LOGDIR=/var/log/trove
+export ESCAPED_GUEST_LOGDIR="${GUEST_LOGDIR//\//\\/}"
+export DIB_CLOUD_INIT_DATASOURCES="ConfigDrive"
+export BRANCH_OVERRIDE=newton
+export RELEASE=$DIB_RELEASE
+
+export PATH+=:$HOME/tools/diskimage-builder/bin
+
+export ELEMENTS_PATH=$HOME/elements
+export ELEMENTS_PATH+=:$TROVESTACK_SCRIPTS/files/elements
+export ELEMENTS_PATH+=:$HOME/tools/diskimage-builder/elements
+export ELEMENTS_PATH+=:$HOME/tools/tripleo-image-elements/elements
+
+export DIB_APT_CONF_DIR=/etc/apt/apt.conf.d
+export DIB_CLOUD_INIT_ETC_HOSTS=true
+
+# This is a workaround for random setlocale errors.  It uses
+# an internal local that is equivalent to En_us without having
+# to perform the set operation
+export LC_ALL=C

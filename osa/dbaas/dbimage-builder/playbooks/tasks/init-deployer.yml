@@ -1,0 +1,76 @@
+---
+
+# This task is invoked during the invocation of the playbook below:
+#
+# ansible-playbook -i host_file dbimage-make.yml -u ubuntu -c ssh
+#
+# This is invoked on the deployer node AKA localhost as root
+
+- name: Create ssh key for root user
+  command: "ssh-keygen -t rsa -f ~/.ssh/id_rsa -N ''"
+  args:
+    creates: "~/.ssh/id_rsa"
+
+- name: Get deployer's public key
+  slurp:
+    src: "~/.ssh/id_rsa.pub"
+  register: public_key
+
+- name: Remember deployer's public key
+  set_fact:
+    deployer_pub_key: "{{ public_key.content | b64decode }}"
+
+- name: Add root user's public key to ubuntu user's authorized_keys on localhost
+  authorized_key:
+    user: "{{ dibUser }}"
+    state: present
+    key: "{{ deployer_pub_key }}"
+    path: "/home/{{ dibUser }}/.ssh/authorized_keys"
+  when: ipAddrDib == 'localhost'
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 600
+  register: apt_update
+  until: apt_update|success
+  retries: 5
+  delay: 60
+
+- name: Install apt packages
+  apt:
+    pkg: "{{ item }}"
+    state: present
+  register: install_packages
+  until: install_packages|success
+  with_items: "{{ dbimage_apt_packages }}"
+  retries: 5
+  delay: 20
+  when: "{{ dbimage_apt_packages }}"
+
+- name: Install pip packages
+  pip:
+    name: "{{ dbimage_pip_packages | join(' ') }}"
+    state: present
+  register: install_packages
+  until: install_packages|success
+  retries: 5
+  delay: 20
+  when: "{{ dbimage_pip_packages }}"
+
+- name: Create directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+  with_items:
+    - "{{ baseDir }}/etc/ssh"
+    - "{{ baseDir }}/etc/trove"
+
+- name: Clean environment
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ baseDir }}/etc/ssh/"
+    - "{{ baseDir }}/etc/trove/"

@@ -1,0 +1,10 @@
+---
+# This task is invoked during the invocation of the playbook below:
+#
+# ansible-playbook -i host_file dbimage-make.yml -u ubuntu -c ssh
+#
+# This is invoked on the dibvm under the ubuntu user
+
+- name: Set cross_build variable
+  set_fact:
+    cross_build: "{{ dibRelease and dibRelease != ansible_distribution_release }}"
