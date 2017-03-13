@@ -711,6 +711,75 @@ class CreateBackupForm(forms.SelfHandlingForm):
         return True
 
 
+class RenameInstanceForm(forms.SelfHandlingForm):
+    instance = forms.ChoiceField(
+        label=_("Instance"),
+        required=True)
+
+    name = forms.CharField(max_length=80, label=_("New Name"))
+
+    def __init__(self, request, *args, **kwargs):
+        super(RenameInstanceForm, self).__init__(request, *args, **kwargs)
+
+        instID = None
+
+        # If an initial instance id was passed in, retrieve it
+        # and use it to prime the field
+        if 'initial' in kwargs:
+            if kwargs['initial'] and 'instance_id' in kwargs['initial']:
+                instID = kwargs['initial']['instance_id']
+
+        # Allow all instances to be renamed
+        sts = None
+        choices = create_instance_choices(request, sts, instID)
+
+        self.fields['instance'].choices = choices
+
+        if instID:
+            self.fields['instance'].initial = instID
+            self.fields['instance'].widget.attrs['readonly'] = True
+
+    def clean(self):
+        instance = self.data['instance']
+
+        if not instance:
+            msg = _("Select an instance to rename")
+            self._errors['instance'] = self.error_class([msg])
+
+    def handle(self, request, data):
+        __method__ = 'forms.RenameInstance.handle'
+
+        sel_inst = data['instance']
+        new_name = data['name']
+
+        # Need the instance name in both success/failure cases.
+        # Retrieve it now (will be instance_id if we couldn't retrieve it).
+        instance_name = retrieve_instance_name(request, sel_inst)
+
+        # Perform the instance rename attempt
+        try:
+            trove_api.trove.troveclient(request).instances.edit(sel_inst,
+                                                                name=new_name)
+        except Exception as e:
+            failure_message = ("Attempt to rename instance %(old_name)s to"
+                               " new name %(new_name)s was not"
+                               " successful.  Details of the error: %(reason)s"
+                               % {'old_name': instance_name, 'new_name':
+                                  new_name, 'reason': e})
+            logging.error("%s: Exception received trying to rename"
+                          " instance %s.  Exception is: %s",
+                          __method__, instance_name, e)
+            exceptions.handle(self.request, failure_message)
+            # Return true to close the dialog
+            return True
+
+        msg = ('Instance %(instance_name)s was renamed to %(new_name)s.'
+               % {'instance_name': instance_name, 'new_name': new_name})
+
+        messages.success(request, msg)
+        return True
+
+
 class DeleteBackupForm(forms.SelfHandlingForm):
     backup = forms.ChoiceField(
         label=_("Backup"),

@@ -84,6 +84,7 @@ class CreateBackupView(forms.ModalFormView):
 class RestartInstanceView(forms.ModalFormView):
     template_name = 'project/database/restart_instance.html'
     modal_header = _("Restart Instance")
+    modal_id = "restart_instance_modal"
     form_id = "restart_instance_form"
     form_class = project_forms.RestartInstanceForm
     submit_label = _("Restart")
@@ -134,6 +135,28 @@ class ResizeVolumeView(forms.ModalFormView):
     submit_url = reverse_lazy("horizon:project:database:resize_volume")
     success_url = reverse_lazy('horizon:project:database:index')
     page_title = _("Resize Volume")
+
+    def get_initial(self):
+        # Need the instance id to prime the dialog if passed in
+        if "instance_id" in self.kwargs:
+            return {'instance_id': self.kwargs['instance_id']}
+        else:
+            return
+
+    def get_success_url(self):
+        # On completion, ensure we navigate to the instances tab
+        return build_url_tab('?tab=database_page__instances')
+
+
+class RenameInstanceView(forms.ModalFormView):
+    template_name = 'project/database/rename_instance.html'
+    modal_header = _("Rename Instance")
+    form_id = "rename_instance_form"
+    form_class = project_forms.RenameInstanceForm
+    submit_label = _("Rename")
+    submit_url = reverse_lazy("horizon:project:database:rename_instance")
+    success_url = reverse_lazy('horizon:project:database:index')
+    page_title = _("Rename Instance")
 
     def get_initial(self):
         # Need the instance id to prime the dialog if passed in

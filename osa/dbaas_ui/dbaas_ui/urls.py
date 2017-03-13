@@ -42,11 +42,15 @@ urlpatterns = patterns(
     url(r'^(?P<instance_id>[^/]+)/resize_instance/$',
         views.ResizeInstanceView.as_view(), name='resize_instance'),
 
-
     url(r'^resize_volume',
         views.ResizeVolumeView.as_view(), name='resize_volume'),
     url(r'^(?P<instance_id>[^/]+)/restart_volume/$',
         views.ResizeVolumeView.as_view(), name='resize_volume'),
+
+    url(r'^rename_instance',
+        views.RenameInstanceView.as_view(), name='rename_instance'),
+    url(r'^(?P<instance_id>[^/]+)/rename_instance/$',
+        views.RenameInstanceView.as_view(), name='rename_instance'),
 
     url(r'^delete_instance',
         views.DeleteInstanceView.as_view(), name='delete_instance'),

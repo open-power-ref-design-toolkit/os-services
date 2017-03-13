@@ -20,7 +20,6 @@ from django.utils.translation import ugettext_lazy as _
 from horizon import tables
 from horizon.templatetags import sizeformat
 from horizon.utils import filters
-
 from openstack_dashboard import api as trove_api
 
 INSTANCE_STATUS_CHOICES = (
@@ -121,6 +120,14 @@ class ResizeInstanceLink(tables.LinkAction):
     def allowed(self, request, instance=None):
         return (instance.status == 'ACTIVE' or
                 instance.status == 'SHUTOFF')
+
+
+class RenameInstanceLink(tables.LinkAction):
+    name = "renameInstance"
+    verbose_name = _("Rename Instance")
+    url = "horizon:project:database:rename_instance"
+    classes = ("ajax-modal",)
+    icon = "sort-amount-desc"
 
 
 class ResizeVolumeLink(tables.LinkAction):
@@ -315,6 +322,7 @@ class InstancesTable(tables.DataTable):
         # row_class = UpdateRowInstances
         table_actions = (LaunchInstanceLink, GenericFilterAction)
         row_actions = (CreateBackupLink,
+                       RenameInstanceLink,
                        ResizeInstanceLink,
                        ResizeVolumeLink,
                        RestartInstanceLink,

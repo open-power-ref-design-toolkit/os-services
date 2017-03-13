@@ -75,12 +75,27 @@
                </div>
             </a>
 
-            <a id="tg1_taskLink5"  href="/project/database/delete_instance" class="ajax-modal" style="width:auto;display:inline-block">
+            <a id="tg1_taskLink5"  href="/project/database/rename_instance" class="ajax-modal" style="width:auto;display:inline-block">
                <div id="tg1_task5_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
                   <table cellpadding="10">
                      <tr>
                         <td align='center'>
                            {% block tg1_t5_icon %}
+                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/folder_64.png">
+                           {% endblock %}
+                           <p style="text-align:left; line-height:1;">Rename Instance
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+            </a>
+
+            <a id="tg1_taskLink6"  href="/project/database/delete_instance" class="ajax-modal" style="width:auto;display:inline-block">
+               <div id="tg1_task6_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
+                  <table cellpadding="10">
+                     <tr>
+                        <td align='center'>
+                           {% block tg1_t6_icon %}
                               <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/trash_64.png">
                            {% endblock %}
                            <p style="text-align:left; line-height:1;">Delete Instance
