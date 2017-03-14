@@ -38,6 +38,7 @@ def validate(file_path):
     try:
         inventory = _load_yml(file_path)
         validate_reference_architecture(inventory)
+        validate_private_compute_cloud(inventory)
         validate_swift(inventory)
         validate_ceph(inventory)
         validate_ops_mgr(inventory)
@@ -69,6 +70,86 @@ def validate_reference_architecture(inventory):
         raise UnsupportedConfig('The ceph-standalone reference architecture '
                                 'cannot be used in conjunction with other '
                                 'reference architectures.')
+
+
+def _is_network_existing(templates, required_net):
+    """ Check if a required network exists in all the given node templates
+    """
+    if not templates:
+        return True
+
+    for template in templates:
+        nets = template.get('networks', [])
+        if required_net not in nets:
+            return False
+
+    return True
+
+
+def _validate_private_compute_cloud_node_templates(roles_to_templates):
+    """ Validate that there should be at least one controller node template
+        and one compute node template when private-compute-cloud reference
+        architecture is there
+    """
+    # Both 'controller' and 'controllers' can be keys in the dictionary
+    # roles_to_templates because 'controllers' is the old node template name
+    # and 'controller' is the role name.
+    if not roles_to_templates.get('controller') and \
+       not roles_to_templates.get('controllers'):
+        msg = ('The configuration must either have a node template named '
+               '\'controllers\' or one node template which has the '
+               'controller role.')
+        raise UnsupportedConfig(msg)
+
+    if not roles_to_templates.get('compute'):
+        msg = ('The configuration must either have a node template named '
+               '\'compute\' or one node template which has the compute role.')
+        raise UnsupportedConfig(msg)
+
+
+def _validate_private_compute_cloud_networks(config, roles_to_templates):
+    """ Validate that the networks required for private-compute-cloud exist
+    """
+    # These networks should be configured on controllers and compute nodes
+    required_nets = ['openstack-mgmt', 'openstack-tenant-vxlan',
+                     'openstack-tenant-vlan', 'openstack-stg']
+
+    for required_net in required_nets:
+        if required_net not in config.get('networks', []):
+            msg = ('The required network %s is missing.' % required_net)
+            raise UnsupportedConfig(msg)
+
+    # Validate that the controller node templates have the required networks
+    for required_net in required_nets:
+        if not _is_network_existing(roles_to_templates.get('controller'),
+                                    required_net):
+            msg = ('Missing network %(net)s in a node template with '
+                   'controller role')
+            raise UnsupportedConfig(msg % {'net': required_net})
+        if not _is_network_existing(roles_to_templates.get('controllers'),
+                                    required_net):
+            msg = ('Missing network %(net)s in the controllers node template')
+            raise UnsupportedConfig(msg % {'net': required_net})
+
+    # Validate that the compute node templates have the required networks
+    for required_net in required_nets:
+        if not _is_network_existing(roles_to_templates.get('compute'),
+                                    required_net):
+            msg = ('Missing network %(net)s in a compute node template')
+            raise UnsupportedConfig(msg % {'net': required_net})
+
+
+def validate_private_compute_cloud(inventory):
+    """ Validate private-compute-cloud reference architecture configuration
+    """
+
+    reference_architecture = inventory.get('reference-architecture', [])
+    if 'private-compute-cloud' not in reference_architecture:
+        return
+
+    roles_to_templates = _get_roles_to_templates(inventory)
+    _validate_private_compute_cloud_node_templates(roles_to_templates)
+    _validate_private_compute_cloud_networks(inventory, roles_to_templates)
 
 
 def validate_swift(inventory):
@@ -174,30 +255,26 @@ def _validate_ceph_networks(config, roles_to_templates):
     required_net = None
     if CEPH in reference_architecture:
         required_net = 'ceph-public-storage'
-    elif COMPUTE:
+    else:  # COMPUTE
         required_net = 'openstack-stg'
 
-    if required_net not in config['networks']:
+    if required_net not in config.get('networks', []):
         msg = ('The required Ceph storage network %s is '
                'missing.' % required_net)
         raise UnsupportedConfig(msg)
 
-    # validate that the ceph monitor node templates
+    # Validate that the ceph monitor node templates
     # have the network
-    for template in roles_to_templates['ceph-monitor']:
-        nets = template['networks']
-        if required_net not in nets:
-            msg = ('The ceph-monitor and/or controller node template(s)'
-                   ' are missing network %(net)s')
-            raise UnsupportedConfig(msg % {'net': required_net})
-    # validate that the ceph osd node templates
+    if not _is_network_existing(roles_to_templates['ceph-monitor'],
+                                required_net):
+        msg = ('The ceph-monitor and/or controller node template(s)'
+               ' are missing network %(net)s')
+        raise UnsupportedConfig(msg % {'net': required_net})
+    # Validate that the ceph osd node templates
     # have the network
-    for template in roles_to_templates['ceph-osd']:
-        nets = template['networks']
-        if required_net not in nets:
-            msg = ('The ceph osd node template(s)'
-                   ' are missing network %(net)s')
-            raise UnsupportedConfig(msg % {'net': required_net})
+    if not _is_network_existing(roles_to_templates['ceph-osd'], required_net):
+        msg = ('The ceph osd node template(s) are missing network %(net)s')
+        raise UnsupportedConfig(msg % {'net': required_net})
 
 
 def _validate_ceph_devices(config, roles_to_templates):
@@ -232,6 +309,9 @@ def _get_roles_to_templates(config):
     # Get a map of roles to node-templates
     # This includes the backward compatible support for role being the
     # template name and controller nodes being ceph-monitors.
+    # Both 'controller' and 'controllers' can be keys in the resultant
+    # dictionary roles_to_templates because 'controllers' is the old
+    # node template name and 'controller' is the role name.
 
     def add_template(role, template, the_map):
         templates = the_map.get(role)
@@ -242,6 +322,10 @@ def _get_roles_to_templates(config):
             templates.append(template)
 
     roles_to_templates = {}
+    if 'node-templates' not in config:
+        msg = ('node-templates is missing in the configuration')
+        raise UnsupportedConfig(msg)
+
     for name, template in config['node-templates'].iteritems():
         # Add the template by name
         add_template(name, template, roles_to_templates)
@@ -284,15 +368,14 @@ def validate_ops_mgr(config):
     # Require that every node-template be connected to the openstack-mgmt
     # network
     required_net = 'openstack-mgmt'
-    if required_net not in config['networks']:
+    if required_net not in config.get('networks', []):
         msg = ('The required openstack-mgmt network %s is '
                'missing.' % required_net)
         raise UnsupportedConfig(msg)
 
-    # validate that the controllers and ceph-osd node templates
-    # have the network
+    # validate that all the node templates have openstack-mgmt network
     for template_name, template in config.get('node-templates').iteritems():
-        nets = template['networks']
+        nets = template.get('networks', [])
         if required_net not in nets:
             msg = 'The node template %(template)s is missing network %(net)s'
             raise UnsupportedConfig(msg % {'template': template_name,

@@ -104,6 +104,154 @@ class TestValidateConfig(unittest.TestCase):
         inv['reference-architecture'] = ['swift']
         test_mod.validate_reference_architecture(inv)
 
+    @mock.patch.object(test_mod, '_get_roles_to_templates')
+    @mock.patch.object(test_mod,
+                       '_validate_private_compute_cloud_node_templates')
+    @mock.patch.object(test_mod, '_validate_private_compute_cloud_networks')
+    def test_validate_private_compute_cloud(self, networks, templates,
+                                            get_r2t):
+        # Validate private compute cloud
+        config = {'reference-architecture': [test_mod.COMPUTE]}
+        test_mod.validate_private_compute_cloud(config)
+        get_r2t.assert_called_once_with(config)
+        templates.assert_called_once_with(get_r2t.return_value)
+        networks.assert_called_once_with(config, get_r2t.return_value)
+
+    def test_validate_private_compute_cloud_node_templates(self):
+        """ Validate that controller node's and compute node's templates
+            exist for private-compute-cloud reference architecture
+        """
+        # Test good cases with compute and controller:
+        # 1. with 'controller' and without 'controllers',
+        # 2. with 'controllers' and without 'controller',
+        # 3. Both 'controller' and 'controllers'
+        roles_to_templates = {'controller': 'a',
+                              'compute': 'b'}
+
+        test_mod._validate_private_compute_cloud_node_templates(
+            roles_to_templates)
+
+        roles_to_templates = {'controllers': 'a',
+                              'compute': 'b'}
+
+        test_mod._validate_private_compute_cloud_node_templates(
+            roles_to_templates)
+
+        roles_to_templates = {'controllers': 'a',
+                              'controller': 'b',
+                              'compute': 'c'}
+
+        test_mod._validate_private_compute_cloud_node_templates(
+            roles_to_templates)
+
+        # Test the case without compute
+        roles_to_templates.pop('compute')
+        self.assertRaisesRegexp(
+            test_mod.UnsupportedConfig,
+            'node template named \'compute\'.*compute role',
+            test_mod._validate_private_compute_cloud_node_templates,
+            roles_to_templates)
+
+        # Test the case without controller and without controllers
+        roles_to_templates['compute'] = 'a'
+        roles_to_templates.pop('controllers')
+        roles_to_templates.pop('controller')
+        self.assertRaisesRegexp(
+            test_mod.UnsupportedConfig,
+            'node template named \'controllers\'.*controller role',
+            test_mod._validate_private_compute_cloud_node_templates,
+            roles_to_templates)
+
+    def _build_inventory(self, net_list1, net_list2, net_list3):
+        """ Returns role_to_template mapping and the config by building them
+            using the given networks lists
+        """
+        node_templ = {'controllers': {'networks': net_list1},
+                      'compute': {'networks': net_list2},
+                      'converged_node': {'roles': ['controller', 'compute'],
+                                         'networks': net_list3}}
+        role_to_template = {'controllers': [node_templ['controllers']],
+                            'controller': [node_templ['converged_node']],
+                            'compute': [node_templ['compute'],
+                                        node_templ['converged_node']]}
+        config = {'reference-architecture': [test_mod.COMPUTE],
+                  'networks': {'openstack-mgmt': {},
+                               'openstack-tenant-vxlan': {},
+                               'openstack-tenant-vlan': {},
+                               'openstack-stg': {}},
+                  'node-templates': node_templ}
+        return (config, role_to_template)
+
+    def _validate_node_templates_networks(self, net_list1, net_list2,
+                                          net_list3, should_pass):
+        """ If at least one bad networks list is given as input parameter,
+            'Missing network' should exist in the exception message for
+            private-compute-cloud reference architecture.
+        """
+        config, role_to_template = self._build_inventory(net_list1, net_list2,
+                                                         net_list3)
+        if should_pass:
+            test_mod._validate_private_compute_cloud_networks(
+                config, role_to_template)
+        else:
+            self.assertRaisesRegexp(
+                test_mod.UnsupportedConfig, 'Missing network',
+                test_mod._validate_private_compute_cloud_networks,
+                config, role_to_template)
+
+    def _validate_bad_config_networks(self, required_nets, remove_net):
+        """ Validate networks in the inventory by removing the given network
+            for private-compute-cloud reference architecture
+        """
+        config, role_to_template = self._build_inventory(
+            required_nets, required_nets, required_nets)
+        config['networks'].pop(remove_net)
+        msg = ('The required network %s is missing.' % remove_net)
+        self.assertRaisesRegexp(
+            test_mod.UnsupportedConfig, msg,
+            test_mod._validate_private_compute_cloud_networks,
+            config, role_to_template)
+
+    def test_validate_private_compute_cloud_networks(self):
+        """ Validate the required networks configured for
+            private-compute-cloud reference architecture
+        """
+        # Test valid network configurations
+        required_nets = ['openstack-mgmt', 'openstack-tenant-vxlan',
+                         'openstack-tenant-vlan', 'openstack-stg']
+        self._validate_node_templates_networks(
+            required_nets, required_nets, required_nets, True)
+
+        # Test invalid network configurations in node templates
+        invalid_nets_lists = [
+            required_nets[1:4],                       # skip index 0
+            required_nets[0:3],                       # skip index 3
+            required_nets[0:1] + required_nets[2:4],  # skip index 1
+            required_nets[0:2] + required_nets[3:4]]  # skip index 2
+
+        for nets in invalid_nets_lists:
+            # required_nets is good/complete list of networks for
+            # private-compute-cloud reference architecture for controllers
+            # and compute node templates. nets is a proper subset of
+            # required_nets. So 'Missing network' should exist in the
+            # exception message.
+            self._validate_node_templates_networks(
+                required_nets, required_nets, nets, False)
+            self._validate_node_templates_networks(
+                required_nets, nets, required_nets, False)
+            self._validate_node_templates_networks(
+                nets, required_nets, required_nets, False)
+
+        # Test invalid network configurations in inventory.
+        # Remove only one network from the inventory and look for
+        # the exception
+        self._validate_bad_config_networks(required_nets, 'openstack-mgmt')
+        self._validate_bad_config_networks(required_nets,
+                                           'openstack-tenant-vxlan')
+        self._validate_bad_config_networks(required_nets,
+                                           'openstack-tenant-vlan')
+        self._validate_bad_config_networks(required_nets, 'openstack-stg')
+
     @mock.patch.object(test_mod, '_has_converged_metadata_object')
     @mock.patch.object(test_mod, '_has_separate_metadata_object')
     def test_validate_swift(self, separate, converged):
