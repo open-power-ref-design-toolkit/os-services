@@ -88,7 +88,6 @@ BACKUPS_STATUS_DISPLAY_CHOICES = (
 #
 #######################################################
 
-#  Start of Instance-related tasks
 class LaunchInstanceLink(tables.LinkAction):
     name = "launch"
     url = "horizon:project:database:launch_instance"
@@ -146,7 +145,7 @@ class DeleteInstanceLink(tables.LinkAction):
     name = "deleteInstance"
     verbose_name = _("Delete")
     url = "horizon:project:database:delete_instance"
-    classes = ("ajax-modal",)
+    classes = ("ajax-modal", "btn-danger")
     icon = "trash"
 
 
@@ -158,10 +157,11 @@ class CreateBackupLink(tables.LinkAction):
     icon = "camera"
 
     def allowed(self, request, instance=None):
-        return (instance and instance.status in 'ACTIVE' and
-                request.user.has_perm('openstack.services.object-store'))
-
-#  Start of Backups-related tasks
+        if (instance):
+            return (instance and instance.status in 'ACTIVE' and
+                    request.user.has_perm('openstack.services.object-store'))
+        else:
+            return request.user.has_perm('openstack.services.object-store')
 
 
 class DeleteBackupLink(tables.LinkAction):
@@ -169,7 +169,7 @@ class DeleteBackupLink(tables.LinkAction):
     name = "deleteBackup"
     verbose_name = _("Delete")
     url = "horizon:project:database:delete_backup"
-    classes = ("ajax-modal",)
+    classes = ("ajax-modal", "btn-danger")
     icon = "trash"
 
 
@@ -292,9 +292,8 @@ def is_incremental(obj):
 
 
 class InstancesTable(tables.DataTable):
-    # Currently details for backups is not yet available.  When it is,
-    # add:  link="xxxxx:detail"
     name = tables.Column("name",
+                         link="horizon:project:database:instance_details",
                          verbose_name=_("Instance Name"))
     datastore = tables.Column(get_datastore,
                               verbose_name=_("Datastore"))
@@ -330,9 +329,8 @@ class InstancesTable(tables.DataTable):
 
 
 class BackupsTable(tables.DataTable):
-    # Currently details for backups is not yet available.  When it is,
-    # add:  link="xxxxx:detail"
     name = tables.Column("name",
+                         link="horizon:project:database:backup_details",
                          verbose_name=_("Name"))
     datastore = tables.Column(get_datastore,
                               verbose_name=_("Datastore"))

@@ -60,4 +60,13 @@ urlpatterns = patterns(
     url(r'^delete_backup',
         views.DeleteBackupView.as_view(), name='delete_backup'),
     url(r'^(?P<backup_id>[^/]+)/delete_backup/$',
-        views.DeleteBackupView.as_view(), name='delete_backup'),)
+        views.DeleteBackupView.as_view(), name='delete_backup'),
+
+    # URLs to details views
+    url(r'^(?P<instance_id>[^/]+)/instance/$',
+        views.InstanceDetailsView.as_view(), name='instance_details'),
+
+    url(r'^(?P<backup_id>[^/]+)/backup/$',
+        views.BackupDetailsView.as_view(), name='backup_details'),
+
+)

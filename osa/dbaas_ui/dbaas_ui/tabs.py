@@ -13,16 +13,19 @@
 # limitations under the License.
 from collections import OrderedDict
 
+from django import template
 from django.utils.translation import ugettext_lazy as _
 
 from horizon import exceptions
 from horizon.utils import memoized
 from horizon import tabs
 
+import logging
 import six
 
 import tables as tables
 from trove_dashboard import api as trove_api
+from trove_dashboard.content.databases import db_capability
 
 
 @memoized.memoized_method
@@ -134,3 +137,54 @@ class DatabasePageTabs(tabs.TabGroup):
     # Database page has a welcome/main tab and several sub-tabs
     tabs = (ShortcutsTab, InstancesTab, BackupsTab,)
     show_single_tab = True
+    sticky = True
+
+
+class InstanceOverviewTab(tabs.Tab):
+    name = _("Overview")
+    slug = "instance_overview"
+    template_name = ("project/database/_instance_detail_overview.html")
+
+    def get_context_data(self, request):
+        __method__ = "tabs.InstanceOverviewTab.get_context_data"
+        # Place the instance passed in onto the context
+        instance = self.tab_group.kwargs['instance']
+        context = {"instance": instance}
+        try:
+            # Indicate if root is enabled and place that on the context
+            root_show = trove_api.trove.root_show(request, instance.id)
+            context["root_enabled"] = template.defaultfilters.yesno(
+                root_show.rootEnabled)
+        except Exception as e:
+            logging.error("%s:  Exception received trying to "
+                          "retrieve root_show: %s", __method__, e)
+            context["root_enabled"] = _('Unable to obtain information on '
+                                        'root user')
+        return context
+
+    def get_template_name(self, request):
+        # in addition to _instance_detail_overview.html as the
+        # template for instance details, there are additional
+        # template portions based on the datastore type of the
+        # instance
+        instance = self.tab_group.kwargs['instance']
+        template_file = ('project/database/_detail_overview_%s.html' %
+                         self._get_template_type(instance.datastore['type']))
+        try:
+            template.loader.get_template(template_file)
+            return template_file
+        except template.TemplateDoesNotExist:
+            # This datastore type does not have a template file
+            # Just use the base template file
+            return ('project/databases/_detail_overview.html')
+
+    def _get_template_type(self, datastore):
+        if db_capability.is_mysql_compatible(datastore):
+            return 'mysql'
+
+        return datastore
+
+
+class InstanceDetailsTabs(tabs.TabGroup):
+    slug = "instance_details"
+    tabs = (InstanceOverviewTab,)
