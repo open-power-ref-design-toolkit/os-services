@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2016, IBM US, Inc.
+# Copyright 2016, 2017 IBM US, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,13 +22,55 @@
 # through the files available in ../changes directory (and subdirectroies recursively)
 # and creates diff files for every such file that is found under dir1 (including
 # subdirectories of dir1 recursively).
-
+#
 # Example usage: ./versionDiff.sh /tmp/.gitsrc_13.1.0 /tmp/.gitsrc_13.3.5
 #
 # You can use mkdiffs.py to get .gitsrc_13.1.0 and .gitsrc_13.3.5 by running
-# mkdiffs.py twice, once with 13.1.0 in mkdiffs.yml and second time with 13.3.5 ini
+# mkdiffs.py twice, once with 13.1.0 in mkdiffs.yml and second time with 13.3.5 in
 # mkdiffs.yml. When mkdiffs.py is run, the generated .gitsrc directory is located
 # at ../.gitsrc
+#
+#
+# Usual steps in porting os-services to a new OSA version:
+# (1) Run mkdiffs.py to get old OSA version git source code and then save it.
+#       ./mkdiffs
+#       cp -R ../.gitsrc ~/gitsrc_v1
+# (2) Modify the version/tag of different(all) roles in mkdiffs.yml to the
+#     new version from old version. Run mkdiffs.py again to get the new
+#     version's .gitsrc and save that also.
+#       ./mkdiffs
+#       cp -R ../.gitsrc ~/gitsrc_v2
+# (3) Run versionDiff.sh to get the differences between gitsrc_v1 and
+#     gitsrc_v2 for the files under ../changes/
+#       ./versionDiff.sh ~/gitsrc_v1 ~/gitsrc_v2
+#     Choose c[to apply cleanly applicable patches only] or a[to apply all
+#     patches; some of these will result in .rej files, which require
+#     manual attention/merge]
+# (4) Once all the code changes to ../changes/ are done, run mkdiffs.py to get
+#     the patch files in ../.diffs directory. Copy the required .patch files
+#     from ../.diffs/ to ../osa/diffs/
+#     Refer to the next point (5) that helps in deciding which patch files are
+#     to be copied from ../.diffs/ to ../osa/diffs/ and also in copying
+#     automatically.
+# (5) Once the porting is completed (including manually merging all the
+#     patches from ../.versionDiffOutput/ to ../changes), run cmpDiffs.sh
+#     which helps in copying the patch files from ../.diffs to ../osa/diffs
+#     after prompting for y/n for copying:
+#       ./cmpDiffs.sh ../.diffs ../osa/diffs
+#     If there are differences shown in the log file /tmp/cmpDiffs.log and
+#     if we choose option y in y/n for copying patch files from ../.diffs to
+#     ../osa/diffs, then rerun cmpDiffs.sh to validate that there are no
+#     more differences between the patches from ../.diffs and ../osa/diffs.
+#     The resultant log file /tmp/cmpDiffs.log should not contain any
+#     differences. The following command should give empty output if porting
+#     of os-services to new version is complete:
+#     grep -v -e 'FILE:' -e 'No differences between' /tmp/cmpDiffs.log
+# (6) Make any other related changes like the release name change in the line
+#     that has "git checkout" and the value of OSA_TAG variable in
+#     ../osa/scripts/bootstrap-osa.sh
+# (7) You may have to remove patches from ../osa/diffs/ if the corresponding
+#     source file is removed from a subdirectory under os-services/changes/ as
+#     part of porting os-services from one version of OSA to another.
 
 #set -x
 
@@ -130,42 +172,54 @@ echo "Checking if the created patch files from $patch_dir can be applied" \
 
 pushd $EXEC_DIR/../changes > /dev/null 2>&1
 
-#patch_files=`find $patch_dir -type f`
 num_applicable=0
-total_patches=$modified_files_cnt
+num_not_applicable=0
+num_total_patches=$modified_files_cnt
+
+# Patches that are to be applied in moving from version1 to version2 of OSA
+all_patches=()
+
+# Patches which can be applied using patch command without errors
+applicable_patches=()
+
+# Patches which result in errors if we try applying them using patch command
+non_applicable_patches=()
+
 for file in $files; do
     patch_file=$patch_dir/${file//\//-}.diff
     if [ -f $patch_file ]; then
+        all_patches+=($patch_file)
         echo "patch file " $patch_file >> $log_file 2>&1
         patch --dry-run -N -p1 < $patch_file  >> $log_file 2>&1
         rc=$?
         echo "Apply patch dry-run rc="$rc >> $log_file 2>&1
         if [ $rc -eq 0 ]; then
             num_applicable=$((num_applicable+1))
+            applicable_patches+=($patch_file)
+        else
+            num_not_applicable=$((num_not_applicable+1))
+            non_applicable_patches+=($patch_file)
         fi
-    #else
-    #  echo "File path" $patch_file "does not exist. File is not modifed between versions"
     fi
 done
 
-echo $num_applicable "patches out of" $total_patches "total patches can" \
+echo $num_applicable "patches out of" $num_total_patches "total patches can" \
      "be applied without issues to $EXEC_DIR/../changes in porting" \
      "os-services code from version $dir1 to version $dir2."
 
-remaining=`expr $total_patches - $num_applicable`
-if [ $remaining -ne 0 ]; then
-    echo "You will have to manually resolve the issues and merge $remaining" \
-         "remaining patches by looking into .rej files."
+echo "Patches which can be applied without issues are: ${applicable_patches[@]}"
+
+if [ $num_not_applicable -ne 0 ]; then
+    echo "You will have to manually resolve the issues and merge" \
+         $num_not_applicable "remaining patches."
 fi
 
-echo -n "Do you want to proceed with applying all patches to " \
-        "$EXEC_DIR/../changes including the patches which do not " \
-        "apply cleanly ? Press (y/n):"
-read -r apply_or_not
+# Apply the given list of patches
+function do_apply_patches {
+    patches=("$@")
+    #echo "do_apply_patches: ${patches[@]}"
 
-if [ $apply_or_not == "y" ]; then
-    for file in $files; do
-        patch_file=$patch_dir/${file//\//-}.diff
+    for patch_file in "${patches[@]}"; do
         if [ -f $patch_file ]; then
             echo "Patch file " $patch_file >> $log_file 2>&1
             # Patches are applied to os-services/changes/ directory
@@ -174,12 +228,41 @@ if [ $apply_or_not == "y" ]; then
             echo "Apply patch rc="$rc >> $log_file 2>&1
         fi
     done
-    if [ $remaining -ne 0 ]; then
-        echo "You will have to manually resolve the issues and merge" \
-             $remaining "remaining patches by looking into .rej files" \
-             " mentioned in $log_file"
-    fi
-fi
+}
+
+echo -e "Do you want to proceed with applying patches?"
+echo -e "\ta|all to apply all patches to $EXEC_DIR/../changes/ including" \
+        "\n\t\tthe patches which do not apply cleanly"
+echo -e "\tc|clean_only to apply those patches which can be applied " \
+        "\n\t\twithout failures to $EXEC_DIR/../changes/"
+echo -e "\tn|none to exit without applying any patches"
+echo -ne "  Enter ([a]ll/[c]lean_only/[n]one):"
+
+read -r apply_patches_or_not
+
+case "$apply_patches_or_not" in
+    c | clean_only)
+        echo "Applying patches which can be applied without failures..."
+        do_apply_patches "${applicable_patches[@]}"
+        if [ $num_not_applicable -ne 0 ]; then
+            echo "You will have to manually resolve the issues and merge" \
+                 $num_not_applicable "remaining patches. See $log_file" \
+                 "to find the list of patches applied. The patches to be" \
+                 "merged manually are: ${non_applicable_patches[@]}"
+        fi
+        ;;
+    a | all)
+        echo "Applying all patches including the ones that result in failures"
+        do_apply_patches $all_patches
+        if [ $non_applicable_patches -ne 0 ]; then
+            echo "Patches which resulted in errors are:" \
+                 "${non_applicable_patches[@]}"
+            echo "You will have to manually resolve the issues and merge" \
+                 "these" $num_not_applicable "patches by looking into" \
+                 ".rej files mentioned in $log_file"
+        fi
+        ;;
+esac
 
 popd > /dev/null 2>&1
 
