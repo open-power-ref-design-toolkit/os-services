@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2016, IBM US, Inc.
+# Copyright 2016, 2017 IBM US, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -103,12 +103,49 @@ class OSAFileGenerator(object):
 
         self.user_config['cidr_networks'] = cidr
 
+    def is_host_type_of_role(self, role, node_template):
+        """ Check if the given node_template has the given role"""
+        roles = node_template.get('roles', [])
+        if role in roles:
+            return True
+
+        return False
+
+    def _get_nodes_through_roles(self, role):
+        """ Go through all node-templates and get all the host types which
+            have the given role. This method looks at roles only. It
+            doesn't look for sections like "controllers", "computes", etc
+            under nodes unless "controllers" or "compute" node-template has
+            controller/compute role defined.
+        """
+        hosts = []  # hosts of given role
+
+        # Find the node-templates section.
+        node_templates = self.gen_dict.get('node-templates', None)
+        nodes = self.gen_dict.get('nodes', None)
+        if not node_templates or not nodes:
+            return hosts
+
+        # Go through all the node-templates and look for the given role
+        for host_type, template in node_templates.iteritems():
+            if self.is_host_type_of_role(role, template):
+                # Add nodes of this host type to hosts list
+                hosts.extend(nodes.get(host_type, []))
+
+        return hosts
+
     def _get_controllers(self):
         nodes = self.gen_dict.get('nodes', None)
         if not nodes:
             return None
 
-        return nodes.get('controllers', None)
+        controllers_list1 = nodes.get('controllers', [])
+        controllers_list2 = self._get_nodes_through_roles('controller')
+
+        for node in controllers_list1:
+            if node not in controllers_list2:
+                controllers_list2.append(node)
+        return controllers_list2
 
     def _configure_infra_hosts(self):
         """Configure the infra hosts."""
@@ -159,14 +196,6 @@ class OSAFileGenerator(object):
 
     def _configure_global_overrides(self):
         """Configure the global overrides section."""
-        nodes = self.gen_dict.get('nodes', None)
-        if not nodes:
-            return
-
-        controllers = nodes.get('controllers', None)
-        if not controllers:
-            return
-
         net_mgmt = net_stg = net_tunnel = net_vlan = None
         br_mgmt = br_tunnel = br_stg = br_vlan = None
 
@@ -306,7 +335,13 @@ class OSAFileGenerator(object):
         if not nodes:
             return None
 
-        return nodes.get('compute', None)
+        computes_list1 = nodes.get('compute', [])
+        computes_list2 = self._get_nodes_through_roles('compute')
+        for node in computes_list1:
+            if node not in computes_list2:
+                computes_list2.append(node)
+        # return all nodes from computes_list1 and computes_list2
+        return computes_list2
 
     def _configure_compute_hosts(self):
         """Configure the compute hosts."""
@@ -446,18 +481,24 @@ class OSAFileGenerator(object):
         if not nodes:
             return None
 
-        swift_proxy_hosts = []
+        proxies = []
 
         ref_arch_list = self.get_ref_arch()
 
         if SWIFT in ref_arch_list:
-            proxy_list = ('controllers'
-                          if SWIFT_MINIMUM_HARDWARE in ref_arch_list
-                          else 'swift-proxy')
+            proxies = []
+            proxies.extend(nodes.get('swift-proxy', []))
+            swift_proxy_by_role = self._get_nodes_through_roles('swift-proxy')
+            for node in swift_proxy_by_role:
+                if node not in proxies:
+                    proxies.append(node)
+            # for backward compatibility we fall back to the controller
+            # nodes if we haven't found proxies yet and SWIFT_MINIMUM_HARDWARE
+            # is specified.
+            if not proxies and (SWIFT_MINIMUM_HARDWARE in ref_arch_list):
+                proxies = self._get_controllers()
 
-            swift_proxy_hosts = nodes.get(proxy_list, None)
-
-        return swift_proxy_hosts
+        return proxies
 
     def _configure_swift_proxy_hosts(self):
         """Configure list of swift proxy hosts."""
@@ -804,12 +845,12 @@ class OSAFileGenerator(object):
         if not nodes:
             return
 
-        controllers = nodes.get('controllers', None)
-        if not controllers:
+        mons = self._get_ceph_monitors()
+        if not mons:
             return
 
         monitors = []
-        for c in controllers:
+        for c in mons:
             monitors.append(c.get('openstack-stg-addr', 'N/A'))
 
         settings = {
@@ -821,6 +862,28 @@ class OSAFileGenerator(object):
         }
 
         self._dump_yml(settings, OSA_USER_VAR_CEPH)
+
+    def _get_ceph_monitors(self):
+        # Get ceph monitors by template name
+        nodes = self.gen_dict.get('nodes', {})
+        mons = []
+        mons.extend(nodes.get('ceph-monitor', []))
+
+        # Get ceph monitors by role
+        role_mons = self._get_nodes_through_roles('ceph-monitor')
+        for mon in role_mons:
+            if mon not in mons:
+                mons.append(mon)
+        if mons:
+            return mons
+
+        # If no nodes were found using the ceph-monitor role, we
+        # return the controller nodes for backward compatibility with
+        # configurations that assumed the ceph monitors were controllers.
+        # The implication here is that if node templates are using the
+        # ceph-monitor role then the 'controllers' node template will not be
+        # automatically added as a monitor node.
+        return self._get_controllers()
 
 
 def process_inventory(inv_name, output_dir):
