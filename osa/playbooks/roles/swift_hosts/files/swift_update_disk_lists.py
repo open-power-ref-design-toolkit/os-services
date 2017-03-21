@@ -74,18 +74,14 @@ class SwiftDiskPrep(object):
         self.output_dict = copy.deepcopy(self.input_dict)
 
         target_host = {}
-        host_types = ('swift-metadata', 'swift-object')
+        # Flatten the nodes from the inventory into a single list
+        nodes = [node for sublist in self.output_dict['nodes'].values()
+                 for node in sublist]
 
-        for host_type in host_types:
-            if host_type not in self.output_dict['nodes']:
-                continue
-
-            swift_hosts = self.output_dict['nodes'][host_type]
-
-            for host in swift_hosts:
-                if self.nodename == host[NODENAME_FIELD]:
-                    target_host = host
-                    break
+        for host in nodes:
+            if self.nodename == host[NODENAME_FIELD]:
+                target_host = host
+                break
 
         if target_host:
             if 'domain-settings' not in target_host:

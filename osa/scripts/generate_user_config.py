@@ -134,6 +134,16 @@ class OSAFileGenerator(object):
 
         return hosts
 
+    def _get_nodes_for_role(self, role):
+        nodes = self.gen_dict.get('nodes', {})
+        nodes_for_role = []
+        nodes_for_role.extend(nodes.get(role, []))
+        by_role = self._get_nodes_through_roles(role)
+        for node in by_role:
+            if node not in nodes_for_role:
+                nodes_for_role.append(node)
+        return nodes_for_role
+
     def _get_controllers(self):
         nodes = self.gen_dict.get('nodes', None)
         if not nodes:
@@ -334,14 +344,8 @@ class OSAFileGenerator(object):
         nodes = self.gen_dict.get('nodes', None)
         if not nodes:
             return None
-
-        computes_list1 = nodes.get('compute', [])
-        computes_list2 = self._get_nodes_through_roles('compute')
-        for node in computes_list1:
-            if node not in computes_list2:
-                computes_list2.append(node)
-        # return all nodes from computes_list1 and computes_list2
-        return computes_list2
+        compute_list = self._get_nodes_for_role('compute')
+        return compute_list
 
     def _configure_compute_hosts(self):
         """Configure the compute hosts."""
@@ -444,22 +448,6 @@ class OSAFileGenerator(object):
 
         return
 
-    def _configure_swift_common_drives(self):
-        """Configure common drives list for swift.
-
-        For cases where the same drives list applies to all swift_hosts.
-        """
-
-        # For most cases the reference architecture needs to have
-        # the drives listed per host, and there is no common drives list.
-        # It may be possible to make use of this if the refarch is
-        # swift_standalone_minimum_hardware but there is no provision
-        # in master_inventory.yml for specifying a common drives list.
-        # This means that even for that particular refarch, this section
-        # will be blank and drives will be specified on a per node basis.
-
-        return
-
     def _configure_swift_policies(self):
         """Configure storage_policies for swift."""
 
@@ -486,12 +474,7 @@ class OSAFileGenerator(object):
         ref_arch_list = self.get_ref_arch()
 
         if SWIFT in ref_arch_list:
-            proxies = []
-            proxies.extend(nodes.get('swift-proxy', []))
-            swift_proxy_by_role = self._get_nodes_through_roles('swift-proxy')
-            for node in swift_proxy_by_role:
-                if node not in proxies:
-                    proxies.append(node)
+            proxies = self._get_nodes_for_role('swift-proxy')
             # for backward compatibility we fall back to the controller
             # nodes if we haven't found proxies yet and SWIFT_MINIMUM_HARDWARE
             # is specified.
@@ -520,7 +503,7 @@ class OSAFileGenerator(object):
         self.user_config[SWIFT_PROXY_HOSTS] = proxy_hosts
         return
 
-    def _configure_swift_template(self, host_type, template_vars):
+    def _configure_swift_template(self, host, template_vars):
         """Grab values from the node-template for the given host_type."""
 
         # Find the node-templates section.
@@ -529,7 +512,7 @@ class OSAFileGenerator(object):
             return
 
         # The host_type is either swift-metadata or swift-object.
-        template = node_templates.get(host_type, None)
+        template = node_templates.get(host['template'], None)
         if not template:
             return
 
@@ -605,12 +588,16 @@ class OSAFileGenerator(object):
 
         return
 
-    def _get_swift_hosts(self, host_type):
+    def _get_swift_ring_hosts(self):
         nodes = self.gen_dict.get('nodes', None)
         if not nodes:
             return None
-
-        return nodes.get(host_type, None)
+        object_nodes = self._get_nodes_for_role('swift-object')
+        md_nodes = self._get_nodes_for_role('swift-metadata')
+        for node in md_nodes:
+            if node not in object_nodes:
+                object_nodes.append(node)
+        return object_nodes
 
     def _configure_swift_hosts(self):
         """Configure list of swift_hosts.
@@ -622,62 +609,70 @@ class OSAFileGenerator(object):
         if not nodes:
             return
 
-        # Swift Metadata and Object Hosts.
-        #
-        # We have a single unified list of swift_hosts.  The key
-        # difference is that a swift_metadata host will only have
-        # drives in the account and container rings, whereas a
-        # swift_object host could have drives in the account,
-        # container, and object rings.
-        swift_hosts = {}
+        def is_converged_metadata_object(meta, object):
+            meta_copy = list(meta)
+            object_copy = list(object)
+            try:
+                for node in meta_copy:
+                    object_copy.remove(node)
+            except ValueError:
+                return False
+            return not object_copy
 
-        host_types = ('swift-metadata', 'swift-object')
-        for host_type in host_types:
-            host_list = nodes.get(host_type, None)
-            if not host_list:
-                continue
-
-            # We automatically set the zone index for each host.  This
-            # assumes the default 3x swift replication, so the zone
-            # values cycle between 0-2.  We come back to the starting
-            # value 0 each time the host_type changes (since we want
-            # the first swift_metadata host to be zone 0 and the first
-            # swift_object host to be zone 0).
-            zone = 0
-
-            # See if there are values for zone_count and mount_point
-            # specified in the node-templates.
-            template_vars = {}
-            self._configure_swift_template(host_type, template_vars)
-
-            zone_count = template_vars.get('zone_count', 3)
-            mount_point = template_vars.get('mount_point', None)
-
-            for host in host_list:
-                hostname = host.get('hostname', None)
-                if hostname:
-                    # Fill out the dictionary of swift_vars for
-                    # this host (including the zone and drives list).
-                    swift_vars = {}
-                    self._configure_swift_host(host, zone, mount_point,
-                                               swift_vars)
-
-                    swift_hosts[hostname] = {
-                        'ip': host.get('openstack-mgmt-addr', 'N/A'),
-                        'container_vars': {'swift_vars': swift_vars},
-                    }
-
-                    zone += 1
-                    if zone % zone_count == 0:
-                        zone = 0
+        object_nodes = self._get_nodes_for_role('swift-object')
+        md_nodes = self._get_nodes_for_role('swift-metadata')
+        # Here we simply see if the two node lists have the same elements.
+        # Better checking of ring device settings, etc is done in the
+        # validate config step which is called earlier.
+        converged = is_converged_metadata_object(md_nodes, object_nodes)
+        if converged:
+            swift_hosts = self._build_swift_hosts_section(object_nodes)
+        else:
+            # Separate metadata and object nodes.
+            # We build the swift host sections for each and merge them
+            # and add the merged dict to the config.
+            swift_hosts = self._build_swift_hosts_section(object_nodes)
+            mh = self._build_swift_hosts_section(md_nodes)
+            swift_hosts.update(mh)
 
         # Avoid adding an empty value for the key 'swift_hosts' in the
-        # case where no swift_metadata or swift_object entries exist
+        # case where no swift metadata or swift object nodes exist
         # in the inventory.
         if swift_hosts:
             self.user_config[SWIFT_HOSTS] = swift_hosts
 
-        return
+    def _build_swift_hosts_section(self, nodes):
+        # We automatically set the zone index for each host.  This
+        # assumes the default 3x swift replication, so the zone
+        # values cycle between 0-2.
+        swift_hosts = {}
+        zone = 0
+        for host in nodes:
+
+            hostname = host.get('hostname', None)
+            if hostname:
+
+                # See if there are values for zone_count and mount_point
+                # specified in the node-templates.
+                template_vars = {}
+                self._configure_swift_template(host, template_vars)
+                zone_count = template_vars.get('zone_count', 3)
+                mount_point = template_vars.get('mount_point', None)
+                # Fill out the dictionary of swift_vars for
+                # this host (including the zone and drives list).
+                swift_vars = {}
+                self._configure_swift_host(host, zone, mount_point,
+                                           swift_vars)
+
+                swift_hosts[hostname] = {
+                    'ip': host.get('openstack-mgmt-addr', 'N/A'),
+                    'container_vars': {'swift_vars': swift_vars},
+                }
+
+                zone += 1
+                if zone % zone_count == 0:
+                    zone = 0
+        return swift_hosts
 
     def _configure_swift(self):
         """Configure user variables for swift."""
@@ -687,7 +682,6 @@ class OSAFileGenerator(object):
             return
 
         self._configure_swift_general()
-        self._configure_swift_common_drives()
         self._configure_swift_policies()
         self._configure_swift_proxy_hosts()
         self._configure_swift_hosts()
@@ -746,9 +740,7 @@ class OSAFileGenerator(object):
         hosts = self._get_swift_proxy_hosts()
         self._do_configure_repo_hosts(hosts, SWIFT_PROXY_HOSTS,
                                       repo_hosts_archs)
-        hosts = self._get_swift_hosts('swift-metadata')
-        self._do_configure_repo_hosts(hosts, SWIFT_HOSTS, repo_hosts_archs)
-        hosts = self._get_swift_hosts('swift-object')
+        hosts = self._get_swift_ring_hosts()
         self._do_configure_repo_hosts(hosts, SWIFT_HOSTS, repo_hosts_archs)
 
     def create_user_config(self):
