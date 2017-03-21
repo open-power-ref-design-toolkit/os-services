@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.template import defaultfilters as d_filters
 
@@ -149,6 +150,30 @@ class DeleteInstanceLink(tables.LinkAction):
     icon = "trash"
 
 
+class CreateUserLink(tables.LinkAction):
+    name = "create_user"
+    verbose_name = _("Create User")
+    url = "horizon:project:database:create_user"
+    verbose_name = _("Create User")
+    classes = ("ajax-modal", "btn-create")
+    icon = "plus"
+
+    def allowed(self, request, instance=None):
+        if (instance):
+            return (instance and instance.status in 'ACTIVE' and
+                    has_user_add_perm(request))
+        else:
+            return has_user_add_perm(request)
+
+    def get_link_url(self):
+        if 'instance_id' in self.table.kwargs:
+            instance_id = self.table.kwargs['instance_id']
+            url = reverse(self.url, args=[instance_id])
+        else:
+            url = reverse(self.url)
+        return url
+
+
 class CreateBackupLink(tables.LinkAction):
     name = "create"
     url = "horizon:project:database:create_backup"
@@ -164,6 +189,34 @@ class CreateBackupLink(tables.LinkAction):
             return request.user.has_perm('openstack.services.object-store')
 
 
+class CreateDatabaseLink(tables.LinkAction):
+    name = "create_database"
+    url = "horizon:project:database:create_database"
+    verbose_name = _("Create Database")
+    classes = ("ajax-modal", "btn-create")
+    icon = "plus"
+
+    def allowed(self, request, database=None):
+        instance = self.table.kwargs['instance']
+        return (instance.status in 'ACTIVE' and
+                has_database_add_perm(request))
+
+    def get_link_url(self):
+        if 'instance_id' in self.table.kwargs:
+            instance_id = self.table.kwargs['instance_id']
+            url = reverse(self.url, args=[instance_id])
+        else:
+            url = reverse(self.url)
+        return url
+
+
+def has_database_add_perm(request):
+    perms = getattr(settings, 'TROVE_ADD_DATABASE_PERMS', [])
+    if perms:
+        return request.user.has_perms(perms)
+    return True
+
+
 class DeleteBackupLink(tables.LinkAction):
     # Always allowed in table of backups
     name = "deleteBackup"
@@ -171,6 +224,42 @@ class DeleteBackupLink(tables.LinkAction):
     url = "horizon:project:database:delete_backup"
     classes = ("ajax-modal", "btn-danger")
     icon = "trash"
+
+
+class DeleteUserLink(tables.LinkAction):
+    # Always allowed in table of users
+    name = "deleteUser"
+    verbose_name = _("Delete")
+    url = "horizon:project:database:delete_user"
+    classes = ("ajax-modal", "btn-danger")
+    icon = "trash"
+
+    def get_link_url(self, datum):
+        if 'instance_id' in self.table.kwargs:
+            # we need both the instance ID and the name of the user to delete
+            instance_id = self.table.kwargs['instance_id'] + "::" + datum.name
+            url = reverse(self.url, args=[instance_id])
+        else:
+            url = reverse(self.url)
+        return url
+
+
+class DeleteDatabaseLink(tables.LinkAction):
+    # Always allowed in table of databases
+    name = "deleteDatabase"
+    verbose_name = _("Delete")
+    url = "horizon:project:database:delete_database"
+    classes = ("ajax-modal", "btn-danger")
+    icon = "trash"
+
+    def get_link_url(self, datum):
+        if 'instance_id' in self.table.kwargs:
+            # we need both the instance ID and the name of the user to delete
+            instance_id = self.table.kwargs['instance_id'] + "::" + datum.name
+            url = reverse(self.url, args=[instance_id])
+        else:
+            url = reverse(self.url)
+        return url
 
 
 class RestoreFromBackupLink(tables.LinkAction):
@@ -269,6 +358,14 @@ def get_volume_size(instance):
     return _("Not available")
 
 
+def get_databases(user):
+    if hasattr(user, "access"):
+        databases = [db.name for db in user.access]
+        databases.sort()
+        return ', '.join(databases)
+    return _("-")
+
+
 def db_link(obj):
     if not hasattr(obj, 'instance'):
         return
@@ -279,7 +376,7 @@ def db_link(obj):
 
 
 def db_name(obj):
-    # TODO:  Investigate -- if the backup doesn't have an instance or
+    # TODO(jdwald):  Investigate -- if the backup doesn't have an instance or
     #        it has an instance, but the instance does not have a name
     #        then return the instance ID -- which is not very useful...
     if not hasattr(obj, 'instance') or not hasattr(obj.instance, 'name'):
@@ -289,6 +386,13 @@ def db_name(obj):
 
 def is_incremental(obj):
     return hasattr(obj, 'parent_id') and obj.parent_id is not None
+
+
+def has_user_add_perm(request):
+    perms = getattr(settings, 'TROVE_ADD_USER_PERMS', [])
+    if perms:
+        return request.user.has_perms(perms)
+    return True
 
 
 class InstancesTable(tables.DataTable):
@@ -306,8 +410,8 @@ class InstancesTable(tables.DataTable):
     volume = tables.Column(get_volume_size,
                            verbose_name=_("Volume Size"),
                            attrs={'data-type': 'size'})
-    # TODO:  Need some investigation.  Due to tabbed interface, the dynamic
-    #        update of the status column is not working.
+    # TODO(jdwald):  Need some investigation.  Due to tabbed interface,
+    #                the dynamic update of the status column is not working.
     status = tables.Column("status",
                            verbose_name=_("Status"),
                            status=True,
@@ -347,8 +451,8 @@ class BackupsTable(tables.DataTable):
                                 verbose_name=_("Incremental"),
                                 filters=(d_filters.yesno,
                                          d_filters.capfirst))
-    # TODO:  Need some investigation.  Due to tabbed interface, the dynamic
-    #        update of the status column is not working.
+    # TODO(jdwald):  Need some investigation.  Due to tabbed interface,
+    #                the dynamic update of the status column is not working.
     status = tables.Column("status",
                            verbose_name=_("Status"),
                            status=True,
@@ -362,3 +466,31 @@ class BackupsTable(tables.DataTable):
         # row_class = UpdateRowBackups
         table_actions = (GenericFilterAction, CreateBackupLink)
         row_actions = (RestoreFromBackupLink, DeleteBackupLink,)
+
+
+class UsersTable(tables.DataTable):
+    name = tables.Column("name", verbose_name=_("User Name"))
+    # host = tables.Column("host", verbose_name=_("Allowed Host"))
+    databases = tables.Column(get_databases, verbose_name=_("Databases"))
+
+    class Meta(object):
+        name = "users"
+        verbose_name = _("Users")
+        table_actions = (CreateUserLink, GenericFilterAction,)
+        row_actions = (DeleteUserLink,)
+
+    def get_object_id(self, datum):
+        return datum.name
+
+
+class DatabaseTable(tables.DataTable):
+    name = tables.Column("name", verbose_name=_("Database Name"))
+
+    class Meta(object):
+        name = "databases"
+        verbose_name = _("Databases")
+        table_actions = (CreateDatabaseLink, GenericFilterAction,)
+        row_actions = (DeleteDatabaseLink,)
+
+    def get_object_id(self, datum):
+        return datum.name

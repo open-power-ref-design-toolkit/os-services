@@ -17,8 +17,8 @@ from django import template
 from django.utils.translation import ugettext_lazy as _
 
 from horizon import exceptions
-from horizon.utils import memoized
 from horizon import tabs
+from horizon.utils import memoized
 
 import logging
 import six
@@ -185,6 +185,76 @@ class InstanceOverviewTab(tabs.Tab):
         return datastore
 
 
+class UserTab(tabs.TableTab):
+    table_classes = [tables.UsersTable]
+    name = _("Users")
+    slug = "users_tab"
+    instance = None
+    template_name = "horizon/common/_detail_table.html"
+    preload = False
+
+    def get_users_data(self):
+        __method__ = "tabs.UserTab.get_users_data"
+        instance = self.tab_group.kwargs['instance']
+        try:
+            # Retrieve all users for the selected instance
+            data = trove_api.trove.users_list(self.request, instance.id)
+
+            for user in data:
+                user.instance = instance
+                try:
+                    # Set the user's access to the instance
+                    user.access = trove_api.trove.user_list_access(
+                        self.request,
+                        instance.id,
+                        user.name)
+                except exceptions.NOT_FOUND:
+                    pass
+                except Exception as e:
+                    logging.error("%s: Exception received trying to retrieve "
+                                  " user information for instance %s.  "
+                                  "Exception : %s",
+                                  __method__, instance.name, e)
+                    msg = _('Unable to retrieve user data for the selected '
+                            'instance.')
+                    exceptions.handle(self.request, msg)
+        except Exception as e:
+            logging.error("%s: Exception received trying to retrieve user "
+                          "information for instance %s.  "
+                          "Exception : %s", __method__, instance.name, e)
+            msg = _('Unable to retrieve user data for selected instance.')
+            exceptions.handle(self.request, msg)
+            data = []
+        return data
+
+    def allowed(self, request):
+        return tables.has_user_add_perm(request)
+
+
+class DatabaseTab(tabs.TableTab):
+    table_classes = [tables.DatabaseTable]
+    name = _("Databases")
+    slug = "database_tab"
+    instance = None
+    template_name = "horizon/common/_detail_table.html"
+    preload = False
+
+    def get_databases_data(self):
+        instance = self.tab_group.kwargs['instance']
+        try:
+            data = trove_api.trove.database_list(self.request, instance.id)
+            for db in data:
+                setattr(db, 'instance', instance)
+        except Exception:
+            msg = _('Unable to get databases data.')
+            exceptions.handle(self.request, msg)
+            data = []
+        return data
+
+    def allowed(self, request):
+        return tables.has_database_add_perm(request)
+
+
 class InstanceDetailsTabs(tabs.TabGroup):
     slug = "instance_details"
-    tabs = (InstanceOverviewTab,)
+    tabs = (InstanceOverviewTab, UserTab, DatabaseTab,)

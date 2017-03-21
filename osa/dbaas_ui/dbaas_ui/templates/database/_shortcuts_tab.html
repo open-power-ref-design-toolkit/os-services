@@ -105,6 +105,35 @@
                </div>
             </a>
 
+            <a id="tg1_taskLink7"  href="/project/database/create_database" class="ajax-modal" style="width:auto;display:inline-block;">
+               <div id="tg1_task7_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
+                  <table cellpadding="10">
+                     <tr>
+                        <td align='center'>
+                           {% block tg1_t7_icon %}
+                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/user_64.png">
+                           {% endblock %}
+                           <p style="text-align:left; line-height:1;">Create Database
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+            </a>
+
+            <a id="tg1_taskLink8"  href="/project/database/delete_database" class="ajax-modal" style="width:auto;display:inline-block">
+               <div id="tg1_task8_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
+                  <table cellpadding="10">
+                     <tr>
+                        <td align='center'>
+                           {% block tg1_t8_icon %}
+                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/trash_64.png">
+                           {% endblock %}
+                           <p style="text-align:left; line-height:1;">Delete Database
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+            </a>
 
          </div>
       </div>
@@ -171,4 +200,57 @@
          </div>
       </div>
    </div>
+  <div class="panel-group" id="section3">
+      <div class="panel panel-default">
+         <div class="panel-heading">
+            <h4 class="panel-title">
+               <a data-toggle="collapse" href="#tg3_tasks" id="tg3">
+                  {% block tg3_icon %}
+                     <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/secure_24.png">
+                  {% endblock %}
+
+                  &nbsp;Security:  Actions related to managing users and access
+               </a>
+            </h4>
+         </div>
+         <div class=" panel-collapse collapse in" id="tg3_tasks">
+            <a id="tg3_taskLink1"  href="/project/database/create_user" class="ajax-modal" style="width:auto;display:inline-block;">
+               <div id="tg3_task1_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
+                  <table cellpadding="10">
+                     <tr>
+                        <td align='center'>
+                           {% block tg3_t1_icon %}
+                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/user_64.png">
+                           {% endblock %}
+                           <p style="text-align:left; line-height:1;">Create User
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+            </a>
+            <a id="tg3_taskLink2"  href="/project/database/delete_user" class="ajax-modal" style="width:auto;display:inline-block">
+               <div id="tg3_task2_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
+                  <table cellpadding="10">
+                     <tr>
+                        <td align='center'>
+                           {% block tg3_t2_icon %}
+                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/trash_64.png">
+                           {% endblock %}
+                           <p style="text-align:left; line-height:1;">Delete User
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+            </a>
+         </div>
+      </div>
+   </div>
+
+
+
+
+
+
+
+
 </div>

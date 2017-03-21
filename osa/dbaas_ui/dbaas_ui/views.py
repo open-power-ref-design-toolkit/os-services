@@ -19,23 +19,29 @@ from horizon import exceptions
 from horizon import forms
 from horizon import messages
 from horizon import tabs as baseTabs
-from horizon import views as horizon_views
-from horizon import workflows as horizon_workflows
 from horizon.utils import filters
 from horizon.utils import memoized
+from horizon import views as horizon_views
+from horizon import workflows as horizon_workflows
+
 
 import logging
 
 from dbaas_ui import forms as project_forms
-from dbaas_ui import tabs as database_tabs
 from dbaas_ui import tables as project_tables
+from dbaas_ui import tabs as database_tabs
 from dbaas_ui import workflows as aggregate_workflows
 
 from trove_dashboard import api as trove_api
 
 
-def build_url_tab(target_tab):
+def build_db_url(target_tab):
     return reverse('horizon:project:database:index') + target_tab
+
+
+def build_instance_details_url(instance_id, target_tab=None):
+    return reverse('horizon:project:database:instance_details',
+                   args=(instance_id,)) + target_tab
 
 
 class IndexView(baseTabs.TabView):
@@ -53,7 +59,7 @@ class LaunchInstanceView(horizon_workflows.WorkflowView):
 
     def get_success_url(self):
         # On successful completion, navigate to the instances tab
-        return build_url_tab('?tab=database_page__instances')
+        return build_db_url('?tab=database_page__instances')
 
     def get_initial(self):
         initial = super(LaunchInstanceView, self).get_initial()
@@ -88,7 +94,7 @@ class CreateBackupView(forms.ModalFormView):
 
     def get_success_url(self):
         # On successful completion, navigate to the backups tab
-        return build_url_tab('?tab=database_page__backups')
+        return build_db_url('?tab=database_page__backups')
 
 
 class RestartInstanceView(forms.ModalFormView):
@@ -111,7 +117,7 @@ class RestartInstanceView(forms.ModalFormView):
 
     def get_success_url(self):
         # On successful completion, navigate to the instances tab
-        return build_url_tab('?tab=database_page__instances')
+        return build_db_url('?tab=database_page__instances')
 
 
 class ResizeInstanceView(forms.ModalFormView):
@@ -133,7 +139,7 @@ class ResizeInstanceView(forms.ModalFormView):
 
     def get_success_url(self):
         # On successful completion, navigate to the instances tab
-        return build_url_tab('?tab=database_page__instances')
+        return build_db_url('?tab=database_page__instances')
 
 
 class ResizeVolumeView(forms.ModalFormView):
@@ -155,7 +161,7 @@ class ResizeVolumeView(forms.ModalFormView):
 
     def get_success_url(self):
         # On successful completion, navigate to the instances tab
-        return build_url_tab('?tab=database_page__instances')
+        return build_db_url('?tab=database_page__instances')
 
 
 class RenameInstanceView(forms.ModalFormView):
@@ -177,7 +183,7 @@ class RenameInstanceView(forms.ModalFormView):
 
     def get_success_url(self):
         # On successful completion, navigate to the instances tab
-        return build_url_tab('?tab=database_page__instances')
+        return build_db_url('?tab=database_page__instances')
 
 
 class DeleteInstanceView(forms.ModalFormView):
@@ -199,7 +205,7 @@ class DeleteInstanceView(forms.ModalFormView):
 
     def get_success_url(self):
         # On successful completion, navigate to the instances tab
-        return build_url_tab('?tab=database_page__instances')
+        return build_db_url('?tab=database_page__instances')
 
 
 class DeleteBackupView(forms.ModalFormView):
@@ -221,7 +227,147 @@ class DeleteBackupView(forms.ModalFormView):
 
     def get_success_url(self):
         # On successful completion, we navigate to the backups tab
-        return build_url_tab('?tab=database_page__backups')
+        return build_db_url('?tab=database_page__backups')
+
+
+class CreateUserView(forms.ModalFormView):
+    template_name = 'project/database/create_user.html'
+    modal_header = _("Create User")
+    form_id = "create_user_form"
+    form_class = project_forms.CreateUserForm
+    submit_label = _("Create")
+    submit_url = reverse_lazy("horizon:project:database:create_user")
+    success_url = reverse_lazy('horizon:project:database:index')
+    page_title = _("Create User")
+    instance_id = None
+
+    def get_initial(self):
+        # Need the instance id to prime the dialog if passed in
+        if "instance_id" in self.kwargs:
+            self.instance_id = self.kwargs['instance_id']
+            return {'instance_id': self.kwargs['instance_id']}
+        else:
+            return
+
+    def get_success_url(self):
+        # Try to retrieve the selected_instance (id) from the session
+        if hasattr(self.request, 'session'):
+            if 'instance_id' in self.request.session:
+                return build_instance_details_url(
+                    self.request.session['instance_id'],
+                    '?tab=instance_details__users_tab')
+
+        # We were not able to retrieve the instance_id that the
+        # user was created on.  Just redirect to to the list
+        # of instances.
+        return build_db_url('?tab=database_page__instances')
+
+
+class DeleteUserView(forms.ModalFormView):
+    template_name = 'project/database/delete_user.html'
+    modal_header = _("Delete User")
+    form_id = "delete_user_form"
+    form_class = project_forms.DeleteUserForm
+    submit_label = _("Delete")
+    submit_url = reverse_lazy("horizon:project:database:delete_user")
+    success_url = reverse_lazy('horizon:project:database:index')
+    page_title = _("Delete User")
+
+    def get_initial(self):
+        # Need the instance and user to prime the dialog if passed in
+        if "user_id" in self.kwargs:
+            return {'user_id': self.kwargs['user_id']}
+        else:
+            return
+
+    def get_context_data(self, **kwargs):
+        context = super(DeleteUserView, self).get_context_data(**kwargs)
+        context["instance_id"] = kwargs.get("instance_id")
+        self._instance = context['instance_id']
+        return context
+
+    def get_success_url(self):
+        # Try to retrieve the selected_instance (id) from the session
+        if hasattr(self.request, 'session'):
+            if 'instance_id' in self.request.session:
+                return build_instance_details_url(
+                    self.request.session['instance_id'],
+                    '?tab=instance_details__users_tab')
+
+        # We were not able to retrieve the instance_id that the
+        # user was deleted from on.  Just redirect to to the list
+        # of instances.
+        return build_db_url('?tab=database_page__instances')
+
+
+class CreateDatabaseView(forms.ModalFormView):
+    template_name = 'project/database/create_database.html'
+    modal_header = _("Create Database")
+    form_id = "create_database_form"
+    form_class = project_forms.CreateDatabaseForm
+    submit_label = _("Create")
+    submit_url = reverse_lazy("horizon:project:database:create_database")
+    success_url = reverse_lazy('horizon:project:database:index')
+    page_title = _("Create Database")
+    instance_id = None
+
+    def get_initial(self):
+        # Need the instance id to prime the dialog if passed in
+        if "instance_id" in self.kwargs:
+            self.instance_id = self.kwargs['instance_id']
+            return {'instance_id': self.kwargs['instance_id']}
+        else:
+            return
+
+    def get_success_url(self):
+        # Try to retrieve the selected_instance (id) from the session
+        if hasattr(self.request, 'session'):
+            if 'instance_id' in self.request.session:
+                return build_instance_details_url(
+                    self.request.session['instance_id'],
+                    '?tab=instance_details__database_tab')
+
+        # We were not able to retrieve the instance_id that the
+        # database was created on.  Just redirect to to the list
+        # of instances.
+        return build_db_url('?tab=database_page__instances')
+
+
+class DeleteDatabaseView(forms.ModalFormView):
+    template_name = 'project/database/delete_database.html'
+    modal_header = _("Delete Database")
+    form_id = "delete_database_form"
+    form_class = project_forms.DeleteDatabaseForm
+    submit_label = _("Delete")
+    submit_url = reverse_lazy("horizon:project:database:delete_database")
+    success_url = reverse_lazy('horizon:project:database:index')
+    page_title = _("Delete Database")
+
+    def get_initial(self):
+        # Need the instance and user to prime the dialog if passed in
+        if "database_id" in self.kwargs:
+            return {'database_id': self.kwargs['database_id']}
+        else:
+            return
+
+    def get_context_data(self, **kwargs):
+        context = super(DeleteDatabaseView, self).get_context_data(**kwargs)
+        context["instance_id"] = kwargs.get("instance_id")
+        self._instance = context['instance_id']
+        return context
+
+    def get_success_url(self):
+        # Try to retrieve the selected_instance (id) from the session
+        if hasattr(self.request, 'session'):
+            if 'instance_id' in self.request.session:
+                return build_instance_details_url(
+                    self.request.session['instance_id'],
+                    '?tab=instance_details__database_tab')
+
+        # We were not able to retrieve the instance_id that the
+        # user was created on.  Just redirect to to the list
+        # of instances.
+        return build_db_url('?tab=database_page__instances')
 
 
 class InstanceDetailsView(baseTabs.TabView):
