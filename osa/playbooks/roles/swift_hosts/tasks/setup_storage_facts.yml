@@ -23,39 +23,18 @@
       metadata_mount_point: {}
       object_mount_point: {}
 
-  - name: Set metadata domain-settings shortcut for non-converged case.
+  - name: Set domain-settings shortcuts.
     set_fact:
-      template_md_ds: "{{ node_templates['swift-metadata']['domain-settings'] | default({}) }}"
-    when: node_templates['swift-metadata'] is defined
+      template_ds: "{{ node_templates[template]['domain-settings'] | default({}) }}"
+      host_ds: "{{ hostvars[inventory_hostname]['domain_settings'] | default({}) }}"
 
-  - name: Set metadata domain-settings shortcut for converged case.
+  - name: Set Swift host device lists and mountpoint.
     set_fact:
-      template_md_ds: {}
-    when: node_templates['swift-metadata'] is not defined
-
-  - name: Set other domain-settings shortcuts.
-    set_fact:
-      template_obj_ds: "{{ node_templates['swift-object']['domain-settings'] | default({}) }}"
-      host_md_ds: "{{ hostvars[inventory_hostname]['domain_settings'] | default({}) }}"
-      host_obj_ds: "{{ hostvars[inventory_hostname]['domain_settings'] | default({}) }}"
-
-  - name: Set Swift metadata host device lists and mountpoint.
-    set_fact:
-      account_devices: "{{ host_md_ds['account-ring-devices'] | default(template_md_ds['account-ring-devices']) | default({}) }}"
-      container_devices: "{{ host_md_ds['container-ring-devices'] | default(template_md_ds['container-ring-devices']) | default({}) }}"
-      metadata_mount_point: "{{ host_md_ds['mount-point'] | default(template_md_ds['mount-point']) | default('/srv/node') }}"
-    when:
-      - groups['swift-metadata'] is defined
-      - inventory_hostname in groups['swift-metadata']
-
-  - name: Set Swift object host device lists and mountpoint.
-    set_fact:
-      account_devices: "{{ host_obj_ds['account-ring-devices'] | default(template_obj_ds['account-ring-devices']) | default({}) }}"
-      container_devices: "{{ host_obj_ds['container-ring-devices'] | default(template_obj_ds['container-ring-devices']) | default({}) }}"
-      metadata_mount_point: "{{ host_obj_ds['mount-point'] | default(template_obj_ds['mount-point']) | default('/srv/node') }}"
-      object_devices: "{{ host_obj_ds['object-ring-devices'] | default(template_obj_ds['object-ring-devices']) | default({}) }}"
-      object_mount_point: "{{ host_obj_ds['mount-point'] | default(template_obj_ds['mount-point']) | default('/srv/node') }}"
-    when: inventory_hostname in groups['swift-object']
+      account_devices: "{{ host_ds['account-ring-devices'] | default(template_ds['account-ring-devices']) | default({}) }}"
+      container_devices: "{{ host_ds['container-ring-devices'] | default(template_ds['container-ring-devices']) | default({}) }}"
+      metadata_mount_point: "{{ host_ds['mount-point'] | default(template_ds['mount-point']) | default('/srv/node') }}"
+      object_devices: "{{ host_ds['object-ring-devices'] | default(template_ds['object-ring-devices']) | default({}) }}"
+      object_mount_point: "{{ host_ds['mount-point'] | default(template_ds['mount-point']) | default('/srv/node') }}"
 
   - name: Print device list settings.
     debug:

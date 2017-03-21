@@ -264,7 +264,7 @@ class TestValidateConfig(unittest.TestCase):
                           inv)
 
         converged.return_value = False
-        inv['node-templates'].pop('swift-proxy')
+        inv['node-templates'] = {'controllers': {}}
         self.assertRaises(test_mod.UnsupportedConfig,
                           test_mod.validate_swift,
                           inv)
@@ -291,6 +291,20 @@ class TestValidateConfig(unittest.TestCase):
 
         converged.return_value = False
         separate.return_value = False
+        self.assertRaises(test_mod.UnsupportedConfig,
+                          test_mod.validate_swift,
+                          inv)
+
+        # Test swift proxy role in converged node case
+        inv = {'reference-architecture': ['swift', 'swift-minimum-hardware'],
+               'node-templates': {'a': {'roles': ['swift-proxy']}}}
+        converged.return_value = True
+        separate.return_value = False
+        test_mod.validate_swift(inv)
+
+        # Test swift proxy role in converged node case
+        inv = {'reference-architecture': ['swift', 'swift-minimum-hardware'],
+               'node-templates': {'a': {'roles': ['some-role']}}}
         self.assertRaises(test_mod.UnsupportedConfig,
                           test_mod.validate_swift,
                           inv)
@@ -326,6 +340,36 @@ class TestValidateConfig(unittest.TestCase):
               'container-ring-devices': [],
               'object-ring-devices': []}
         node_tmpl['swift-metadata'] = {'domain-settings': ds}
+        self.assertFalse(test_mod._has_converged_metadata_object(inv))
+
+        ######################
+        # Test role variations
+        ######################
+        # Test a template that has converged
+        inv = {'node-templates': {'first': {'roles': ['swift-object',
+                                                      'swift-metadata']}}}
+        ds = {'account-ring-devices': [],
+              'container-ring-devices': [],
+              'object-ring-devices': []}
+        inv['node-templates']['first']['domain-settings'] = ds
+        self.assertTrue(test_mod._has_converged_metadata_object(inv))
+
+        # Test with two templates, both with converged
+        inv = {'node-templates': {'first': {'roles': ['swift-object',
+                                                      'swift-metadata']},
+                                  'second': {'roles': ['swift-object',
+                                                       'swift-metadata']}}}
+        ds = {'account-ring-devices': [],
+              'container-ring-devices': [],
+              'object-ring-devices': []}
+        inv['node-templates']['first']['domain-settings'] = ds
+        inv['node-templates']['second']['domain-settings'] = ds
+        self.assertTrue(test_mod._has_converged_metadata_object(inv))
+
+        # Test with a mix of templates where one is converged and the other
+        # is not.
+        sec = inv['node-templates']['second']['domain-settings']
+        sec.pop('container-ring-devices')
         self.assertFalse(test_mod._has_converged_metadata_object(inv))
 
     def test_has_separate_metadata_object(self):
@@ -366,6 +410,110 @@ class TestValidateConfig(unittest.TestCase):
                    'container-ring-devices': []}
         node_tmpl['swift-metadata'] = {'domain-settings': meta_ds}
         self.assertFalse(test_mod._has_separate_metadata_object(inv))
+        ######################
+        # Test role variations
+        ######################
+        # Test a templates that have roles and are separate
+        inv = {'node-templates': {'first': {'roles': ['swift-object']},
+                                  'second': {'roles': ['swift-metadata']}}}
+        md_rings = {'account-ring-devices': [],
+                    'container-ring-devices': []}
+
+        object_rings = {'object-ring-devices': []}
+        inv['node-templates']['first']['domain-settings'] = object_rings
+        inv['node-templates']['second']['domain-settings'] = md_rings
+        self.assertTrue(test_mod._has_separate_metadata_object(inv))
+
+        # Test with two metadata and two object templates that are separate
+        inv = {'node-templates': {'first': {'roles': ['swift-object']},
+                                  'second': {'roles': ['swift-metadata']},
+                                  'third': {'roles': ['swift-object']},
+                                  'fourth': {'roles': ['swift-metadata']}}}
+        md_rings = {'account-ring-devices': [],
+                    'container-ring-devices': []}
+
+        object_rings = {'object-ring-devices': []}
+        inv['node-templates']['first']['domain-settings'] = object_rings
+        inv['node-templates']['third']['domain-settings'] = object_rings
+        inv['node-templates']['second']['domain-settings'] = md_rings
+        inv['node-templates']['fourth']['domain-settings'] = md_rings
+        self.assertTrue(test_mod._has_separate_metadata_object(inv))
+
+        # Test templates that have roles that are not separate
+        inv = {'node-templates': {'first': {'roles': ['swift-object']},
+                                  'second': {'roles': ['swift-metadata']}}}
+        md_rings = {'account-ring-devices': [],
+                    'container-ring-devices': []}
+
+        bad_object_rings = {'account-ring-devices': [],
+                            'container-ring-devices': [],
+                            'object-ring-devices': []}
+        inv['node-templates']['first']['domain-settings'] = bad_object_rings
+        inv['node-templates']['second']['domain-settings'] = md_rings
+        self.assertFalse(test_mod._has_separate_metadata_object(inv))
+
+        # Test with two object and two metadata templates that are not separate
+        inv = {'node-templates': {'first': {'roles': ['swift-object']},
+                                  'second': {'roles': ['swift-metadata']},
+                                  'third': {'roles': ['swift-object']},
+                                  'fourth': {'roles': ['swift-metadata']}}}
+        md_rings = {'account-ring-devices': [],
+                    'container-ring-devices': []}
+
+        object_rings = {'object-ring-devices': []}
+        inv['node-templates']['first']['domain-settings'] = object_rings
+        inv['node-templates']['third']['domain-settings'] = object_rings
+        inv['node-templates']['second']['domain-settings'] = md_rings
+        inv['node-templates']['fourth']['domain-settings'] = bad_object_rings
+        self.assertFalse(test_mod._has_separate_metadata_object(inv))
+
+    def test_validate_rings_match_roles(self):
+        md_rings = {'account-ring-devices': [],
+                    'container-ring-devices': []}
+        obj_rings = {'object-ring-devices': []}
+        converged_rings = {}
+        converged_rings.update(md_rings)
+        converged_rings.update(obj_rings)
+        # Test separate case
+        cfg = {'node-templates': {'a': {'roles': ['swift-metadata'],
+                                        'domain-settings': md_rings},
+                                  'b': {'roles': ['swift-object'],
+                                        'domain-settings': obj_rings}}}
+        test_mod._validate_rings_match_roles(cfg)
+
+        # Test converged case
+        cfg = {'node-templates': {'a': {'roles': ['swift-metadata',
+                                                  'swift-object'],
+                                        'domain-settings': converged_rings}}}
+        test_mod._validate_rings_match_roles(cfg)
+
+        # Test backward compat converged case
+        cfg = {'node-templates': {'swift-object': {
+            'domain-settings': converged_rings}}}
+        test_mod._validate_rings_match_roles(cfg)
+
+        # Test metadata role without rings
+        cfg = {'node-templates': {'a': {'roles': ['swift-metadata']}}}
+        self.assertRaisesRegexp(test_mod.UnsupportedConfig,
+                                'is missing the account',
+                                test_mod._validate_rings_match_roles, cfg)
+
+        # Test object role without rings
+        cfg = {'node-templates': {'a': {'roles': ['swift-object']}}}
+        self.assertRaisesRegexp(test_mod.UnsupportedConfig,
+                                'is missing the object',
+                                test_mod._validate_rings_match_roles, cfg)
+
+        # Test template with metadata rings but without role
+        cfg = {'node-templates': {'a': {'domain-settings': md_rings}}}
+        self.assertRaisesRegexp(test_mod.UnsupportedConfig,
+                                'has account',
+                                test_mod._validate_rings_match_roles, cfg)
+        # Test template with object ring but without role
+        cfg = {'node-templates': {'a': {'domain-settings': obj_rings}}}
+        self.assertRaisesRegexp(test_mod.UnsupportedConfig,
+                                'has the object ring',
+                                test_mod._validate_rings_match_roles, cfg)
 
     def test_validate_ops_mgr(self):
         # Test valid case
