@@ -62,6 +62,26 @@ urlpatterns = patterns(
     url(r'^(?P<backup_id>[^/]+)/delete_backup/$',
         views.DeleteBackupView.as_view(), name='delete_backup'),
 
+    url(r'^create_user',
+        views.CreateUserView.as_view(), name='create_user'),
+    url(r'^(?P<instance_id>[^/]+)/create_user/$',
+        views.CreateUserView.as_view(), name='create_user'),
+
+    url(r'^delete_user',
+        views.DeleteUserView.as_view(), name='delete_user'),
+    url(r'^(?P<user_id>[^/]+)/delete_user/$',
+        views.DeleteUserView.as_view(), name='delete_user'),
+
+    url(r'^create_database',
+        views.CreateDatabaseView.as_view(), name='create_database'),
+    url(r'^(?P<instance_id>[^/]+)/create_database/$',
+        views.CreateDatabaseView.as_view(), name='create_database'),
+
+    url(r'^delete_database',
+        views.DeleteDatabaseView.as_view(), name='delete_database'),
+    url(r'^(?P<database_id>[^/]+)/delete_database/$',
+        views.DeleteDatabaseView.as_view(), name='delete_database'),
+
     # URLs to details views
     url(r'^(?P<instance_id>[^/]+)/instance/$',
         views.InstanceDetailsView.as_view(), name='instance_details'),

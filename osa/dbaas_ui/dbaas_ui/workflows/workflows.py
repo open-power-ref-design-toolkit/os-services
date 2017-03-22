@@ -368,6 +368,8 @@ class RestoreFromBackup(LaunchInstance):
     slug = "restore_from_instance"
     name = _("Restore Database Instance From Backup")
     finalize_button_name = _("Restore")
+    # Provide the correct name (Backup) for the Advanced Action panel
+    AdvancedAction.name = "Backup"
     default_steps = (SetInstanceDetails,
                      dash_create_instance.SetNetwork, Advanced)
 

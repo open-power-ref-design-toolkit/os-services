@@ -11,12 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 
 from horizon import exceptions
 from horizon import forms
 from horizon import messages
 from horizon.templatetags import sizeformat
+from horizon.utils import validators
 
 import logging
 
@@ -59,7 +61,10 @@ def create_instance_choices(request, allowed_states=None, instanceID=None):
     # list of allowed statuses The choices have a value of the instance ID.
     instance_choices = []
 
-    all_instances = retrieve_instances(request, allowed_states)
+    if instanceID:
+        all_instances = [retrieve_instance(request, instanceID)]
+    else:
+        all_instances = retrieve_instances(request, allowed_states)
 
     if not instanceID:
         # Initial (and default) value instructs the user to select an instance
@@ -127,9 +132,8 @@ def create_inst_fl_choices(request, allowed_states=None, instanceID=None):
                     logging.error("%s: Exception retrieving size information"
                                   " for instance: %s.  Exception is: %s",
                                   __method__, inst.name, e)
-                    msg = _('Unable to retrieve size information for'
-                            ' instance %s.',
-                            inst.name)
+                    msg = ('Unable to retrieve size information for'
+                           ' instance %s.', inst.name)
                     exceptions.handle(request, msg)
         else:
             # No instance ID was passed in -- just append all instances
@@ -147,8 +151,8 @@ def create_inst_fl_choices(request, allowed_states=None, instanceID=None):
                 logging.error("%s: Exception retrieving size information for"
                               " instance: %s.  Exception is: %s", __method__,
                               inst.name, e)
-                msg = _('Unable to retrieve size information for instance %s.',
-                        inst.name)
+                msg = ('Unable to retrieve size information for '
+                       'instance %s.', inst.name)
                 exceptions.handle(request, msg)
 
     # If nothing ended up getting added to the list of choices
@@ -227,15 +231,188 @@ def create_flavor_choices(request):
     return flavor_choices
 
 
-def retrieve_instance_name(request, instance_id):
-    # Retrieve the name of an instance based on an instance id.
-    # If the instance is not able to be retrieved, returns the instance_id
+def retrieve_users(request, instance_id):
+    # Retrieve all users for the instance_id passed in
+    __method__ = 'forms.retrieve_users'
+    all_users = []
+    try:
+        all_users = trove_api.trove.users_list(request, instance_id)
+    except Exception as e:
+        logging.error("%s: Exception retrieving users for instance %s.  "
+                      "Error is: %s", __method__, instance_id, e)
+        msg = _('Unable to retrieve list of users.')
+        exceptions.handle(request, msg)
+
+    return all_users
+
+
+def create_user_choices(request, instance_id=None, userName=None):
+    # build a list of user choices for the instance passed in, and
+    # then filter that list on a passed in userName
+    user_choices = []
+    all_instances = []
+
+    # Set initial value if needed
+    if not userName:
+        # Initial (and default) value instructs the user to select a user
+        user_choices.append((None, _("Select a user")))
+
+    # Retrieve the instances (either the one identified by instance_id, or
+    # all instances
+    if instance_id:
+        # Retrieve the specific instance
+        all_instances.append(retrieve_instance(request, instance_id))
+    else:
+        # Retrieve all instances
+        all_instances = retrieve_instances(request)
+
+    # all_instances may be empty if no instances have been defined.
+    for instance in all_instances:
+        all_users = retrieve_users(request, instance.id)
+
+        for user in all_users:
+            # value will be the instance id and the user name
+            choiceValue = instance.id + "::" + user.name
+
+            if not instance_id:
+                # We were called without an instance context --we can go ahead
+                # and add the instance name to the user name for the display
+                # value, and append this user entry to our list of choices
+                displayValue = user.name + " (instance: " + instance.name + ')'
+            else:
+                # We already have the instance context -- don't need to append
+                # the instance name to the user name for the display value
+                displayValue = user.name
+
+            # If we were not called with a user name, or we were called with
+            # a user name and the retrieved user's name matches the user
+            # name passed in, we can append this user entry to our list
+            # of choices.
+            if not userName or userName == user.name:
+                user_choices.append((choiceValue, displayValue))
+
+    # If nothing ended up getting added to the list of choices
+    if len(user_choices) == 0:
+        if userName:
+            user_choices.append((None, _("Selected user not available")))
+            msg = _('Selected user could not be retrieved.')
+            messages.error(request, msg)
+        else:
+            # No users exist -- shouldn't happen (we should have a
+            # default value...very strange...just put on a 'no users
+            # available' message
+            user_choices.append((None, _("No users available")))
+    elif len(user_choices) == 1:
+        if not userName:
+            # We were called without a user name, and there's only a single
+            # element in our list.  In this scenario, we put in a default
+            # value on telling the user to select a item...but there's
+            # nothing there -- remove the 'select a user' default value
+            # and add a 'no users available' message.
+            user_choices.pop()
+            user_choices.append((None, _("No users available")))
+
+    return user_choices
+
+
+def retrieve_databases(request, instance_id):
+    # Retrieve all databases for the instance_id passed in
+    __method__ = 'forms.retrieve_databases'
+    all_databases = []
+    try:
+        all_databases = trove_api.trove.database_list(request, instance_id)
+    except Exception as e:
+        logging.error("%s: Exception retrieving databases for instance %s.  "
+                      "Error is: %s", __method__, instance_id, e)
+        msg = _('Unable to retrieve list of databases.')
+        exceptions.handle(request, msg)
+
+    return all_databases
+
+
+def create_database_choices(request, instance_id=None, databaseName=None):
+    # build a list of database choices for the instance passed in, and
+    # then filter that list on a passed in databaseName
+    database_choices = []
+    all_instances = []
+
+    if not databaseName:
+        # Currently we only want the default ('Select a database')
+        # added to our choices when we have NO dbName and no
+        # instance ID
+        if not instance_id:
+            # Initial (and default) value instructs the user to
+            # select a database
+            database_choices.append((None, _("Select a database")))
+
+    if (instance_id):
+        # Retrieve the specific instance
+        all_instances.append(retrieve_instance(request, instance_id))
+    else:
+        # Retrieve all instances
+        all_instances = retrieve_instances(request)
+
+    # all_instances may be empty of no instances have been defined.
+    for instance in all_instances:
+        all_databases = retrieve_databases(request, instance.id)
+
+        for database in all_databases:
+            # value will be the instance id and the database name
+            choiceValue = instance.id + "::" + database.name
+
+            if not instance_id:
+                # We were called without an instance context --we can go ahead
+                # and add the instance name to the database name for the
+                # display value, and append this database entry to our list of
+                # choices
+                instPart = " (instance: " + instance.name + ')'
+                displayValue = database.name + instPart
+            else:
+                # We already have the instance context -- don't need to append
+                # the instance name to the database name for the display value
+                displayValue = database.name
+
+            # If we were not called with a database name, or we were called
+            # with a database name and the retrieved database's name matches
+            # the database name passed in, we can append this database entry
+            # to our list of choices.
+            if not databaseName or databaseName == database.name:
+                database_choices.append((choiceValue, displayValue))
+
+    # If nothing ended up getting added to the list of choices
+    if len(database_choices) == 0:
+        if databaseName:
+            database_choices.append((None,
+                                     _("Selected database not available")))
+            msg = _('Selected database could not be retrieved.')
+            messages.error(request, msg)
+        else:
+            # No databases exist -- shouldn't happen (we should have a
+            # default value...very strange...just put on a 'no databases
+            # available' message
+            database_choices.append((None, _("No databases available")))
+    elif len(database_choices) == 1:
+        if not databaseName:
+            # We were called without a database name, and there's only a single
+            # element in our list.  In this scenario, we put in a default
+            # value on telling the user to select a item...but there's
+            # nothing there -- remove the 'select a database' default value
+            # and add a 'no databases available' message.
+            database_choices.pop()
+            database_choices.append((None, _("No databases available")))
+
+    return database_choices
+
+
+def retrieve_instance(request, instance_id):
+    # Retrieve an instance based on an instance id.
+    # If the instance is not able to be retrieved, returns None
     __method__ = 'forms.retrieve_instance'
 
-    instance_name = instance_id
+    instance = None
     try:
         instance = trove_api.trove.instance_get(request, instance_id)
-        instance_name = instance.name
+        return instance
     except Exception as e:
         logging.error("%s: Exception retrieving instance with ID: %s."
                       " Exception is: %s", __method__, instance_id, e)
@@ -246,7 +423,7 @@ def retrieve_instance_name(request, instance_id):
                % {'instance_id': instance_id, 'reason': e})
         exceptions.handle(request, msg)
 
-    return instance_name
+    return instance
 
 
 def retrieve_backup_name(request, backup_id):
@@ -380,7 +557,7 @@ class RestartInstanceForm(forms.SelfHandlingForm):
 
         # Need the instance name in both success/failure cases.
         # Retrieve it now (will be instance_id if we couldn't retrieve it).
-        instance_name = retrieve_instance_name(request, selected_instance)
+        instance_name = retrieve_instance(request, selected_instance).name
 
         # Perform the restart attempt
         try:
@@ -442,7 +619,7 @@ class DeleteInstanceForm(forms.SelfHandlingForm):
 
         # Need the instance name in both success/failure cases.
         # Retrieve it now (will be instance_id if we couldn't retrieve it).
-        instance_name = retrieve_instance_name(request, selected_instance)
+        instance_name = retrieve_instance(request, selected_instance).name
 
         # Perform the delete attempt
         try:
@@ -517,9 +694,10 @@ class ResizeInstanceForm(forms.SelfHandlingForm):
                         " the old size.")
                 self._errors['new_flavor'] = self.error_class([msg])
 
-        # TODO:  Consider -- should we allow the user to resize an instance
-        #        'down' -- for example, if an instance is at a large size,
-        #        can user resize that instance to medium size?
+        # TODO(jdwald):  Consider -- should we allow the user to resize an
+        #                instance 'down' -- for example, if an instance is
+        #                at a large size, can user resize that instance to
+        #                medium size?
 
     def handle(self, request, data):
         __method__ = 'forms.ResizeInstanceForm.handle'
@@ -530,7 +708,7 @@ class ResizeInstanceForm(forms.SelfHandlingForm):
 
         # Need the instance name in both success/failure cases.
         # Retrieve it now (will be instance_id if we couldn't retrieve it).
-        instance_name = retrieve_instance_name(request, selected_inst)
+        instance_name = retrieve_instance(request, selected_inst).name
 
         # Perform the resize instance attempt
         try:
@@ -615,7 +793,7 @@ class ResizeVolumeForm(forms.SelfHandlingForm):
 
         # Need the instance name in both success/failure cases.
         # Retrieve it now (will be instance_id if we couldn't retrieve it).
-        instance_name = retrieve_instance_name(request, selected_inst)
+        instance_name = retrieve_instance(request, selected_inst).name
 
         # Perform the resize volume attempt
         try:
@@ -685,7 +863,7 @@ class CreateBackupForm(forms.SelfHandlingForm):
 
         # Need the instance name in both success/failure cases.
         # Retrieve it now (will be instance_id if we couldn't retrieve it).
-        instance_name = retrieve_instance_name(request, selected_instance)
+        instance_name = retrieve_instance(request, selected_instance).name
 
         # Perform the backup attempt
         try:
@@ -754,7 +932,7 @@ class RenameInstanceForm(forms.SelfHandlingForm):
 
         # Need the instance name in both success/failure cases.
         # Retrieve it now (will be instance_id if we couldn't retrieve it).
-        instance_name = retrieve_instance_name(request, sel_inst)
+        instance_name = retrieve_instance(request, sel_inst).name
 
         # Perform the instance rename attempt
         try:
@@ -840,4 +1018,385 @@ class DeleteBackupForm(forms.SelfHandlingForm):
         msg = ('Delete of backup %(backup_name)s started.'
                % {'backup_name': backup_name})
         messages.success(request, msg)
+        return True
+
+
+class CreateUserForm(forms.SelfHandlingForm):
+    name = forms.CharField(label=_("Name"))
+    password = forms.RegexField(
+        label=_("Password"),
+        widget=forms.PasswordInput(render_value=False),
+        regex=validators.password_validator(),
+        error_messages={'invalid': validators.password_validator_msg()})
+    instance = forms.ChoiceField(
+        label=_("Instance"),
+        widget=forms.Select(attrs={
+            'class': 'switchable',
+            'data-slug': 'instance'
+        }),
+        required=True)
+
+    def __init__(self, request, *args, **kwargs):
+        super(CreateUserForm, self).__init__(request, *args, **kwargs)
+
+        instID = None
+
+        # If an initial instance id was passed in, retrieve it
+        # and use it to prime the field
+        if 'initial' in kwargs:
+            if kwargs['initial'] and 'instance_id' in kwargs['initial']:
+                instID = kwargs['initial']['instance_id']
+
+        sts = ("ACTIVE",)
+        choices = create_instance_choices(request, sts, instID)
+
+        # Restrict list of instances to those on which a user can
+        # be added (based on instance statuses)
+        sts = ("ACTIVE",)
+        choices = create_instance_choices(request, sts, instID)
+
+        self.fields['instance'].choices = choices
+
+        if instID:
+            self.fields['instance'].initial = instID
+            self.fields['instance'].widget.attrs['readonly'] = True
+
+        database_choices = []
+
+        for instance_choice in choices:
+            # Retrieve the list of databases
+            if instance_choice[0]:
+                # Define a db field for this instance
+                dataKey = 'data-instance-' + instance_choice[0]
+
+                self.fields[instance_choice[0]] = forms.MultipleChoiceField(
+                    label=_("Available Databases"),
+                    required=False,
+                    widget=forms.CheckboxSelectMultiple(
+                        attrs={'class': 'switched',
+                               'data-switch-on': 'instance',
+                               dataKey: instance_choice[0]}))
+
+                # Retrieve all databases for the instance
+                database_choices = create_database_choices(request,
+                                                           instance_choice[0],
+                                                           None)
+
+                if len(database_choices) >= 1:
+                    self.fields[instance_choice[0]].choices = database_choices
+                else:
+                    msg = _("No databases found")
+                    self.fields[instance_choice[0]].choices = [(None, msg)]
+
+    def clean(self):
+        cleaned_data = super(CreateUserForm, self).clean()
+
+        instance = cleaned_data['instance']
+
+        if not instance:
+            msg = _("Select the instance on which to create the user.")
+            self._errors['instance'] = self.error_class([msg])
+
+        return cleaned_data
+
+    def handle(self, request, data):
+        __method__ = 'forms.createUserForm.handle'
+
+        selected_instance = data['instance']
+        user_name = data['name']
+
+        # Get the list of databases to which the new user should be
+        # granted access (and put it into a form that's usable)
+        selected_databases = data[selected_instance]
+        dbs = []
+        if len(selected_databases):
+            for database in selected_databases:
+                if database != "None":
+                    inst_id, db_name = parse_element_and_value_text(database)
+                    dbs.append({'name': db_name.strip()})
+
+        # Need the instance name in both success/failure cases.
+        # Retrieve it now (will be instance_id if we couldn't retrieve it).
+        instance_name = retrieve_instance(request, selected_instance).name
+
+        # Perform the create user attempt
+        try:
+            trove_api.trove.user_create(
+                request,
+                selected_instance,
+                user_name,
+                data['password'],
+                host=None,
+                databases=dbs)
+
+        except Exception as e:
+            failure_message = ("Attempt to create user %(user_name)s "
+                               "on %(instance_name)s was not successful.  "
+                               "Details of the error: %(reason)s"
+                               % {'user_name': user_name,
+                                  'instance_name': instance_name,
+                                  'reason': e})
+            logging.error("%s: Exception received trying to create "
+                          "user %s.  Exception is: %s",
+                          __method__, user_name, e)
+
+            redirect = reverse("horizon:project:database:instance_details",
+                               args=(selected_instance,))
+            redirect += "?tab=instance_details__users_tab"
+            exceptions.handle(request, failure_message, redirect=redirect)
+            return True
+
+        msg = ("User %(user_name)s created on instance %(instance_name)s."
+               % {'user_name': user_name, 'instance_name': instance_name})
+
+        messages.success(request, msg)
+
+        # We are successful -- store away the instance_id onto the session
+        # so that we can correctly update our view.
+        if hasattr(request, 'session'):
+            request.session['instance_id'] = selected_instance
+
+        return True
+
+
+class DeleteUserForm(forms.SelfHandlingForm):
+    user = forms.ChoiceField(
+        label=_("User"),
+        required=True)
+
+    def __init__(self, request, *args, **kwargs):
+        super(DeleteUserForm, self).__init__(request, *args, **kwargs)
+
+        selectedUser = None
+
+        instance_id = None
+        user_name = None
+
+        choices = None
+
+        # If an initial user id was passed in, retrieve it
+        # and use it to prime the field
+        if 'initial' in kwargs:
+            if kwargs['initial'] and 'user_id' in kwargs['initial']:
+                selectedUser = kwargs['initial']['user_id']
+                instance_id, user_name = parse_element_and_value_text(
+                    selectedUser)
+                choices = create_user_choices(request, instance_id, user_name)
+            elif 'data' in kwargs:
+                if 'user' in kwargs['data']:
+                    selectedUser = kwargs['data']['user']
+                    instance_id, user_name = parse_element_and_value_text(
+                        selectedUser)
+                    choices = create_user_choices(request,
+                                                  instance_id,
+                                                  user_name)
+                else:
+                    choices = create_user_choices(request, None, None)
+            else:
+                choices = create_user_choices(request, None, None)
+        else:
+            choices = create_user_choices(request, None, None)
+
+        self.fields['user'].choices = choices
+
+        if selectedUser:
+            self.fields['user'].initial = selectedUser
+            self.fields['user'].widget.attrs['readonly'] = True
+
+    def handle(self, request, data):
+        __method__ = 'forms.DeleteUserForm.handle'
+
+        instance_id, user_name = parse_element_and_value_text(
+            self.data['user'])
+
+        # Perform the delete attempt
+        try:
+            trove_api.trove.user_delete(request, instance_id, user_name)
+        except Exception as e:
+            failure_message = ("Attempt to delete user %(user_name)s was"
+                               " not successful.  Details of the error:"
+                               "  %(reason)s"
+                               % {'user_name': user_name, 'reason': e})
+            logging.error("%s: Exception received trying to delete user %s"
+                          " Exception is: %s",
+                          __method__, user_name, e)
+            exceptions.handle(self.request, failure_message)
+            # Return true to close the dialog
+            return True
+
+        msg = ('User %(user_name)s deleted.'
+               % {'user_name': user_name})
+        messages.success(request, msg)
+
+        # We are successful -- store away the instance_id onto the session
+        # so that we can correctly update our view.
+        if hasattr(request, 'session'):
+            request.session['instance_id'] = instance_id
+
+        return True
+
+
+class CreateDatabaseForm(forms.SelfHandlingForm):
+    name = forms.CharField(label=_("Name"))
+    instance = forms.ChoiceField(
+        label=_("Instance"),
+        required=True)
+
+    def __init__(self, request, *args, **kwargs):
+        super(CreateDatabaseForm, self).__init__(request, *args, **kwargs)
+
+        instID = None
+
+        # If an initial instance id was passed in, retrieve it
+        # and use it to prime the field
+        if 'initial' in kwargs:
+            if kwargs['initial'] and 'instance_id' in kwargs['initial']:
+                instID = kwargs['initial']['instance_id']
+
+        # Restrict list of instances to those on which a database can
+        # be added (statuses)
+        sts = ("ACTIVE",)
+        choices = create_instance_choices(request, sts, instID)
+
+        self.fields['instance'].choices = choices
+
+        if instID:
+            self.fields['instance'].initial = instID
+            self.fields['instance'].widget.attrs['readonly'] = True
+
+    def clean(self):
+        instance = self.data['instance']
+
+        if not instance:
+            msg = _("Select the instance on which to create the database.")
+            self._errors['instance'] = self.error_class([msg])
+
+    def handle(self, request, data):
+        __method__ = 'forms.CreateDatabaseForm.handle'
+
+        selected_instance = data['instance']
+        database_name = data['name']
+
+        # Need the instance name in both success/failure cases.
+        # Retrieve it now (will be instance_id if we couldn't retrieve it).
+        instance_name = retrieve_instance(request, selected_instance).name
+
+        # Perform the create database attempt
+        try:
+            trove_api.trove.database_create(request,
+                                            selected_instance,
+                                            data['name'],
+                                            character_set=None,
+                                            collation=None)
+
+        except Exception as e:
+            failure_message = ("Attempt to create database %(database_name)s "
+                               "on %(instance_name)s was not successful.  "
+                               "Details of the error: %(reason)s"
+                               % {'database_name': database_name,
+                                  'instance_name': instance_name,
+                                  'reason': e})
+            logging.error("%s: Exception received trying to create "
+                          "database %s.  Exception is: %s",
+                          __method__, database_name, e)
+
+            redirect = reverse("horizon:project:database:instance_details",
+                               args=(selected_instance,))
+            redirect += "?tab=instance_details__database_tab"
+            exceptions.handle(request, failure_message, redirect=redirect)
+            return True
+
+        msg = ("Database %(database_name)s created on "
+               "instance %(instance_name)s."
+               % {'database_name': database_name,
+                  'instance_name': instance_name})
+
+        messages.success(request, msg)
+
+        # We are successful -- store away the instance_id onto the session
+        # so that we can correctly update our view.
+        if hasattr(request, 'session'):
+            request.session['instance_id'] = selected_instance
+
+        return True
+
+
+class DeleteDatabaseForm(forms.SelfHandlingForm):
+    database = forms.ChoiceField(
+        label=_("Database"),
+        required=True)
+
+    def __init__(self, request, *args, **kwargs):
+        super(DeleteDatabaseForm, self).__init__(request, *args, **kwargs)
+
+        selectedDatabase = None
+
+        instance_id = None
+        database_name = None
+
+        choices = None
+
+        # If an initial database id was passed in, retrieve it
+        # and use it to prime the field
+        if 'initial' in kwargs:
+            if kwargs['initial'] and 'database_id' in kwargs['initial']:
+                selectedDatabase = kwargs['initial']['database_id']
+                instance_id, database_name = parse_element_and_value_text(
+                    selectedDatabase)
+                choices = create_database_choices(request,
+                                                  instance_id,
+                                                  database_name)
+            elif 'data' in kwargs:
+                if 'database' in kwargs['data']:
+                    selectedDatabase = kwargs['data']['database']
+                    instance_id, database_name = parse_element_and_value_text(
+                        selectedDatabase)
+                    choices = create_database_choices(request,
+                                                      instance_id,
+                                                      database_name)
+                else:
+                    choices = create_database_choices(request, None, None)
+            else:
+                choices = create_database_choices(request, None, None)
+        else:
+            choices = create_database_choices(request, None, None)
+
+        self.fields['database'].choices = choices
+
+        if selectedDatabase:
+            self.fields['database'].initial = selectedDatabase
+            self.fields['database'].widget.attrs['readonly'] = True
+
+    def handle(self, request, data):
+        __method__ = 'forms.DeleteDatabaseForm.handle'
+
+        instance_id, database_name = parse_element_and_value_text(
+            self.data['database'])
+
+        # Perform the delete attempt
+        try:
+            trove_api.trove.database_delete(request,
+                                            instance_id,
+                                            database_name)
+        except Exception as e:
+            failure_message = ("Attempt to delete database %(database_name)s "
+                               "was not successful.  Details of the error: "
+                               "%(reason)s"
+                               % {'database_name': database_name, 'reason': e})
+            logging.error("%s: Exception received trying to delete database %s"
+                          " Exception is: %s",
+                          __method__, database_name, e)
+            exceptions.handle(self.request, failure_message)
+            # Return true to close the dialog
+            return True
+
+        msg = ('Database %(database_name)s deleted.'
+               % {'database_name': database_name})
+        messages.success(request, msg)
+
+        # We are successful -- store away the instance_id onto the session
+        # so that we can correctly update our view.
+        if hasattr(request, 'session'):
+            request.session['instance_id'] = instance_id
+
         return True
