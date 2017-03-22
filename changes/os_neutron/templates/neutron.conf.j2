@@ -52,7 +52,7 @@ agent_down_time = {{ neutron_agent_down_time }}
 
 {% set num_agent = groups[neutron_services['neutron-dhcp-agent']['group']] | length %}
 {% if neutron_plugin_type.split('.')[0] == 'ml2' and num_agent >= 2 %}
-{% if neutron_services['neutron-linuxbridge-agent']['service_en'] | bool %}
+{% if neutron_services['neutron-linuxbridge-agent']['service_en'] | bool or neutron_services['neutron-openvswitch-agent']['service_en'] | bool %}
 
 {% set max_l3_router = num_agent if num_agent > 2 else 2 %}
 {% set min_l3_router = num_agent if (num_agent > 2 and num_agent < max_l3_router) else 2 %}
@@ -62,8 +62,10 @@ l3_ha = True
 l3_ha_net_cidr = {{ neutron_l3_ha_net_cidr }}
 min_l3_agents_per_router = {{ min_l3_router }}
 max_l3_agents_per_router = {{ max_l3_router }}
+{% if neutron_provider_networks.network_mappings_list is defined %}
 ha_network_type = {{ neutron_provider_networks.network_mappings_list[0].split(':')[0] }}
 ha_network_physical_name = {{ neutron_provider_networks.network_mappings_list[0].split(':')[-1] }}
+{% endif %}
 
 {% endif %}
 {% endif %}

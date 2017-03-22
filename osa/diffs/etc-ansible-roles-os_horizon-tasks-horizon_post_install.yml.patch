@@ -1,9 +1,9 @@
 diff -Naur a/etc/ansible/roles/os_horizon/tasks/horizon_post_install.yml b/etc/ansible/roles/os_horizon/tasks/horizon_post_install.yml
---- a/etc/ansible/roles/os_horizon/tasks/horizon_post_install.yml	2017-01-30 12:52:10.678001899 -0500
-+++ b/etc/ansible/roles/os_horizon/tasks/horizon_post_install.yml	2017-01-30 12:50:31.344487086 -0500
-@@ -73,6 +73,26 @@
-   tags:
-     - horizon-configs
+--- a/etc/ansible/roles/os_horizon/tasks/horizon_post_install.yml	2017-03-02 06:30:11.657883528 -0500
++++ b/etc/ansible/roles/os_horizon/tasks/horizon_post_install.yml	2017-03-02 05:54:39.749845406 -0500
+@@ -67,6 +67,26 @@
+     - src: "{{ horizon_lib_dir }}/sahara_dashboard/enabled/_1840_data_processing_jobs_panel.py"
+       path: "{{ horizon_lib_dir }}/openstack_dashboard/enabled/_1840_data_processing_jobs_panel.py"
  
 +- name: Enable the trove-dashboard Horizon panel
 +  file:
