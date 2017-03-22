@@ -18,10 +18,14 @@ from django.template import defaultfilters as d_filters
 from django.utils.translation import pgettext_lazy
 from django.utils.translation import ugettext_lazy as _
 
+from horizon import messages
 from horizon import tables
 from horizon.templatetags import sizeformat
 from horizon.utils import filters
-from openstack_dashboard import api as trove_api
+from trove_dashboard import api as trove_api
+
+
+import logging
 
 INSTANCE_STATUS_CHOICES = (
     ("ACTIVE", True),
@@ -276,6 +280,85 @@ class RestoreFromBackupLink(tables.LinkAction):
         url = reverse(self.url)
         return url + '?backup=%s' % datum.id
 
+
+class ManageRootLink(tables.LinkAction):
+    # Allowed on instances that are active.  This function opens
+    # the Manage Root Access table.  From that table a flag shows
+    # if the superuser has ever been enabled, and the user can
+    # enable root, disable root, or reset the root password.
+    name = "manage_root_action"
+    verbose_name = _("Manage Root Access")
+    url = "horizon:project:database:manage_root"
+
+    def allowed(self, request, instance):
+        if (instance):
+            return (instance and instance.status in 'ACTIVE')
+        else:
+            return True
+
+    def get_link_url(self, datum=None):
+        instance_id = self.table.get_object_id(datum)
+        return reverse(self.url, args=[instance_id])
+
+
+class EnableRootAction(tables.Action):
+    # Always allowed in Manage Root Access table.  This function
+    # enables the superuser profile (root) on the selected
+    # instance if it has never been enabled, and it generates
+    # a new password for the profile.  If root has already been
+    # enabled on the instance, the function simply creates a new
+    # password for root.  In either case, the table is updated with
+    # the new password for root (so it can be viewed by the end-user)
+    # Note that this action requires no end-user interaction -- once
+    # the user selects this table action, it just runs.
+    name = "enable_root_action"
+    verbose_name = _("Enable Root")
+
+    def handle(self, table, request, obj_ids):
+        __method__ = "tables.EnableRootAction.handle"
+        try:
+            username, password = trove_api.trove.root_enable(request, obj_ids)
+            # Once root has been enabled, update the table accordingly
+            # with the enabled flag and password
+            table.data[0].enabled = True
+            table.data[0].password = password
+        except Exception as e:
+            logging.error("%s: Exception trying to enable root on %s.  "
+                          "Exception: %s", __method__, obj_ids, e)
+            messages.error(request, _('There was a problem enabling '
+                                      'root: %s') % e.message)
+
+
+class DisableRootAction(tables.Action):
+    # Allowed when root has been enabled.  This function scrambles
+    # the superuser profile (root) -- rendering the profile disabled (root
+    # is unable to access the instance since the password is not known).
+    # Note that this action requires no end-user interaction -- once the
+    # user selects this table action, it just runs.
+    name = "disable_root_action"
+    verbose_name = _("Disable Root")
+
+    def allowed(self, request, instance):
+        enabled = trove_api.trove.root_show(request, instance.id)
+        return enabled.rootEnabled
+
+    # multi-select is not supported
+    def single(self, table, request, object_id):
+        __method__ = "tables.DisableRootAction.single"
+        try:
+            # This API merely sets the root password to
+            # a random password.
+            trove_api.trove.root_disable(request, object_id)
+            table.data[0].password = None
+            messages.success(request, _("Successfully disabled root access."))
+        except Exception as e:
+            logging.error("%s: Exception trying to disable root on %s.  "
+                          "Exception: %s", __method__, object_id, e)
+            messages.warning(request,
+                             _("There was a problem enabling "
+                               "root: %s") % e.message)
+
+
 # Start of other tasks
 
 
@@ -429,6 +512,7 @@ class InstancesTable(tables.DataTable):
                        ResizeInstanceLink,
                        ResizeVolumeLink,
                        RestartInstanceLink,
+                       ManageRootLink,
                        DeleteInstanceLink,)
 
 
@@ -494,3 +578,21 @@ class DatabaseTable(tables.DataTable):
 
     def get_object_id(self, datum):
         return datum.name
+
+
+class ManageRootTable(tables.DataTable):
+    name = tables.Column('name', verbose_name=_('Instance Name'))
+    enabled = tables.Column('enabled',
+                            verbose_name=_('Has Root Ever Been Enabled'),
+                            filters=(d_filters.yesno, d_filters.capfirst),
+                            help_text=_("Status if root was ever enabled "
+                                        "for an instance."))
+    password = tables.Column('password', verbose_name=_('Password'),
+                             help_text=_("Password is only visible "
+                                         "immediately after the root is "
+                                         "enabled or reset."))
+
+    class Meta(object):
+        name = "manage_root"
+        verbose_name = _("Manage Root")
+        row_actions = (EnableRootAction, DisableRootAction,)

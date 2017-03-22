@@ -19,6 +19,7 @@ from horizon import exceptions
 from horizon import forms
 from horizon import messages
 from horizon import tabs as baseTabs
+from horizon import tables as baseTables
 from horizon.utils import filters
 from horizon.utils import memoized
 from horizon import views as horizon_views
@@ -344,7 +345,7 @@ class DeleteDatabaseView(forms.ModalFormView):
     page_title = _("Delete Database")
 
     def get_initial(self):
-        # Need the instance and user to prime the dialog if passed in
+        # Need the database to prime the dialog if passed in
         if "database_id" in self.kwargs:
             return {'database_id': self.kwargs['database_id']}
         else:
@@ -367,6 +368,112 @@ class DeleteDatabaseView(forms.ModalFormView):
         # We were not able to retrieve the instance_id that the
         # user was created on.  Just redirect to to the list
         # of instances.
+        return build_db_url('?tab=database_page__instances')
+
+
+class EnableRootInfo(object):
+    # This class holds enablement information for the root profile for
+    # an instance.  This is used to build the manage root access dialog
+    def __init__(self, instance_id, instance_name, enabled, password=None):
+        self.id = instance_id
+        self.name = instance_name
+        self.enabled = enabled
+        self.password = password
+
+
+class ManageRootView(baseTables.DataTableView):
+    # The purpose of this view is to open a dialog showing the enablement of
+    # of the superuser profile (root) on the selected instance.  The user can
+    # enable and disable the profile, and reset the password.
+    table_class = project_tables.ManageRootTable
+    template_name = 'project/database/manage_root.html'
+    page_title = _("Manage Root Access")
+
+    @memoized.memoized_method
+    def get_data(self):
+        # Retrieve the instance (based on instance id) -- required
+        # to display the instance ID
+        instance_id = self.kwargs['instance_id']
+        try:
+            instance = trove_api.trove.instance_get(self.request, instance_id)
+        except Exception:
+            redirect = build_instance_details_url(
+                self.request.session['instance_id'],)
+
+            exceptions.handle(self.request,
+                              _('Unable to retrieve instance details.'),
+                              redirect=redirect)
+
+        # Identify if root has ever been enabled (based on instance id)
+        try:
+            enabled = trove_api.trove.root_show(self.request, instance_id)
+        except Exception:
+            redirect = build_instance_details_url(
+                self.request.session['instance_id'],)
+            exceptions.handle(self.request,
+                              _('Unable to determine if instance root '
+                                'is enabled.'),
+                              redirect=redirect)
+
+        # Build a 'root enabled' object to get added to the table
+        root_enabled_list = []
+        root_enabled_info = EnableRootInfo(instance.id,
+                                           instance.name,
+                                           enabled.rootEnabled)
+        root_enabled_list.append(root_enabled_info)
+
+        return root_enabled_list
+
+    def get_context_data(self, **kwargs):
+        context = super(ManageRootView, self).get_context_data(**kwargs)
+        context['instance_id'] = self.kwargs['instance_id']
+        return context
+
+
+class ManageRootNoContextView(forms.ModalFormView):
+    # The purpose of this view is to prompt the user for the context
+    # on which manage root access should be done
+    template_name = 'project/database/manage_root_no_context.html'
+    modal_header = _("Manage Root Access")
+    form_id = "manage_root_no_context_form"
+    form_class = project_forms.ManageRootNoContextForm
+    submit_label = _("Manage Root Access")
+    submit_url = reverse_lazy("horizon:project:database:manage_root")
+    success_url = reverse_lazy('horizon:project:database:index')
+    page_title = _("Manage Root Access")
+
+    def get_initial(self):
+        if "instance_id" in self.kwargs:
+            return {'instance_id': self.kwargs['instance_id']}
+        else:
+            return
+
+    def get_context_data(self, **kwargs):
+        context = super(ManageRootNoContextView,
+                        self).get_context_data(**kwargs)
+        context["instance_id"] = kwargs.get("instance_id")
+        self._instance = context['instance_id']
+        return context
+
+    def get_success_url(self):
+        # Try to retrieve the selected_instance (id) from the session
+        if hasattr(self.request, 'session'):
+            if 'instance_id' in self.request.session:
+                instance_id = self.request.session['instance_id']
+                # redirect to the manage root access link....
+                return reverse('horizon:project:database:manage_root',
+                               args=(instance_id,))
+
+        msg = _('A problem occurred trying to launch Manage Root Access.')
+        messages.error(self.request, msg)
+
+        logging.error("%s: Unable to launch into manage root function "
+                      "because the selected instance ID was not found "
+                      "on the session.")
+
+        # We were not able to retrieve the instance_id the
+        # user just selected.  Display the message, and redirect the user
+        # to the list of instances.
         return build_db_url('?tab=database_page__instances')
 
 

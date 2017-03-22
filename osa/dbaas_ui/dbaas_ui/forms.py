@@ -1091,9 +1091,7 @@ class CreateUserForm(forms.SelfHandlingForm):
     def clean(self):
         cleaned_data = super(CreateUserForm, self).clean()
 
-        instance = cleaned_data['instance']
-
-        if not instance:
+        if 'instance' not in cleaned_data:
             msg = _("Select the instance on which to create the user.")
             self._errors['instance'] = self.error_class([msg])
 
@@ -1395,6 +1393,45 @@ class DeleteDatabaseForm(forms.SelfHandlingForm):
         messages.success(request, msg)
 
         # We are successful -- store away the instance_id onto the session
+        # so that we can correctly update our view.
+        if hasattr(request, 'session'):
+            request.session['instance_id'] = instance_id
+
+        return True
+
+
+class ManageRootNoContextForm(forms.SelfHandlingForm):
+    # This form is used to prompt the user for a context on which the user
+    # wants to manage rooot access.  The form shows the list of instances and
+    # prompts the user to select an instance.  Once an instance is selected,
+    # the handle method places the selected instance id on the session where
+    # the ManageRootNoContextView can retrieve it (in get_success_url) to
+    # open the Manage Root Access panel.
+    instance = forms.ChoiceField(
+        label=_("Instance"),
+        required=True)
+
+    def __init__(self, request, *args, **kwargs):
+        super(ManageRootNoContextForm, self).__init__(request, *args, **kwargs)
+
+        # Restrict list of instances to those on which the root user can be
+        # enabled.
+        sts = ("ACTIVE",)
+        choices = create_instance_choices(request, sts)
+
+        self.fields['instance'].choices = choices
+
+    def clean(self):
+        instance = self.data['instance']
+
+        if not instance:
+            msg = _("Select an instance on which to manage root access.")
+            self._errors['instance'] = self.error_class([msg])
+
+    def handle(self, request, data):
+        instance_id = data['instance']
+
+        # Just store away the instance_id onto the session
         # so that we can correctly update our view.
         if hasattr(request, 'session'):
             request.session['instance_id'] = instance_id

@@ -82,6 +82,14 @@ urlpatterns = patterns(
     url(r'^(?P<database_id>[^/]+)/delete_database/$',
         views.DeleteDatabaseView.as_view(), name='delete_database'),
 
+    url(r'^(?P<instance_id>[^/]+)/manage_root/$',
+        views.ManageRootView.as_view(), name='manage_root'),
+    # When we have no context (no instance id) for managing root,
+    # we'll call a different 'view' to prompt the user on which
+    # instance to manage root.
+    url(r'^manage_root',
+        views.ManageRootNoContextView.as_view(), name='manage_root'),
+
     # URLs to details views
     url(r'^(?P<instance_id>[^/]+)/instance/$',
         views.InstanceDetailsView.as_view(), name='instance_details'),
