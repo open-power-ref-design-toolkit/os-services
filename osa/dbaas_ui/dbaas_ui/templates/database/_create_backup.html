@@ -3,6 +3,12 @@
 
 {% block modal-body-right %}
   <p>{% trans "Specify a backup name and description, and select the instance to back up." %}</p>
+  <p>
+    {% blocktrans trimmed %}
+      <strong>Note:</strong> You can perform an incremental backup by specifying a parent backup.
+      If the database does not support incremental backup, the operation will result in an error."
+    {% endblocktrans  %}
+  </p>
  <div style="background:white;margin: auto 30px;">
   {% block tg1_t1_icon %}
      <img class="splash-logo" src="{{ STATIC_URL }}/dashboard/img/venn-diagram_128.png">

@@ -828,6 +828,10 @@ class CreateBackupForm(forms.SelfHandlingForm):
         label=_("Instance"),
         required=True)
 
+    parent = forms.ChoiceField(label=_("Parent Backup"),
+                               required=False,
+                               help_text=_("Optional parent backup"))
+
     def __init__(self, request, *args, **kwargs):
         super(CreateBackupForm, self).__init__(request, *args, **kwargs)
 
@@ -849,6 +853,12 @@ class CreateBackupForm(forms.SelfHandlingForm):
             self.fields['instance'].initial = instID
             self.fields['instance'].widget.attrs['readonly'] = True
 
+        # at this point, allow any backup to be a parent
+        sts = None
+        parent_choices = create_backup_choices(request)
+
+        self.fields['parent'].choices = parent_choices
+
     def clean(self):
         instance = self.data['instance']
 
@@ -869,7 +879,8 @@ class CreateBackupForm(forms.SelfHandlingForm):
         try:
             trove_api.trove.backup_create(request, data['name'],
                                           selected_instance,
-                                          data['description'])
+                                          data['description'],
+                                          data['parent'])
         except Exception as e:
             failure_message = ("Attempt to create backup %(backup_name)s of"
                                " instance %(instance_name)s was not"
