@@ -1,7 +1,7 @@
 diff -Naur a/etc/ansible/roles/os_trove/defaults/main.yml b/etc/ansible/roles/os_trove/defaults/main.yml
---- a/etc/ansible/roles/os_trove/defaults/main.yml	2017-02-09 17:35:31.376453122 -0600
-+++ b/etc/ansible/roles/os_trove/defaults/main.yml	2017-02-09 17:30:39.378561757 -0600
-@@ -54,9 +54,9 @@
+--- a/etc/ansible/roles/os_trove/defaults/main.yml	2017-03-24 01:54:07.255511912 -0400
++++ b/etc/ansible/roles/os_trove/defaults/main.yml	2017-03-24 01:52:12.423509859 -0400
+@@ -54,15 +54,18 @@
  trove_service_adminurl: "{{ trove_service_adminuri_proto }}://{{ internal_lb_vip_address }}:{{ trove_service_port }}/v1.0/%(tenant_id)s"
  trove_auth_url: "{{ keystone_service_internalurl }}"
  trove_nova_compute_url: "{{ trove_service_internaluri_proto }}://{{ internal_lb_vip_address }}:{{ nova_service_port }}/v2.1"
@@ -13,25 +13,28 @@ diff -Naur a/etc/ansible/roles/os_trove/defaults/main.yml b/etc/ansible/roles/os
 +trove_neutron_url: "{{ trove_service_internaluri_proto }}://{{ internal_lb_vip_address }}:{{ neutron_service_port }}/"
  trove_profiler_enabled: false
  
- # If ``trove_api_workers`` is unset the system will use half the number of
-@@ -64,6 +64,9 @@
- # trove_api_workers: 16
- # trove_api_workers: 16
- 
-+## Cap the maximun number of threads / workers when a user value is unspecified.
-+trove_api_threads_max: 16
+-# If ``trove_api_workers`` is unset the system will use half the number of
+-# available VCPUS to compute the number of api workers to use.
+-# trove_api_workers: 16
+-# trove_api_workers: 16
++## Cap the maximum number of threads / workers when a user value is unspecified.
++trove_api_workers_max: 16
++trove_api_workers: "{{ [[ansible_processor_vcpus|default(2) // 2, 1] | max, trove_api_workers_max] | min }}"
 +
++## Cap the maximum number of threads / workers when a user value is unspecified.
++trove_conductor_workers_max: 16
++trove_conductor_workers: "{{ [[ansible_processor_vcpus|default(2) // 2, 1] | max, trove_conductor_workers_max] | min }}"
+ 
  # Name of the virtual env to deploy into
  trove_venv_tag: untagged
- trove_bin: "/openstack/venvs/trove-{{ trove_venv_tag }}/bin"
 @@ -88,7 +91,9 @@
  trove_apache_servertokens: "Prod"
  trove_apache_serversignature: "Off"
  trove_wsgi_threads: 1
 -trove_wsgi_processes: "{{ ansible_processor_vcpus | default (1) * 2 }}"
-+## Cap the maximun number of threads / workers when a user value is unspecified.
++## Cap the maximum number of processes when a user value is unspecified.
 +trove_wsgi_processes_max: 32
-+trove_wsgi_processes: "{{ [ansible_processor_vcpus|default(1) * 2, trove_wsgi_processes_max] | min }}"
++trove_wsgi_processes: "{{ [[ansible_processor_vcpus|default(1), 1] | max * 2, trove_wsgi_processes_max] | min }}"
  
  # set trove_ssl to true to enable SSL configuration on the trove containers
  trove_ssl: false
