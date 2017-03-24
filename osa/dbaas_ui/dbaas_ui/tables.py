@@ -192,6 +192,19 @@ class CreateBackupLink(tables.LinkAction):
         else:
             return request.user.has_perm('openstack.services.object-store')
 
+    def get_link_url(self, datum=None):
+        instance_id = None
+        if 'instance_id' in self.table.kwargs:
+            instance_id = self.table.kwargs['instance_id']
+        else:
+            instance_id = self.table.get_object_id(datum)
+
+        if instance_id:
+            url = reverse(self.url, args=[instance_id])
+        else:
+            url = reverse(self.url)
+        return url
+
 
 class CreateDatabaseLink(tables.LinkAction):
     name = "create_database"
@@ -596,3 +609,33 @@ class ManageRootTable(tables.DataTable):
         name = "manage_root"
         verbose_name = _("Manage Root")
         row_actions = (EnableRootAction, DisableRootAction,)
+
+
+class InstanceBackupsTable(tables.DataTable):
+    name = tables.Column("name",
+                         link="horizon:project:database:backup_details",
+                         verbose_name=_("Name"))
+    created = tables.Column("created", verbose_name=_("Created"),
+                            filters=[filters.parse_isotime])
+    location = tables.Column(lambda obj: _("Download"),
+                             link=lambda obj: obj.locationRef,
+                             verbose_name=_("Backup File"))
+    incremental = tables.Column(is_incremental,
+                                verbose_name=_("Incremental"),
+                                filters=(d_filters.yesno,
+                                         d_filters.capfirst))
+
+    # TODO(jdwald):  Need some investigation.  Due to tabbed interface,
+    #                the dynamic update of the status column is not working.
+    status = tables.Column("status",
+                           verbose_name=_("Status"),
+                           status=True,
+                           status_choices=BACKUPS_STATUS_CHOICES,
+                           display_choices=BACKUPS_STATUS_DISPLAY_CHOICES)
+
+    class Meta(object):
+        name = "backups"
+        verbose_name = _("Backups")
+        status_columns = ["status"]
+        table_actions = (GenericFilterAction, CreateBackupLink)
+        row_actions = (RestoreFromBackupLink, DeleteBackupLink,)
