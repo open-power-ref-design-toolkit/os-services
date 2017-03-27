@@ -60,7 +60,8 @@ class InstancesTab(tabs.TableTab):
     name = _("Instances")
     slug = "instances"
     table_classes = (tables.InstancesTable,)
-    template_name = "project/database/_instances_tab.html"
+    template_name = "horizon/common/_detail_table.html"
+    preload = False
 
     def has_more_data(self, table):
         return self._more
@@ -104,7 +105,8 @@ class BackupsTab(tabs.TableTab):
     name = _("Backups")
     slug = "backups"
     table_classes = (tables.BackupsTable,)
-    template_name = "project/database/_backups_tab.html"
+    template_name = "horizon/common/_detail_table.html"
+    preload = False
 
     def _get_extra_data(self, backup):
         """Apply extra info to the backup."""
@@ -231,6 +233,29 @@ class UserTab(tabs.TableTab):
         return tables.has_user_add_perm(request)
 
 
+class InstanceBackupsTab(tabs.TableTab):
+    table_classes = [tables.InstanceBackupsTable]
+    name = _("Backups")
+    slug = "instance_backups_tab"
+    instance = None
+    template_name = "horizon/common/_detail_table.html"
+    preload = False
+
+    def get_backups_data(self):
+        instance = self.tab_group.kwargs['instance']
+
+        # retrieve backups for the selected instance
+        backups = []
+        try:
+            backups = trove_api.trove.instance_backups(self.request,
+                                                       instance.id)
+        except Exception:
+            msg = _('Unable to retrieve list of backups for '
+                    'instance: %s.', instance.name)
+            exceptions.handle(self.request, msg)
+        return backups
+
+
 class DatabaseTab(tabs.TableTab):
     table_classes = [tables.DatabaseTable]
     name = _("Databases")
@@ -257,4 +282,4 @@ class DatabaseTab(tabs.TableTab):
 
 class InstanceDetailsTabs(tabs.TabGroup):
     slug = "instance_details"
-    tabs = (InstanceOverviewTab, UserTab, DatabaseTab,)
+    tabs = (InstanceOverviewTab, UserTab, DatabaseTab, InstanceBackupsTab)
