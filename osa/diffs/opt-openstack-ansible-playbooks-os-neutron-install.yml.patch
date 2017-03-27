@@ -1,6 +1,6 @@
 diff -Naur a/opt/openstack-ansible/playbooks/os-neutron-install.yml b/opt/openstack-ansible/playbooks/os-neutron-install.yml
---- a/opt/openstack-ansible/playbooks/os-neutron-install.yml	2017-01-21 12:25:28.255586767 -0500
-+++ b/opt/openstack-ansible/playbooks/os-neutron-install.yml	2017-01-21 12:25:04.163586336 -0500
+--- a/opt/openstack-ansible/playbooks/os-neutron-install.yml	2017-03-24 09:21:25.831991823 -0400
++++ b/opt/openstack-ansible/playbooks/os-neutron-install.yml	2017-03-24 09:09:57.775979520 -0400
 @@ -19,6 +19,33 @@
    max_fail_percentage: 20
    user: root
@@ -32,10 +32,10 @@ diff -Naur a/opt/openstack-ansible/playbooks/os-neutron-install.yml b/opt/openst
 +        - not is_metal | bool
 +      tags:
 +        - disable_ipv6
-     - include: common-tasks/os-lxc-container-setup.yml
-       static: no
+     - include: common-tasks/dynamic-address-fact.yml
        vars:
-@@ -28,11 +55,15 @@
+         network_address: "tunnel_address"
+@@ -31,11 +58,15 @@
              mount_path: "/lib/modules"
          extra_container_config:
            - "lxc.cgroup.devices.allow=a *:* rmw"
