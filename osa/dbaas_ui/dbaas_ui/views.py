@@ -41,8 +41,12 @@ def build_db_url(target_tab):
 
 
 def build_instance_details_url(instance_id, target_tab=None):
-    return reverse('horizon:project:database:instance_details',
-                   args=(instance_id,)) + target_tab
+    if target_tab:
+        return reverse('horizon:project:database:instance_details',
+                       args=(instance_id,)) + target_tab
+    else:
+        return reverse('horizon:project:database:instance_details',
+                       args=(instance_id,))
 
 
 class IndexView(baseTabs.TabView):
@@ -381,6 +385,14 @@ class EnableRootInfo(object):
         self.password = password
 
 
+class DBAccess(object):
+    # this class holds the access the user has for a database
+    # (database name, database access)
+    def __init__(self, name, access):
+        self.name = name
+        self.access = access
+
+
 class ManageRootView(baseTables.DataTableView):
     # The purpose of this view is to open a dialog showing the enablement of
     # of the superuser profile (root) on the selected instance.  The user can
@@ -398,7 +410,7 @@ class ManageRootView(baseTables.DataTableView):
             instance = trove_api.trove.instance_get(self.request, instance_id)
         except Exception:
             redirect = build_instance_details_url(
-                self.request.session['instance_id'],)
+                instance_id,)
 
             exceptions.handle(self.request,
                               _('Unable to retrieve instance details.'),
@@ -409,10 +421,10 @@ class ManageRootView(baseTables.DataTableView):
             enabled = trove_api.trove.root_show(self.request, instance_id)
         except Exception:
             redirect = build_instance_details_url(
-                self.request.session['instance_id'],)
+                instance_id,)
             exceptions.handle(self.request,
-                              _('Unable to determine if instance root '
-                                'is enabled.'),
+                              _('Unable to determine if root is enabled '
+                                'on the selected instance.'),
                               redirect=redirect)
 
         # Build a 'root enabled' object to get added to the table
@@ -430,6 +442,94 @@ class ManageRootView(baseTables.DataTableView):
         return context
 
 
+class ManageUserView(baseTables.DataTableView):
+    table_class = project_tables.ManageUserDBTable
+    template_name = 'project/database/manage_user.html'
+    # We don't have the instance name on which the user is
+    # being managed. Set the title based on the user passed
+    # in, and we'll try to override it later.
+    page_title = _("Database Access for: {{ user_name }}")
+
+    @memoized.memoized_method
+    def get_data(self):
+        __method__ = "views.ManageUserView.get_data"
+        instance_id = self.kwargs['instance_id']
+        user_name = self.kwargs['user_name']
+        instance = None
+
+        # Retrieve the instance (so we can update the page title)
+        try:
+            instance = trove_api.trove.instance_get(self.request, instance_id)
+            # Now that we have the instance, override the title
+            self.page_title = ("Database Access for: %(user_name)s on "
+                               "%(instance_name)s" % {'user_name':
+                                                      user_name,
+                                                      'instance_name':
+                                                      instance.name})
+        except Exception as e:
+            # log the error, but don't externalize it.  Just proceed with the
+            # page title as it is.
+            logging.error("%s: Exception trying to retrieve the selected "
+                          "instance %s.  The exception "
+                          " is: %s", __method__, instance_id, e)
+
+        # Retrieve the databases defined on the instance
+        try:
+            databases = trove_api.trove.database_list(self.request,
+                                                      instance_id)
+        except Exception as e:
+            # Without the databases, we can't continue with this function
+            logging.error("Exception trying to retrieve the list of databases"
+                          " for instance %s.  The exception "
+                          " is: %s", __method__, instance_id, e)
+
+            databases = []
+            # Redirect to the users tab for the instance
+            redirect = build_instance_details_url(
+                instance_id, '?tab=instance_details__users_tab')
+
+            exceptions.handle(self.request,
+                              _('Unable to retrieve databases.'),
+                              redirect=redirect)
+
+        # Retrieve the databases the user has access to
+        try:
+            granted = trove_api.trove.user_list_access(
+                self.request, instance_id, user_name)
+        except Exception:
+            # Without the list of databases the user has access to,
+            # we can't continue with this function
+            logging.error("Exception trying to retrieve the list of databases"
+                          " the user has access to on instance %s.  The"
+                          " exception is: %s", __method__, instance_id, e)
+
+            granted = []
+            # Redirect to the users tab for the instance
+            redirect = build_instance_details_url(
+                instance_id, '?tab=instance_details__users_tab')
+
+            exceptions.handle(self.request,
+                              _('Unable to retrieve accessible databases.'),
+                              redirect=redirect)
+
+        db_access_list = []
+        for database in databases:
+            if database in granted:
+                access = True
+            else:
+                access = False
+
+            db_access = DBAccess(database.name, access)
+            db_access_list.append(db_access)
+
+        return sorted(db_access_list, key=lambda data: (data.name))
+
+    def get_context_data(self, **kwargs):
+        context = super(ManageUserView, self).get_context_data(**kwargs)
+        context["db_access"] = self.get_data()
+        return context
+
+
 class ManageRootNoContextView(forms.ModalFormView):
     # The purpose of this view is to prompt the user for the context
     # on which manage root access should be done
@@ -442,19 +542,6 @@ class ManageRootNoContextView(forms.ModalFormView):
     success_url = reverse_lazy('horizon:project:database:index')
     page_title = _("Manage Root Access")
 
-    def get_initial(self):
-        if "instance_id" in self.kwargs:
-            return {'instance_id': self.kwargs['instance_id']}
-        else:
-            return
-
-    def get_context_data(self, **kwargs):
-        context = super(ManageRootNoContextView,
-                        self).get_context_data(**kwargs)
-        context["instance_id"] = kwargs.get("instance_id")
-        self._instance = context['instance_id']
-        return context
-
     def get_success_url(self):
         # Try to retrieve the selected_instance (id) from the session
         if hasattr(self.request, 'session'):
@@ -464,10 +551,50 @@ class ManageRootNoContextView(forms.ModalFormView):
                 return reverse('horizon:project:database:manage_root',
                                args=(instance_id,))
 
+        # We did not have the required information to allow user to
+        # manage root access.
         msg = _('A problem occurred trying to launch Manage Root Access.')
         messages.error(self.request, msg)
 
         logging.error("%s: Unable to launch into manage root function "
+                      "because the selected instance ID was not found "
+                      "on the session.")
+
+        # We were not able to retrieve the instance_id the
+        # user just selected.  Display the message, and redirect the user
+        # to the list of instances.
+        return build_db_url('?tab=database_page__instances')
+
+
+class ManageUserNoContextView(forms.ModalFormView):
+    # The purpose of this view is to prompt the user for the context
+    # on which manage user access should be done
+    template_name = 'project/database/manage_user_no_context.html'
+    modal_header = _("Manage User Access")
+    form_id = "manage_user_no_context_form"
+    form_class = project_forms.ManageUserNoContextForm
+    submit_label = _("Manage User Access")
+    submit_url = reverse_lazy("horizon:project:database:manage_user")
+    success_url = reverse_lazy('horizon:project:database:index')
+    page_title = _("Manage User Access")
+
+    def get_success_url(self):
+        # Try to retrieve the selected user and instance (id) from the session
+        if hasattr(self.request, 'session'):
+            if ('instance_id' in self.request.session and
+                    'user' in self.request.session):
+                instance_id = self.request.session['instance_id']
+                user = self.request.session['user']
+                # redirect to the manage root access link....
+                return reverse('horizon:project:database:manage_user',
+                               args=(instance_id, user))
+
+        # We did not have the required information to allow user to
+        # manage user access
+        msg = _('A problem occurred trying to launch Manage User Access.')
+        messages.error(self.request, msg)
+
+        logging.error("%s: Unable to launch into manage user function "
                       "because the selected instance ID was not found "
                       "on the session.")
 

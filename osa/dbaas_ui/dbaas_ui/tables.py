@@ -15,13 +15,18 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.template import defaultfilters as d_filters
 
+from django.utils import http
 from django.utils.translation import pgettext_lazy
 from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ungettext_lazy
 
 from horizon import messages
 from horizon import tables
 from horizon.templatetags import sizeformat
 from horizon.utils import filters
+
+import six.moves.urllib.parse as urlparse
+
 from trove_dashboard import api as trove_api
 
 
@@ -292,6 +297,117 @@ class RestoreFromBackupLink(tables.LinkAction):
     def get_link_url(self, datum):
         url = reverse(self.url)
         return url + '?backup=%s' % datum.id
+
+
+def parse_host_param(request):
+    # Retrieve the host from the request
+    host = None
+    if request.META.get('QUERY_STRING', ''):
+        param = urlparse.parse_qs(request.META.get('QUERY_STRING'))
+        values = param.get('host')
+        if values:
+            host = next(iter(values), None)
+    return host
+
+
+class GrantDBAccess(tables.BatchAction):
+    # Allowed when the database indicates the user has no access
+    # to the database.  This function grants the user access to the
+    # database.
+    # Note that this action requires no end-user interaction -- once
+    # the user selects this table action, it just runs.
+    name = "grant_access"
+    classes = ('btn-grant-access')
+
+    @staticmethod
+    def action_present(count):
+        return ungettext_lazy(
+            u"Grant Access",
+            u"Grant Access",
+            count
+        )
+
+    @staticmethod
+    def action_past(count):
+        return ungettext_lazy(
+            u"Granted Access to",
+            u"Granted Access to",
+            count
+        )
+
+    def allowed(self, request, instance=None):
+        if instance:
+            return not instance.access
+        return False
+
+    def action(self, request, obj_id):
+        trove_api.trove.user_grant_access(
+            request,
+            self.table.kwargs['instance_id'],
+            self.table.kwargs['user_name'],
+            [obj_id],
+            host=parse_host_param(request))
+
+
+class RevokeDBAccess(tables.BatchAction):
+    # Allowed when the database indicates the user has access to the database.
+    # This function revokes the user access to the database on the
+    # instance.
+    # Note that this action requires no end-user interaction -- once the
+    # user selects this table action, it just runs.
+    name = "revoke_access"
+    classes = ('btn-revoke-access')
+
+    @staticmethod
+    def action_present(count):
+        return ungettext_lazy(
+            u"Revoke Access",
+            u"Revoke Access",
+            count
+        )
+
+    @staticmethod
+    def action_past(count):
+        return ungettext_lazy(
+            u"Access Revoked to",
+            u"Access Revoked to",
+            count
+        )
+
+    def allowed(self, request, instance=None):
+        if instance:
+            return instance.access
+        return False
+
+    def action(self, request, obj_id):
+        trove_api.trove.user_revoke_access(
+            request,
+            self.table.kwargs['instance_id'],
+            self.table.kwargs['user_name'],
+            obj_id,
+            host=parse_host_param(request))
+
+
+class ManageUserDBAccess(tables.LinkAction):
+    name = "manage_user_db_access"
+    verbose_name = _("Manage Access")
+    url = "horizon:project:database:manage_user"
+    icon = "pencil"
+
+    def allowed(self, request, instance=None):
+        instance = self.table.kwargs['instance']
+        return (instance and instance.status in 'ACTIVE' and
+                has_user_add_perm(request))
+
+    def get_link_url(self, datum):
+        user = datum
+        url = reverse(self.url, args=[user.instance.id,
+                                      user.name])
+        if user.host:
+            params = http.urlencode({"host": user.host})
+            url = "?".join([url, params])
+
+        return url
 
 
 class ManageRootLink(tables.LinkAction):
@@ -574,7 +690,7 @@ class UsersTable(tables.DataTable):
         name = "users"
         verbose_name = _("Users")
         table_actions = (CreateUserLink, GenericFilterAction,)
-        row_actions = (DeleteUserLink,)
+        row_actions = (ManageUserDBAccess, DeleteUserLink,)
 
     def get_object_id(self, datum):
         return datum.name
@@ -609,6 +725,22 @@ class ManageRootTable(tables.DataTable):
         name = "manage_root"
         verbose_name = _("Manage Root")
         row_actions = (EnableRootAction, DisableRootAction,)
+
+
+class ManageUserDBTable(tables.DataTable):
+    dbname = tables.Column("name", verbose_name=_("Database Name"))
+    access = tables.Column(
+        "access",
+        verbose_name=_("Accessible"),
+        filters=(d_filters.yesno, d_filters.capfirst))
+
+    class Meta(object):
+        name = "access"
+        verbose_name = _("Database Access")
+        row_actions = (GrantDBAccess, RevokeDBAccess)
+
+    def get_object_id(self, datum):
+        return datum.name
 
 
 class InstanceBackupsTable(tables.DataTable):
