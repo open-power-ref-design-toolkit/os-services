@@ -77,6 +77,7 @@ SWIFT_NORMAL_INPUT_DICT = {
         'swift-metadata': [
             {
                 'hostname': 'swiftmetadata1',
+                'template': 'swift-metadata',
                 'openstack-mgmt-addr': '1.2.3.5',
                 'domain-settings': {
                     'account-ring-disks': [
@@ -95,6 +96,7 @@ SWIFT_NORMAL_INPUT_DICT = {
         'swift-object': [
             {
                 'hostname': 'swiftobject1',
+                'template': 'swift-object',
                 'openstack-mgmt-addr': '1.2.3.6',
                 'domain-settings': {
                     'object-ring-disks': [
@@ -106,6 +108,7 @@ SWIFT_NORMAL_INPUT_DICT = {
             },
             {
                 'hostname': 'swiftobject2',
+                'template': 'swift-object',
                 'openstack-mgmt-addr': '1.2.3.7',
                 'domain-settings': {
                     'object-ring-disks': [
@@ -117,6 +120,7 @@ SWIFT_NORMAL_INPUT_DICT = {
             },
             {
                 'hostname': 'swiftobject3',
+                'template': 'swift-object',
                 'openstack-mgmt-addr': '1.2.3.8',
                 'domain-settings': {
                     'object-ring-disks': [
@@ -285,6 +289,35 @@ class TestOFGBasics(unittest.TestCase):
         ofg.gen_dict = inv
         ret = ofg._get_controllers()
         self.assertItemsEqual(ret, ['n1', 'n2', 'n3', 'n4', 'n5', 'n6'])
+
+    def test_get_nodes_for_role(self):
+        ofg = guc.OSAFileGenerator('input-file', 'output-dir')
+
+        # Test with node template name
+        inv = {'nodes': {'mytype': ['n1', 'n2', 'n3', 'n4']}}
+        ofg.gen_dict = inv
+        ret = ofg._get_nodes_for_role('mytype')
+        self.assertItemsEqual(['n1', 'n2', 'n3', 'n4'], ret)
+
+        # Test with no node template found
+        ret = ofg._get_nodes_for_role('mytype2')
+        self.assertEqual(0, len(ret))
+
+        # Test with role
+        inv = {'nodes': {'mytype': ['n1', 'n2', 'n3', 'n4']},
+               'node-templates': {'mytype': {'roles': 'myrole'}}}
+        ofg.gen_dict = inv
+        ret = ofg._get_nodes_for_role('myrole')
+        self.assertItemsEqual(['n1', 'n2', 'n3', 'n4'], ret)
+
+        # Test with role and template. Ensure nodes aren't
+        # listed twice when the node template has a role that matches
+        # its name.
+        inv = {'nodes': {'mytype': ['n1', 'n2', 'n3', 'n4']},
+               'node-templates': {'mytype': {'roles': 'mytype'}}}
+        ofg.gen_dict = inv
+        ret = ofg._get_nodes_for_role('mytype')
+        self.assertItemsEqual(['n1', 'n2', 'n3', 'n4'], ret)
 
 
 class TestCIDRNetworks(unittest.TestCase):
@@ -2625,6 +2658,141 @@ class TestConfigureSwift(unittest.TestCase):
                'node-templates': {'random': {'roles': ['controller']}}}
         ret = self.ofg._get_swift_proxy_hosts()
         self.assertItemsEqual(ret, ['n4', 'n5', 'n6', 'n7'])
+
+    def test_configure_swift_hosts_with_roles(self):
+        ###############################
+        # Test converged meta/object
+        ###############################
+        def gen_converged_node(ip, template):
+            return {'openstack-mgmt-addr': ip,
+                    'hostname': 'hn' + ip,
+                    'template': template,
+                    'domain-settings': {'account-ring-disks': ['disk1'],
+                                        'container-ring-disks': ['disk1'],
+                                        'object-ring-disks': ['disk1']}}
+
+        nt = {'a': {'roles': ['swift-object', 'swift-metadata']},
+              'b': {'roles': ['swift-object', 'swift-metadata']}}
+        nodes = {'a': [gen_converged_node('1', 'a'),
+                       gen_converged_node('2', 'a')],
+                 'b': [gen_converged_node('3', 'b'),
+                       gen_converged_node('4', 'b')]}
+        inv = {'node-templates': nt,
+               'nodes': nodes}
+        self.ofg.gen_dict = inv
+        self.ofg.user_config = {}
+        self.ofg._configure_swift_hosts()
+
+        expected_drives = [{'groups': ['account', 'container', 'default'],
+                            'name': 'disk1'}]
+        sh = self.ofg.user_config['swift_hosts']
+        for x in range(1, 5):
+            drives = sh['hn%s' % x]['container_vars']['swift_vars']['drives']
+            self.assertEqual(expected_drives, drives)
+
+        # Count up the zones
+        zone0 = 0
+        zone1 = 0
+        zone2 = 0
+        for node in self.ofg.user_config['swift_hosts'].values():
+            zone = node['container_vars']['swift_vars']['zone']
+            if zone == 0:
+                zone0 = zone0 + 1
+            elif zone == 1:
+                zone1 = zone1 + 1
+            elif zone == 2:
+                zone2 = zone2 + 1
+        # With 4 nodes we expect 2 nodes in zone 0, and 1 node in zone 1 and 2
+        self.assertEqual(zone0, 2)
+        self.assertEqual(zone1, 1)
+        self.assertEqual(zone2, 1)
+
+        ###############################
+        # Test separate meta/object
+        ###############################
+        def gen_meta_node(ip, template):
+            return {'openstack-mgmt-addr': ip,
+                    'hostname': 'hn' + ip,
+                    'template': template,
+                    'domain-settings': {'account-ring-disks': ['d99'],
+                                        'container-ring-disks': ['d99']}}
+
+        def gen_obj_node(ip, template):
+            return {'openstack-mgmt-addr': ip,
+                    'hostname': 'hn' + ip,
+                    'template': template,
+                    'domain-settings': {'object-ring-disks': ['d4']}}
+
+        nt = {'a': {'roles': ['swift-metadata']},
+              'b': {'roles': ['swift-object']}}
+        nodes = {'a': [gen_meta_node('1', 'a'),
+                       gen_meta_node('2', 'a'),
+                       gen_meta_node('3', 'a'),
+                       gen_meta_node('4', 'a'),
+                       gen_meta_node('5', 'a'),
+                       gen_meta_node('6', 'a')],
+                 'b': [gen_obj_node('7', 'b'),
+                       gen_obj_node('8', 'b'),
+                       gen_obj_node('9', 'b'),
+                       gen_obj_node('10', 'b'),
+                       gen_obj_node('11', 'b'),
+                       gen_obj_node('12', 'b')]}
+        inv = {'node-templates': nt,
+               'nodes': nodes}
+        self.ofg.gen_dict = inv
+        self.ofg.user_config = {}
+        self.ofg._configure_swift_hosts()
+
+        # Validate metadata nodes
+        expected_drives = [{'groups': ['account', 'container'],
+                            'name': 'd99'}]
+        sh = self.ofg.user_config['swift_hosts']
+        for x in range(1, 7):
+            drives = sh['hn%s' % x]['container_vars']['swift_vars']['drives']
+            self.assertEqual(expected_drives, drives)
+
+        # Count up the zones
+        zone0 = 0
+        zone1 = 0
+        zone2 = 0
+        for x in range(1, 7):
+            node = self.ofg.user_config['swift_hosts'].get('hn%s' % x)
+            zone = node['container_vars']['swift_vars']['zone']
+            if zone == 0:
+                zone0 = zone0 + 1
+            elif zone == 1:
+                zone1 = zone1 + 1
+            elif zone == 2:
+                zone2 = zone2 + 1
+        # With 6 nodes we expect 2 nodes each zone
+        self.assertEqual(zone0, 2)
+        self.assertEqual(zone1, 2)
+        self.assertEqual(zone2, 2)
+
+        expected_drives = [{'groups': ['default'],
+                            'name': 'd4'}]
+        sh = self.ofg.user_config['swift_hosts']
+        for x in range(7, 13):
+            drives = sh['hn%s' % x]['container_vars']['swift_vars']['drives']
+            self.assertEqual(expected_drives, drives)
+
+        # Count up the zones
+        zone0 = 0
+        zone1 = 0
+        zone2 = 0
+        for x in range(7, 13):
+            node = self.ofg.user_config['swift_hosts'].get('hn%s' % x)
+            zone = node['container_vars']['swift_vars']['zone']
+            if zone == 0:
+                zone0 = zone0 + 1
+            elif zone == 1:
+                zone1 = zone1 + 1
+            elif zone == 2:
+                zone2 = zone2 + 1
+        # With 6 nodes we expect 2 nodes each zone
+        self.assertEqual(zone0, 2)
+        self.assertEqual(zone1, 2)
+        self.assertEqual(zone2, 2)
 
 
 if __name__ == '__main__':

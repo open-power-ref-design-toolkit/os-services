@@ -163,20 +163,39 @@ def validate_swift(inventory):
     if 'swift' not in reference_architecture:
         return
 
+    _validate_rings_match_roles(inventory)
     converged_metadata_object = _has_converged_metadata_object(inventory)
     separate_metadata_object = _has_separate_metadata_object(inventory)
     if SWIFT_MIN in reference_architecture:
+        # Note this remains a template-only check rather than a role check.
+        # This is because it is valid to add the swift-proxy role to the
+        # template where the swift-proxy will run when doing swift-min hardware
         if 'swift-proxy' in inventory.get('node-templates'):
             msg = ('The swift-proxy node template must not be used with the '
                    'swift-minimum-hardware reference architecture.')
             raise UnsupportedConfig(msg)
+
+        # We must either have the controllers node template or template
+        # with the swift-proxy role
+        roles_to_templates = _get_roles_to_templates(inventory)
+        if 'controllers' not in inventory.get('node-templates') and \
+                'swift-proxy' not in roles_to_templates:
+            msg = ('When the swift-minimum-hardware reference architecture is '
+                   'specified a node template named \'controllers\' must be '
+                   'present, or a node template must have the swift-proxy '
+                   'role.')
+            raise UnsupportedConfig(msg)
         if not converged_metadata_object:
-            msg = ('When the swift-minimum-hardawre reference architecture is '
+            msg = ('When the swift-minimum-hardware reference architecture is '
                    'specified, the account, container, and object rings must '
                    'be converged in the swift-object node template.')
             raise UnsupportedConfig(msg)
     else:
-        if 'swift-proxy' not in inventory.get('node-templates'):
+        roles_to_templates = _get_roles_to_templates(inventory)
+        # In non-swift min hardware configurations the swift proxy must
+        # run on a swift-proxy named template or a template with the
+        # swift-proxy role.
+        if 'swift-proxy' not in roles_to_templates:
             msg = 'The swift-proxy node template was not found.'
             raise UnsupportedConfig(msg)
 
@@ -187,39 +206,97 @@ def validate_swift(inventory):
             raise UnsupportedConfig(msg)
 
 
-def _has_converged_metadata_object(inventory):
-    # Return true only if:
-    # object template and no metadata template
-    # and container, account, and object settings are all on object template
-    swift_meta = inventory['node-templates'].get('swift-metadata')
-    swift_obj = inventory['node-templates'].get('swift-object')
-    if swift_obj and not swift_meta:
-        required_props = {'account-ring-devices',
-                          'container-ring-devices',
-                          'object-ring-devices'}
-        domain_settings = swift_obj.get('domain-settings', {})
-        if required_props.issubset(domain_settings.keys()):
-            return True
+def _validate_rings_match_roles(config):
+    roles_to_templates = _get_roles_to_templates(config)
+    md_rings = {'account-ring-devices',
+                'container-ring-devices'}
+    object_ring = 'object-ring-devices'
 
-    return False
+    # The templates with the metadata role must have the metadata rings
+    md_templates = roles_to_templates.get('swift-metadata', [])
+    for template in md_templates:
+        domain_settings = template.get('domain-settings', {})
+        if not md_rings.issubset(domain_settings.keys()):
+            msg = ('One or more node templates with the swift-metadata role '
+                   'is missing the account and container ring device lists.')
+            raise UnsupportedConfig(msg)
+
+    # The templates with the object role must have the object ring
+    obj_templates = roles_to_templates.get('swift-object', [])
+    for template in obj_templates:
+        domain_settings = template.get('domain-settings', {})
+        if object_ring not in domain_settings:
+            msg = ('One or more node templates with the swift-object role '
+                   'is missing the object ring device list.')
+            raise UnsupportedConfig(msg)
+
+    # Templates with the metadata rings must be in the metadata role set or
+    # the object role set.  Note the "object role set" option
+    # is allowed for backward compatibility for the converged case where
+    # the swift-object template has both metadata and object rings.
+    # Templates with the object ring must have the object role
+    for role, templates in roles_to_templates.iteritems():
+        for template in templates:
+            if template in obj_templates or template in md_templates:
+                continue
+            domain_settings = template.get('domain-settings', {})
+            if not domain_settings:
+                continue
+            if md_rings.issubset(domain_settings.keys()):
+                msg = ('One or more node templates has account and container '
+                       'ring device lists but does not have the '
+                       'swift-metadata or swift-object role.')
+                raise UnsupportedConfig(msg)
+
+            if object_ring in domain_settings:
+                msg = ('One or more node templates has the object ring device '
+                       'list but does not have the swift-object role.')
+                raise UnsupportedConfig(msg)
+
+
+def _has_converged_metadata_object(inventory):
+    roles_to_templates = _get_roles_to_templates(inventory)
+    ring_tmpls = roles_to_templates.get('swift-metadata', [])
+    objs = roles_to_templates.get('swift-object', [])
+    ring_tmpls.extend(objs)
+    required_props = {'account-ring-devices',
+                      'container-ring-devices',
+                      'object-ring-devices'}
+    if not ring_tmpls:
+        return False
+    # Every node must have the required properties
+    for template in ring_tmpls:
+        domain_settings = template.get('domain-settings', {})
+        if not required_props.issubset(domain_settings.keys()):
+            return False
+    return True
 
 
 def _has_separate_metadata_object(inventory):
-    # Return true only if:
-    # both object and metadata templates
-    # metadata has account and container ring config and no object config
-    # object has object but not account and container
-    swift_meta = inventory['node-templates'].get('swift-metadata')
-    swift_obj = inventory['node-templates'].get('swift-object')
-    if swift_obj and swift_meta:
-        required_meta_props = {'account-ring-devices',
-                               'container-ring-devices'}
-        meta_settings = swift_meta.get('domain-settings', {})
-        obj_settings = swift_obj.get('domain-settings', {})
-        if (required_meta_props.issubset(meta_settings.keys()) and
-                'object-ring-devices' in obj_settings.keys()):
-            return True
-    return False
+    roles_to_templates = _get_roles_to_templates(inventory)
+    mds = roles_to_templates.get('swift-metadata', [])
+    objs = roles_to_templates.get('swift-object', [])
+
+    required_meta_props = {'account-ring-devices',
+                           'container-ring-devices'}
+    if not mds:
+        return False
+    if not objs:
+        return False
+
+    for template in mds:
+        domain_settings = template.get('domain-settings', {})
+        if not required_meta_props.issubset(domain_settings.keys()):
+            return False
+        if 'object-ring-devices' in domain_settings:
+            return False
+    for template in objs:
+        domain_settings = template.get('domain-settings', {})
+        if 'object-ring-devices' not in domain_settings:
+            return False
+        if required_meta_props.issubset(domain_settings.keys()):
+            return False
+    return True
 
 
 def validate_ceph(inventory):
