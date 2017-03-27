@@ -219,15 +219,24 @@ class OSAFileGenerator(object):
         if net_vlan:
             br_vlan = net_vlan.get('bridge', 'N/A')
 
+        controllers = self._get_controllers()
+        e_addr = self._get_external_vip_value()
+        if len(controllers) > 1:
+            i_addr = self.gen_dict.get('internal-floating-ipaddr', 'N/A')
+        else:
+            # This is only 1 controller, don't use the external vip, use
+            # the controllers ip addresses for haproxy instead
+            i_addr = controllers[0].get('openstack-mgmt-addr', 'N/A')
+            e_net, e_net_details = self.find_external_network(e_addr,
+                                                              networks)
+            # Now substitute the controllers address
+            e_addr = controllers[0].get(e_net + '-addr', 'N/A')
+
         self.user_config['global_overrides'] = {
             # Set the load balancing addresses
             # They are in the form 1.2.3.4/22, we only need the address here
-            'internal_lb_vip_address':
-                self._get_address(self.gen_dict.get('internal-floating-ipaddr',
-                                                    'N/A')),
-            'external_lb_vip_address':
-                self._get_address(self.gen_dict.get('external-floating-ipaddr',
-                                                    'N/A')),
+            'internal_lb_vip_address': self._get_address(i_addr),
+            'external_lb_vip_address': self._get_address(e_addr),
             'management_bridge': br_mgmt,
         }
 
@@ -777,10 +786,12 @@ class OSAFileGenerator(object):
 
         return ext_intf
 
-    def find_external_interface(self, ext_floating_ip, networks):
-        """Find external interface based on the network address that matches
+    def find_external_network(self, ext_floating_ip, networks):
+        """Find external network based on the network address that matches
            external-floating-ipaddr.
            If not found, return the management network interface.
+
+           Returns: network name, network details
         """
         if ext_floating_ip == 'N/A':
             return None
@@ -790,21 +801,38 @@ class OSAFileGenerator(object):
                 # Check if matching
                 if (netaddr.IPAddress(ext_floating_ip) in
                    netaddr.IPSet([net_details['addr']])):
-                    ext_intf = self.get_network_interface(net_details)
-                    return ext_intf
+                    return net, net_details
 
-        mgmt_network = networks.get('openstack-mgmt', None)
-        ext_intf = mgmt_network.get('eth-port', None)
+        return 'openstack-mgmt', networks.get('openstack-mgmt', None)
+
+    def find_external_interface(self, ext_floating_ip, networks):
+        """Find external interface based on the network address that matches
+           external-floating-ipaddr.
+           If not found, return the management network interface.
+        """
+        if ext_floating_ip == 'N/A':
+            return None
+
+        net, net_details = self.find_external_network(ext_floating_ip,
+                                                      networks)
+        if net_details:
+            ext_intf = self.get_network_interface(net_details)
+        else:
+            mgmt_network = networks.get('openstack-mgmt', None)
+            ext_intf = mgmt_network.get('eth-port', None)
 
         return ext_intf
 
-    def generate_haproxy(self):
-        """Generate user variable file for HAProxy."""
+    def _get_external_vip_value(self):
         external_vip = self.gen_dict.get('external-floating-ipaddr', 'N/A')
         if external_vip != 'N/A' and '/' in external_vip:
             # remove cidr prefix, if exists
             external_vip = external_vip.split('/')[0]
+        return external_vip
 
+    def generate_haproxy(self):
+        """Generate user variable file for HAProxy."""
+        external_vip = self._get_external_vip_value()
         internal_vip = self.gen_dict.get('internal-floating-ipaddr', 'N/A')
         networks = self.gen_dict.get('networks', None)
         mgmt_network = networks.get('openstack-mgmt', None)

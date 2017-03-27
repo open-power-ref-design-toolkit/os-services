@@ -1026,6 +1026,65 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
         self.ofg._configure_global_overrides()
         self.assertEqual({}, self.ofg.user_config)
 
+    def test_find_external_network(self):
+        networks = {
+            'external1': {
+                'addr': '22.33.44.0/22',
+            },
+        }
+
+        # Find external1
+        net, net_details = self.ofg.find_external_network('22.33.44.55',
+                                                          networks)
+        self.assertEqual('external1', net)
+        # Not found
+        net, net_details = self.ofg.find_external_network('111.33.44.55',
+                                                          networks)
+        self.assertEqual('openstack-mgmt', net)
+
+    def test_single_controller(self):
+        self.ofg.gen_dict = {
+            'internal-floating-ipaddr': '11.22.33.44/22',
+            'external-floating-ipaddr': '22.33.44.55/22',
+            'networks': {
+                'external1': {
+                    'addr': '22.33.44.0/22',
+                },
+                'openstack-mgmt': {
+                    'bridge': 'br-mgmt',
+                    'eth-port': 'eth0',
+                    'bridge-port': 'veth-infra'
+                },
+                'openstack-stg': {
+                    'bridge': 'br-stg',
+                    'eth-port': 'eth1',
+                },
+                'openstack-tenant-vxlan': {
+                    'bridge': 'br-vxlan',
+                    'eth-port': 'eth10',
+                },
+                'openstack-tenant-vlan': {
+                    'bridge': 'br-vlan',
+                    'eth-port': 'eth11',
+                }
+            },
+            'nodes': {
+                'controllers': [
+                    {
+                        'hostname': 'host1',
+                        'openstack-mgmt-addr': '11.22.33.44',
+                        'external1-addr': '22.33.44.56',
+                    },
+                ]
+            },
+        }
+        self.ofg._configure_global_overrides()
+        global_overrides = self.ofg.user_config['global_overrides']
+        self.assertEqual('11.22.33.44',
+                         global_overrides['internal_lb_vip_address'])
+        self.assertEqual('22.33.44.56',
+                         global_overrides['external_lb_vip_address'])
+
     def test_networks_not_found(self):
         self.ofg.gen_dict = {
             'network': {  # should be 'networks'
@@ -1323,7 +1382,12 @@ class TestConfigureGlobalOverrides(unittest.TestCase):
                     {
                         'hostname': 'host1',
                         'mgmt-addr': '11.22.33.44',
-                    }
+                    },
+                    {
+                        'hostname': 'host2',
+                        'mgmt-addr': '11.22.33.45',
+                    },
+
                 ]
             },
             'reference-architecture': ['private-compute-cloud']
