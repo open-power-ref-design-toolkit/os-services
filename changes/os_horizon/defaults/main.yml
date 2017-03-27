@@ -49,7 +49,8 @@ horizon_venv_download_url: http://127.0.0.1/venvs/untagged/ubuntu/horizon.tgz
 
 ## System info
 horizon_system_user_name: horizon
-horizon_system_group_name: www-data
+horizon_system_group_name: horizon
+
 horizon_system_shell: /bin/false
 horizon_system_comment: horizon system user
 horizon_system_user_home: "/var/lib/{{ horizon_system_user_name }}"
@@ -114,8 +115,8 @@ horizon_wsgi_threads_max: 16
 horizon_ssl_cert: /etc/ssl/certs/horizon.pem
 horizon_ssl_key: /etc/ssl/private/horizon.key
 horizon_ssl_ca_cert: /etc/ssl/certs/horizon-ca.pem
-horizon_ssl_protocol: "{{ ssl_protocol }}"
-horizon_ssl_cipher_suite: "{{ ssl_cipher_suite }}"
+horizon_ssl_protocol: "{{ ssl_protocol | default('ALL -SSLv2 -SSLv3') }}"
+horizon_ssl_cipher_suite: "{{ ssl_cipher_suite | default('ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:RSA+AESGCM:RSA+AES:!aNULL:!MD5:!DSS') }}"
 # if using a self-signed certificate, set this to true to regenerate it
 horizon_ssl_self_signed_regen: false
 horizon_ssl_self_signed_subject: "/C=US/ST=Texas/L=San Antonio/O=IT/CN={{ horizon_server_name }}/subjectAltName=IP.1={{ external_lb_vip_address }}"
