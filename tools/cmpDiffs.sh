@@ -136,6 +136,7 @@ if [ $num_patches_to_be_copied -eq 0 ] && [ $num_failures -eq 0 ]; then
     echo "It seems there are no patch files to be copied to" $dir2 \
          ". Porting os-services may be complete except probably changing" \
          "the OSA_TAG in bootstrap-osa.sh"
+    exit 0
 fi
 
 cat <<MSG

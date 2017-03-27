@@ -1,7 +1,7 @@
 diff -Naur a/etc/ansible/roles/os_neutron/defaults/main.yml b/etc/ansible/roles/os_neutron/defaults/main.yml
---- a/etc/ansible/roles/os_neutron/defaults/main.yml	2017-03-02 06:30:09.277883485 -0500
-+++ b/etc/ansible/roles/os_neutron/defaults/main.yml	2017-03-02 06:28:05.441881271 -0500
-@@ -458,6 +458,9 @@
+--- a/etc/ansible/roles/os_neutron/defaults/main.yml	2017-03-24 09:21:38.967992058 -0400
++++ b/etc/ansible/roles/os_neutron/defaults/main.yml	2017-03-24 05:04:19.411715977 -0400
+@@ -488,6 +488,9 @@
  # in templates/dhcp_agent.ini.j2 for num_sync_threads.
  # neutron_num_sync_threads: 4
  
