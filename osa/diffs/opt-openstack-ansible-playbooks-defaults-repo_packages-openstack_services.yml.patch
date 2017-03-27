@@ -1,8 +1,8 @@
 diff -Naur a/opt/openstack-ansible/playbooks/defaults/repo_packages/openstack_services.yml b/opt/openstack-ansible/playbooks/defaults/repo_packages/openstack_services.yml
---- a/opt/openstack-ansible/playbooks/defaults/repo_packages/openstack_services.yml	2017-03-07 02:19:31.305339347 -0500
-+++ b/opt/openstack-ansible/playbooks/defaults/repo_packages/openstack_services.yml	2017-03-07 02:13:15.789332632 -0500
+--- a/opt/openstack-ansible/playbooks/defaults/repo_packages/openstack_services.yml	2017-03-24 09:21:25.827991823 -0400
++++ b/opt/openstack-ansible/playbooks/defaults/repo_packages/openstack_services.yml	2017-03-24 05:04:19.407715977 -0400
 @@ -181,3 +181,16 @@
- magnum_git_install_branch: 6c6aa74ccd00a03de361ba681605022fd7e299fc # HEAD of "stable/newton" as of 17.02.2017
+ magnum_git_install_branch: 324c8bcf5bc7f9138a60ff035583fcaf28680463 # HEAD of "stable/newton" as of 03.03.2017
  magnum_git_dest: "/opt/magnum_{{ magnum_git_install_branch | replace('/', '_') }}"
  magnum_git_project_group: magnum_all
 +
