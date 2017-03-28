@@ -121,7 +121,20 @@ neutron_plugin_base:
 neutron_plugin_loaded_base: "{% for plugin in neutron_plugin_base %}{{ plugin }}{% if not loop.last %},{% endif %}{% endfor %}"
 
 # Neutron Plugins
-neutron_plugin_type: ml2.lxb
+# The neutron core plugin (ML2) is defined with neutron_plugin_type,
+# you can not load multiple ML2 plugins as core.
+# Additional ML2 plugins can be loaded with neutron_plugin_types (as list)
+neutron_plugin_type: 'ml2.lxb'
+neutron_plugin_types: []
+neutron_ml2_mechanism_drivers: >-
+  {%- set _var = [] -%}
+  {%- for plugin in [neutron_plugin_type]|union(neutron_plugin_types) -%}
+    {%- if _var.append(neutron_plugins[plugin].mechanisms) -%}{%- endif -%}
+  {%- endfor -%}
+  {%- if neutron_l2_population | bool -%}
+    {%- if _var.append('l2population') -%}{%- endif -%}
+  {%- endif -%}
+  {{ _var | join(',') }}
 
 neutron_plugins:
   ml2.lxb:
@@ -129,7 +142,7 @@ neutron_plugins:
     driver_interface: linuxbridge
     drivers_type: "{{ neutron_ml2_drivers_type }}"
     l2_population: "{{ neutron_l2_population }}"
-    mechanisms: "linuxbridge{% if neutron_l2_population | bool %},l2population{% endif %}"
+    mechanisms: "linuxbridge"
     l3_agent_mode: "legacy"
     plugin_conf_ini_overrides: "{{ neutron_ml2_conf_ini_overrides }}"
     plugin_core: ml2
@@ -139,7 +152,7 @@ neutron_plugins:
     driver_interface: openvswitch
     drivers_type: "{{ neutron_ml2_drivers_type }}"
     l2_population: "{{ neutron_l2_population }}"
-    mechanisms: "openvswitch{% if neutron_l2_population | bool %},l2population{% endif %}"
+    mechanisms: "openvswitch"
     l3_agent_mode: "legacy"
     plugin_conf_ini_overrides: "{{ neutron_ml2_conf_ini_overrides }}"
     plugin_core: ml2
@@ -149,7 +162,7 @@ neutron_plugins:
     driver_interface: openvswitch
     drivers_type: "{{ neutron_ml2_drivers_type }}"
     l2_population: "{{ neutron_l2_population }}"
-    mechanisms: "openvswitch{% if neutron_l2_population | bool %},l2population{% endif %}"
+    mechanisms: "openvswitch"
     l3_agent_mode: "{% if 'nova_compute' in group_names %}dvr{% else %}dvr_snat{% endif %}"
     router_distributed: True
     plugin_conf_ini_overrides: "{{ neutron_ml2_conf_ini_overrides }}"
@@ -169,6 +182,11 @@ neutron_plugins:
     plugin_core: neutron.plugins.nuage.plugin.NuagePlugin
     plugin_ini: plugins/nuage/nuage.ini
     plugin_conf_ini_overrides: "{{ neutron_nuage_conf_ini_overrides }}"
+  ml2.sriov:
+    driver_types: "{{ neutron_ml2_drivers_type }}"
+    mechanisms: "sriovnicswitch"
+    plugin_ini: plugins/ml2/sriov_nic_agent.ini
+    plugin_conf_ini_overrides: "{{ neutron_sriov_nic_agent_ini_overrides }}"
 
 neutron_services:
  neutron-dhcp-agent:
@@ -287,6 +305,15 @@ neutron_services:
    service_rootwrap: rootwrap.d/dhcp.filters
    config_options: "--config-file {{ neutron_conf_dir }}/neutron.conf"
    config_overrides: "{{ neutron_calico_dhcp_agent_ini_overrides }}"
+   config_type: "ini"
+ neutron-sriov-nic-agent:
+   group: neutron_sriov_nic_agent
+   service_name: neutron-sriov-nic-agent
+   service_en: "{{ 'ml2.sriov' in neutron_plugin_types }}"
+   service_conf_path: "{{ neutron_conf_dir }}"
+   service_conf: plugins/ml2/sriov_nic_agent.ini
+   config_options: "--config-file {{ neutron_conf_dir }}/neutron.conf --config-file {{ neutron_conf_dir }}/plugins/ml2/ml2_conf.ini --config-file {{ neutron_conf_dir }}/plugins/ml2/sriov_nic_agent.ini --log-file=/var/log/neutron/neutron-sriov-nic-agent.log"
+   config_overrides: "{{ neutron_sriov_nic_agent_ini_overrides }}"
    config_type: "ini"
 
 ## Neutron DHCP Agent
@@ -446,8 +473,11 @@ neutron_vxlan_group: "239.1.1.1"
 #   network_types: "vxlan,flat,vlan"
 #   network_vlan_ranges: "vlan:1:1,vlan:1024:1025"
 #   network_vxlan_ranges: "1:1000"
+#   network_sriov_mappings: "vlan:p4p1"
 
 neutron_vxlan_enabled: true
+
+neutron_sriov_excluded_devices: ""
 
 neutron_dhcp_domain: openstacklocal
 # Comma-separated list of DNS servers which will be used by dnsmasq as forwarders.
@@ -557,3 +587,4 @@ neutron_openvswitch_agent_ini_overrides: {}
 neutron_bgp_dragent_ini_overrides: {}
 neutron_calico_dhcp_agent_ini_overrides: {}
 neutron_calico_felix_ini_overrides: {}
+neutron_sriov_nic_agent_ini_overrides: {}
