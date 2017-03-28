@@ -145,6 +145,7 @@ trove_requires_pip_packages:
   - virtualenv
   - virtualenv-tools
   - shade
+  - futures
 
 trove_pip_packages:
   - MySQL-python
