@@ -329,9 +329,17 @@ def retrieve_databases(request, instance_id):
     try:
         all_databases = trove_api.trove.database_list(request, instance_id)
     except Exception as e:
+        # Retrieve the instance so we can display that information on our
+        # error message -- so the user knows which instance is having
+        # issues retrieving database information.
+        instance = retrieve_instance(request, instance_id)
+
         logging.error("%s: Exception retrieving databases for instance %s.  "
-                      "Error is: %s", __method__, instance_id, e)
-        msg = _('Unable to retrieve list of databases.')
+                      "Error is: %s", __method__, instance.name, e)
+
+        msg = ('Unable to retrieve list of databases for '
+               'instance %s.' % instance.name)
+
         exceptions.handle(request, msg)
 
     return all_databases

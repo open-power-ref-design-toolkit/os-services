@@ -8,7 +8,7 @@
             <h4 class="panel-title">
                <a data-toggle="collapse" href="#tg1_tasks" id="tg1">
                   {% block tg1_icon %}
-                     <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/move_24.png">
+                     <img class="splash-logo" width="24px" src="{{ STATIC_URL }}/static/dashboard/img/manage_24.svg">
                   {% endblock %}
 
                   &nbsp;Life-cycle Management:  Deploy and maintain instances
@@ -22,9 +22,10 @@
                      <tr>
                         <td align='center'>
                            {% block tg1_t1_icon %}
-                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/deploy_64.png">
+                              <img class="splash-logo" width="64px" src="{{ STATIC_URL }}/static/dashboard/img/LaunchInstance.svg">
                            {% endblock %}
                            <p style="text-align:left; line-height:1;">Launch Instance
+                           </p>
                         </td>
                      </tr>
                   </table>
@@ -36,116 +37,115 @@
                      <tr>
                         <td align='center'>
                            {% block tg1_t2_icon %}
-                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/insert_64.png">
+                              <img class="splash-logo" width="64px" src="{{ STATIC_URL }}/static/dashboard/img/RestartInstance-17.svg">
                            {% endblock %}
                            <p style="text-align:left; line-height:1;">Restart Instance
+                           </p>
                         </td>
                      </tr>
                   </table>
                </div>
             </a>
-
             <a id="tg1_taskLink3"  href="/project/database/resize_instance" class="ajax-modal" style="width:auto;display:inline-block">
                <div id="tg1_task3_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
                   <table cellpadding="10">
                      <tr>
                         <td align='center'>
                            {% block tg1_t3_icon %}
-                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/run_64.png">
+                              <img class="splash-logo" width="64px" src="{{ STATIC_URL }}/static/dashboard/img/ResizeInstance.svg">
                            {% endblock %}
                            <p style="text-align:left; line-height:1;">Resize Instance
+                           </p>
                         </td>
                      </tr>
                   </table>
                </div>
             </a>
-
             <a id="tg1_taskLink4"  href="/project/database/resize_volume" class="ajax-modal" style="width:auto;display:inline-block">
                <div id="tg1_task4_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
                   <table cellpadding="10">
                      <tr>
                         <td align='center'>
                            {% block tg1_t4_icon %}
-                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/speaker_64.png">
+                              <img class="splash-logo" width="64px" src="{{ STATIC_URL }}/static/dashboard/img/ResizeInstance.svg">
                            {% endblock %}
                            <p style="text-align:left; line-height:1;">Resize Volume
+                           </p>
                         </td>
                      </tr>
                   </table>
                </div>
             </a>
-
             <a id="tg1_taskLink5"  href="/project/database/rename_instance" class="ajax-modal" style="width:auto;display:inline-block">
                <div id="tg1_task5_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
                   <table cellpadding="10">
                      <tr>
                         <td align='center'>
                            {% block tg1_t5_icon %}
-                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/folder_64.png">
+                              <img class="splash-logo" width="64px" src="{{ STATIC_URL }}/static/dashboard/img/EditInstance.svg">
                            {% endblock %}
                            <p style="text-align:left; line-height:1;">Rename Instance
+                           </p>
                         </td>
                      </tr>
                   </table>
                </div>
             </a>
-
             <a id="tg1_taskLink6"  href="/project/database/delete_instance" class="ajax-modal" style="width:auto;display:inline-block">
                <div id="tg1_task6_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
                   <table cellpadding="10">
                      <tr>
                         <td align='center'>
                            {% block tg1_t6_icon %}
-                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/trash_64.png">
+                              <img class="splash-logo" width="64px" src="{{ STATIC_URL }}/static/dashboard/img/DeleteInstance.svg">
                            {% endblock %}
                            <p style="text-align:left; line-height:1;">Delete Instance
+                           </p>
                         </td>
                      </tr>
                   </table>
                </div>
             </a>
-
             <a id="tg1_taskLink7"  href="/project/database/create_database" class="ajax-modal" style="width:auto;display:inline-block;">
                <div id="tg1_task7_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
                   <table cellpadding="10">
                      <tr>
                         <td align='center'>
                            {% block tg1_t7_icon %}
-                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/user_64.png">
+                              <img class="splash-logo" width="64px" src="{{ STATIC_URL }}/static/dashboard/img/CreateDatabase.svg">
                            {% endblock %}
                            <p style="text-align:left; line-height:1;">Create Database
+                           </p>
                         </td>
                      </tr>
                   </table>
                </div>
             </a>
-
             <a id="tg1_taskLink8"  href="/project/database/delete_database" class="ajax-modal" style="width:auto;display:inline-block">
                <div id="tg1_task8_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
                   <table cellpadding="10">
                      <tr>
                         <td align='center'>
                            {% block tg1_t8_icon %}
-                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/trash_64.png">
+                              <img class="splash-logo" width="64px" src="{{ STATIC_URL }}/static/dashboard/img/DeleteDatabase.svg">
                            {% endblock %}
                            <p style="text-align:left; line-height:1;">Delete Database
+                           </p>
                         </td>
                      </tr>
                   </table>
                </div>
             </a>
-
          </div>
       </div>
    </div>
-
    <div class="panel-group" id="section2">
       <div class="panel panel-default">
          <div class="panel-heading">
             <h4 class="panel-title">
                <a data-toggle="collapse" href="#tg2_tasks" id="tg2">
                   {% block tg2_icon %}
-                     <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/save_24.png">
+                     <img class="splash-logo" width="24px" src="{{ STATIC_URL }}/static/dashboard/img/view_24.svg">
                   {% endblock %}
 
                   &nbsp;Availability:  Actions related to backup and recovery
@@ -159,9 +159,10 @@
                      <tr>
                         <td align='center'>
                            {% block tg2_t1_icon %}
-                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/venn-diagram_64.png">
+                              <img class="splash-logo" width="64px" src="{{ STATIC_URL }}/static/dashboard/img/CreateBackup.svg">
                            {% endblock %}
                            <p style="text-align:left; line-height:1;">Create Backup
+                           </p>
                         </td>
                      </tr>
                   </table>
@@ -173,9 +174,10 @@
                      <tr>
                         <td align='center'>
                            {% block tg2_t2_icon %}
-                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/restore_64.png">
+                              <img class="splash-logo" width="64px" src="{{ STATIC_URL }}/static/dashboard/img/LaunchBackup.svg">
                            {% endblock %}
                            <p style="text-align:left; line-height:1;">Restore from Backup
+                           </p>
                         </td>
                      </tr>
                   </table>
@@ -187,9 +189,10 @@
                      <tr>
                         <td align='center'>
                            {% block tg2_t3_icon %}
-                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/trash_64.png">
+                              <img class="splash-logo" width="64px" src="{{ STATIC_URL }}/static/dashboard/img/DeleteBackup.svg">
                            {% endblock %}
                            <p style="text-align:left; line-height:1;">Delete Backup
+                           </p>
                         </td>
                      </tr>
                   </table>
@@ -204,7 +207,7 @@
             <h4 class="panel-title">
                <a data-toggle="collapse" href="#tg3_tasks" id="tg3">
                   {% block tg3_icon %}
-                     <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/secure_24.png">
+                     <img class="splash-logo" width="24px" src="{{ STATIC_URL }}/static/dashboard/img/secure_24.png">
                   {% endblock %}
 
                   &nbsp;Security:  Actions related to managing users and access
@@ -218,9 +221,10 @@
                      <tr>
                         <td align='center'>
                            {% block tg3_t1_icon %}
-                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/user_64.png">
+                              <img class="splash-logo" width="64px" src="{{ STATIC_URL }}/static/dashboard/img/CreateUser.svg">
                            {% endblock %}
                            <p style="text-align:left; line-height:1;">Create User
+                           </p>
                         </td>
                      </tr>
                   </table>
@@ -232,9 +236,10 @@
                      <tr>
                         <td align='center'>
                            {% block tg3_t2_icon %}
-                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/trash_64.png">
+                              <img class="splash-logo" width="64px" src="{{ STATIC_URL }}/static/dashboard/img/DeleteUser.svg">
                            {% endblock %}
                            <p style="text-align:left; line-height:1;">Delete User
+                           </p>
                         </td>
                      </tr>
                   </table>
@@ -246,9 +251,10 @@
                      <tr>
                         <td align='center'>
                            {% block tg3_t3_icon %}
-                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/EnableRoot.svg">
+                              <img class="splash-logo" width="64px" src="{{ STATIC_URL }}/static/dashboard/img/ManageRoot-14.svg">
                            {% endblock %}
                            <p style="text-align:left; line-height:1;">Manage Root Access
+                           </p>
                         </td>
                      </tr>
                   </table>
@@ -260,26 +266,16 @@
                      <tr>
                         <td align='center'>
                            {% block tg3_t4_icon %}
-                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/EnableRoot.svg">
+                              <img class="splash-logo" width="64px" src="{{ STATIC_URL }}/static/dashboard/img/EnableRoot.svg">
                            {% endblock %}
                            <p style="text-align:left; line-height:1;">Manage User Access
+                           </p>
                         </td>
                      </tr>
                   </table>
                </div>
             </a>
-
-
-
          </div>
       </div>
    </div>
-
-
-
-
-
-
-
-
 </div>
