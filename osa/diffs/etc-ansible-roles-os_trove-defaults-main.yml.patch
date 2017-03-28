@@ -1,6 +1,6 @@
 diff -Naur a/etc/ansible/roles/os_trove/defaults/main.yml b/etc/ansible/roles/os_trove/defaults/main.yml
---- a/etc/ansible/roles/os_trove/defaults/main.yml	2017-03-24 01:54:07.255511912 -0400
-+++ b/etc/ansible/roles/os_trove/defaults/main.yml	2017-03-24 01:52:12.423509859 -0400
+--- a/etc/ansible/roles/os_trove/defaults/main.yml	2017-03-28 07:27:29.366049387 -0400
++++ b/etc/ansible/roles/os_trove/defaults/main.yml	2017-03-28 07:08:11.646028685 -0400
 @@ -54,15 +54,18 @@
  trove_service_adminurl: "{{ trove_service_adminuri_proto }}://{{ internal_lb_vip_address }}:{{ trove_service_port }}/v1.0/%(tenant_id)s"
  trove_auth_url: "{{ keystone_service_internalurl }}"
@@ -38,15 +38,16 @@ diff -Naur a/etc/ansible/roles/os_trove/defaults/main.yml b/etc/ansible/roles/os
  
  # set trove_ssl to true to enable SSL configuration on the trove containers
  trove_ssl: false
-@@ -139,6 +144,7 @@
+@@ -139,6 +144,8 @@
    - python-keystoneclient
    - virtualenv
    - virtualenv-tools
 +  - shade
++  - futures
  
  trove_pip_packages:
    - MySQL-python
-@@ -148,6 +154,7 @@
+@@ -148,6 +155,7 @@
    - trove
    - python-troveclient
    - python-memcached
