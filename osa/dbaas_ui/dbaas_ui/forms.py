@@ -238,9 +238,16 @@ def retrieve_users(request, instance_id):
     try:
         all_users = trove_api.trove.users_list(request, instance_id)
     except Exception as e:
+        # Retrieve the instance so we can display that information on our
+        # error message -- so the user knows which instance is having
+        # issues retrieving user information.
+        instance = retrieve_instance(request, instance_id)
+
         logging.error("%s: Exception retrieving users for instance %s.  "
-                      "Error is: %s", __method__, instance_id, e)
-        msg = _('Unable to retrieve list of users.')
+                      "Error is: %s", __method__, instance.name, e)
+
+        msg = ('Unable to retrieve list of users for '
+               'instance %s.' % instance.name)
         exceptions.handle(request, msg)
 
     return all_users
@@ -1413,7 +1420,7 @@ class DeleteDatabaseForm(forms.SelfHandlingForm):
 
 class ManageRootNoContextForm(forms.SelfHandlingForm):
     # This form is used to prompt the user for a context on which the user
-    # wants to manage rooot access.  The form shows the list of instances and
+    # wants to manage root access.  The form shows the list of instances and
     # prompts the user to select an instance.  Once an instance is selected,
     # the handle method places the selected instance id on the session where
     # the ManageRootNoContextView can retrieve it (in get_success_url) to
@@ -1445,6 +1452,40 @@ class ManageRootNoContextForm(forms.SelfHandlingForm):
         # Just store away the instance_id onto the session
         # so that we can correctly update our view.
         if hasattr(request, 'session'):
+            request.session['instance_id'] = instance_id
+
+        return True
+
+
+class ManageUserNoContextForm(forms.SelfHandlingForm):
+    # This form is used to prompt the user for a context on which the user
+    # wants to manage user access.  The form shows the list of instances and
+    # users, and prompts the user to select a user/instance.  Once a
+    # user/instance combination is selected, the handle method places the
+    # selected user/instance id on the session where the
+    # ManageUserNoContextView can retrieve it (in get_success_url) to
+    # open the Manage User Access panel.
+    user = forms.ChoiceField(
+        label=_("User"),
+        required=True)
+
+    def __init__(self, request, *args, **kwargs):
+        super(ManageUserNoContextForm, self).__init__(request, *args, **kwargs)
+
+        # Retireve all users for all instances
+        choices = create_user_choices(request, None, None)
+
+        self.fields['user'].choices = choices
+
+    def handle(self, request, data):
+        # Retrieve the selected user/instance to manage
+        instance_id, user_name = parse_element_and_value_text(
+            self.data['user'])
+
+        # Just store away the user and instance_id onto the session
+        # so that we can correctly update our view.
+        if hasattr(request, 'session'):
+            request.session['user'] = user_name
             request.session['instance_id'] = instance_id
 
         return True

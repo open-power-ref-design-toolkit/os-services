@@ -245,7 +245,7 @@
                   <table cellpadding="10">
                      <tr>
                         <td align='center'>
-                           {% block tg3_t333con %}
+                           {% block tg3_t3_icon %}
                               <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/EnableRoot.svg">
                            {% endblock %}
                            <p style="text-align:left; line-height:1;">Manage Root Access
@@ -254,6 +254,22 @@
                   </table>
                </div>
             </a>
+            <a id="tg3_taskLink4"  href="/project/database/manage_user_no_access" class="ajax-modal" style="width:auto;display:inline-block">
+               <div id="tg3_task4_div_link" style="background:white;margin: auto 30px;" onmouseover="this.style.background='#ebeff5';" onmouseout="this.style.background='white';">
+                  <table cellpadding="10">
+                     <tr>
+                        <td align='center'>
+                           {% block tg3_t4_icon %}
+                              <img class="splash-logo" src="{{ STATIC_URL }}/static/dashboard/img/EnableRoot.svg">
+                           {% endblock %}
+                           <p style="text-align:left; line-height:1;">Manage User Access
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+            </a>
+
+
 
          </div>
       </div>

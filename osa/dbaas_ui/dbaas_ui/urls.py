@@ -72,6 +72,16 @@ urlpatterns = patterns(
     url(r'^(?P<user_id>[^/]+)/delete_user/$',
         views.DeleteUserView.as_view(), name='delete_user'),
 
+    # When managing user access we need both the instance and
+    # the user to be managed
+    url(r'^(?P<instance_id>[^/]+)/(?P<user_name>[^/]+)/manage_user/$',
+        views.ManageUserView.as_view(), name='manage_user'),
+    # When we have no context (no instance id/user) for managing a user,
+    # we'll call a different 'view' to prompt the user on which
+    # instance and which user to manage.
+    url(r'^manage_user',
+        views.ManageUserNoContextView.as_view(), name='manage_user'),
+
     url(r'^create_database',
         views.CreateDatabaseView.as_view(), name='create_database'),
     url(r'^(?P<instance_id>[^/]+)/create_database/$',
