@@ -235,6 +235,7 @@ haproxy_default_services:
   - service:
       haproxy_service_name: trove
       haproxy_backend_nodes: "{{ groups['trove_all'] | default([]) }}"
+      haproxy_ssl: "{{ haproxy_ssl }}"
       haproxy_port: 8779
       haproxy_balance_type: http
       haproxy_backend_options:
