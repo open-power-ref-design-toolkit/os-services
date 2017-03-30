@@ -1,13 +1,14 @@
 diff -Naur a/opt/openstack-ansible/playbooks/vars/configs/haproxy_config.yml b/opt/openstack-ansible/playbooks/vars/configs/haproxy_config.yml
---- a/opt/openstack-ansible/playbooks/vars/configs/haproxy_config.yml	2017-03-02 10:44:41.694156577 -0500
-+++ b/opt/openstack-ansible/playbooks/vars/configs/haproxy_config.yml	2017-03-02 05:54:39.741845406 -0500
-@@ -232,3 +232,12 @@
+--- a/opt/openstack-ansible/playbooks/vars/configs/haproxy_config.yml	2017-03-30 06:50:19.317842110 -0500
++++ b/opt/openstack-ansible/playbooks/vars/configs/haproxy_config.yml	2017-03-30 06:49:44.687196964 -0500
+@@ -232,3 +232,13 @@
        haproxy_balance_type: http
        haproxy_backend_options:
          - "httpchk GET /"
 +  - service:
 +      haproxy_service_name: trove
 +      haproxy_backend_nodes: "{{ groups['trove_all'] | default([]) }}"
++      haproxy_ssl: "{{ haproxy_ssl }}"
 +      haproxy_port: 8779
 +      haproxy_balance_type: http
 +      haproxy_backend_options:
