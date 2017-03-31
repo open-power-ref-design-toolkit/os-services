@@ -15,6 +15,8 @@
 # limitations under the License.
 
 import copy
+from contextlib import contextmanager
+from StringIO import StringIO
 import os
 from os import path
 import sys
@@ -538,12 +540,13 @@ class TestValidateConfig(unittest.TestCase):
                                 test_mod.validate_ops_mgr,
                                 config)
 
+    @mock.patch.object(test_mod, 'validate_propagation_roles')
     @mock.patch.object(test_mod, 'validate_ops_mgr')
     @mock.patch.object(test_mod, 'validate_ceph')
     @mock.patch.object(test_mod, 'validate_swift')
     @mock.patch.object(test_mod, 'validate_reference_architecture')
     @mock.patch.object(test_mod, '_load_yml')
-    def test_validate(self, load, ra, swift, ceph, opsmgr):
+    def test_validate(self, load, ra, swift, ceph, opsmgr, prop):
         file_path = 'path'
         test_mod.validate(file_path)
         load.assert_called_once_with(file_path)
@@ -551,6 +554,7 @@ class TestValidateConfig(unittest.TestCase):
         swift.assert_called_once_with(load.return_value)
         ceph.assert_called_once_with(load.return_value)
         opsmgr.assert_called_once_with(load.return_value)
+        prop.assert_called_once_with(load.return_value)
 
     @mock.patch.object(test_mod, '_get_roles_to_templates')
     @mock.patch.object(test_mod, '_validate_ceph_node_templates')
@@ -790,3 +794,48 @@ class TestValidateConfig(unittest.TestCase):
 
         self.assertRaises(test_mod.InvalidDeviceList,
                           test_mod._validate_devices_lists, osd_tmpls, dk)
+
+    def test_validate_propagation_roles(self):
+        # Test good, non-converged case
+        nts = {'controllers': {'roles': ['solution_keys',
+                                         'solution_inventory']},
+               'compute': {'roles': ['solution_keys',
+                                     'solution_inventory']}}
+        test_mod.validate_propagation_roles({'node-templates': nts})
+        # Test good converged use case with roles
+        nts = {'converged': {'roles': ['solution_keys',
+                                       'solution_inventory']}}
+        test_mod.validate_propagation_roles({'node-templates': nts})
+
+        @contextmanager
+        def capture_stdstreams():
+            cap_out = StringIO()
+            cap_err = StringIO()
+            orig_out = sys.stdout
+            orig_err = sys.stderr
+            try:
+                sys.stdout = cap_out
+                sys.stderr = cap_err
+                yield sys.stdout, sys.stderr
+            finally:
+                sys.stdout = orig_out
+                sys.stderr = orig_err
+
+        # Test deprecation warning with controllers only
+        with capture_stdstreams() as (out, err):
+            nts = {'controllers': {}}
+            test_mod.validate_propagation_roles({'node-templates': nts})
+            self.assertTrue('controllers node template' in out.getvalue())
+
+        # Test deprecation warning with controllers and compute
+        nts = {'controllers': {},
+               'compute': {}}
+        with capture_stdstreams() as (out, err):
+            test_mod.validate_propagation_roles({'node-templates': nts})
+            self.assertTrue('compute node template' in out.getvalue())
+        # Test error case with converged
+        nts = {'converged': {}}
+        self.assertRaisesRegexp(test_mod.UnsupportedConfig,
+                                'No node templates were found',
+                                test_mod.validate_propagation_roles,
+                                {'node-templates': nts})
