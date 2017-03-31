@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2016, 2016 IBM US, Inc.
+# Copyright 2016, 2017 IBM US, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ def validate(file_path):
         validate_swift(inventory)
         validate_ceph(inventory)
         validate_ops_mgr(inventory)
+        validate_propagation_roles(inventory)
     except Exception as ex:
         print ex
         sys.exit(1)
@@ -457,6 +458,40 @@ def validate_ops_mgr(config):
             msg = 'The node template %(template)s is missing network %(net)s'
             raise UnsupportedConfig(msg % {'template': template_name,
                                            'net': required_net})
+
+
+def validate_propagation_roles(config):
+    # Validate the solution_inventory and solution_keys file
+    # propagation roles.
+    r2t = _get_roles_to_templates(config)
+
+    if 'solution_keys' not in r2t or 'solution_inventory' not in r2t:
+        # If the config has controllers but does not have the solution_keys
+        # or solution_inventory roles this is a deprecation warning.
+        # Cluster-genesis will remove support for inventory and ssh key
+        # propagation to controllers and compute groups in a future release.
+        if 'controllers' in r2t:
+            if 'compute' in r2t:
+                msg = ('WARNING: The use of controllers and compute node '
+                       'templates without \'solution_keys\' and '
+                       '\'solution_inventory\' roles is deprecated and will '
+                       'be removed in a future release. Please refer to the '
+                       'config.yml files published with the latest version '
+                       'of the reference design for role usage examples.')
+            else:
+                msg = ('WARNING: The use of the controllers node '
+                       'template without \'solution_keys\' and '
+                       '\'solution_inventory\' roles is deprecated and will '
+                       'be removed in a future release. Please refer to the '
+                       'config.yml files published with the latest version '
+                       'of the reference design for role usage examples.')
+            print msg
+        else:
+            msg = ('No node templates were found with the solution_keys or '
+                   'solution_inventory roles. Please refer to the '
+                   'config.yml files published with the latest version '
+                   'of the reference design for role usage examples.')
+            raise UnsupportedConfig(msg)
 
 
 def _load_yml(name):
