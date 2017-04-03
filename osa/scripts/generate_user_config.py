@@ -383,7 +383,7 @@ class OSAFileGenerator(object):
         if not nodes:
             return
 
-        controllers = nodes.get('controllers', None)
+        controllers = self._get_controllers()
         if not controllers:
             return
 

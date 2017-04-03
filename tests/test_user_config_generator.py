@@ -1908,6 +1908,56 @@ class TestConfigureStorageHosts(unittest.TestCase):
         self.assertIn('storage_hosts', result)
         self.assertEqual({}, result['storage_hosts'])
 
+    def test_with_roles(self):
+        self.ofg.gen_dict = {
+            'nodes': {
+                'a': [
+                    {
+                        'hostname': 'host1',
+                        'openstack-mgmt-addr': '11.22.33.44',
+                    },
+                    {
+                        'hostname': 'host2',
+                        'openstack-mgmt-addr': '55.66.77.88',
+                    }
+                ]
+            },
+            'reference-architecture': ['private-compute-cloud'],
+            'node-templates': {'a': {'roles': ['controller']}}
+        }
+
+        self.ofg._configure_storage_hosts()
+        result = self.ofg.user_config
+
+        self.assertIn('storage_hosts', result)
+        host1 = result['storage_hosts']['host1']
+        host2 = result['storage_hosts']['host2']
+
+        hdd_config = {
+            'volume_driver': 'cinder.volume.drivers.rbd.RBDDriver',
+            'rbd_pool': 'volumes',
+            'rbd_ceph_conf': '/etc/ceph/ceph.conf',
+            'rbd_flatten_volume_from_snapshot': False,
+            'rbd_max_clone_depth': 5,
+            'rbd_store_chunk_size': 4,
+            'rados_connect_timeout': -1,
+            'volume_backend_name': 'ceph',
+            'rbd_user': '{{ cinder_ceph_client }}',
+            'rbd_secret_uuid': '{{ cinder_ceph_client_uuid }}',
+        }
+
+        self.assertEqual('11.22.33.44', host1['ip'])
+        cinder_backend1 = host1['container_vars']['cinder_backends']
+        self.assertEqual('cinder_volume',
+                         cinder_backend1['limit_container_types'])
+        self.assertEqual(hdd_config, cinder_backend1['ceph'])
+
+        self.assertEqual('55.66.77.88', host2['ip'])
+        cinder_backend2 = host2['container_vars']['cinder_backends']
+        self.assertEqual('cinder_volume',
+                         cinder_backend2['limit_container_types'])
+        self.assertEqual(hdd_config, cinder_backend2['ceph'])
+
 
 @mock.patch.object(guc.OSAFileGenerator, '_load_yml')
 @mock.patch.object(guc.OSAFileGenerator, '_configure_cidr_networks')
