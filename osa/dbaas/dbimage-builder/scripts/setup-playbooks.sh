@@ -87,12 +87,18 @@ function validate-playbook-environment {
     # Validate dib only to minimize ssh prompting.  Invoke non-privileged cmd to test the connection
     if [ "$target" == "dib" ]; then
         ansible $target -i inventory $ansible_args -m raw -a ls >/dev/null
-        if [ $? != 0 ]; then
-            echo "Error: dbimage-make.yml failed.  Could not connect to $target"
+    else
+        ansible $target -i inventory $ansible_args -m raw -a "lxc-ls -f" >/dev/null
+    fi
+    if [ $? != 0 ]; then
+        echo "Error: dbimage-make.yml failed.  Could not connect to $target"
+        if [ "$target" == "dib" ]; then
             echo "Did you set one of the following in the file $SCRIPTS_DIR/dbimagerc?"
             echo "export DBIMAGE_DIB_PASSWD=<x>"
             echo "export DBIMAGE_DIB_PRIVATE_SSH_KEY=~/.ssh/<y>"
             return 1
+        else
+            echo "Did you specify the wrong IP address or hostname?"
         fi
     fi
 

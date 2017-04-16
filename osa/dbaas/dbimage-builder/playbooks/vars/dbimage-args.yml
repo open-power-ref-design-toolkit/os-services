@@ -3,7 +3,8 @@
 
 ipAddrDib: "{{ lookup('env', 'DBIMAGE_IPADDR') }}"
 dbName: "{{ lookup('env', 'DBIMAGE_DBNAME') }}"
-dbVersion: "{{ lookup('env', 'DBIMAGE_DBVERSION') }}"
+# Given a Version.Release.Maintenance, trim it to V.R.  Users don't ask for Maintenance levels.
+dbVersion: "{{ '.'.join(lookup('env', 'DBIMAGE_DBVERSION').split('.', 2)[:2]) | default('') }}"
 pkg: "{{ lookup('env', 'DBIMAGE_PKG') }}"
 pkgType: "{{ lookup('env', 'DBIMAGE_PKGTYPE') }}"
 installScript: "{{ lookup('env', 'DBIMAGE_INSTALLSCRIPT') }}"
@@ -14,11 +15,13 @@ baseDir: "{{ lookup('env', 'DBIMAGE_DIR') }}"
 ipAddrController: "{{ lookup('env', 'DBIMAGE_CONTROLLER_IP') }}"
 dibUser: "{{ lookup('env', 'DBIMAGE_DIBUSER') }}"
 dbimageHome: "{{ lookup('env', 'DBIMAGE_HOME') }}"
+communityEdition: "{{ lookup('env', 'DBIMAGE_COMMUNITY_EDITION') | bool }}"
 
 # Environment variables set by the user directed at diskimage-builder
 
 distroName: "{{ lookup('env', 'DISTRO_NAME') | default('') }}"
 dibRelease: "{{ lookup('env', 'DIB_RELEASE') | default('') }}"
+dibDebug: "{{ lookup('env', 'DIB_MYDEBUG') | default('') }}"
 
 # Environment variables set by the user directed at Trove
 
@@ -90,6 +93,9 @@ src_dib_diffs:
 src_trove_diffs:
   - "{{ baseDir }}/diffs/trove/15-reddwarf-dep.patch"
   - "{{ baseDir }}/diffs/trove/trove-guestagent.patch"
+  - "{{ baseDir }}/diffs/trove/trove-mariadb.patch"
+  - "{{ baseDir }}/diffs/trove/trove-mysql.patch"
+  - "{{ baseDir }}/diffs/trove/trove-redis.patch"
 
 src_tripleo_diffs:
 

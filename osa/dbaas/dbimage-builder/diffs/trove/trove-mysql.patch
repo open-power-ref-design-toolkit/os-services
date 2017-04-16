@@ -1,0 +1,59 @@
+diff --git a/integration/scripts/files/elements/ubuntu-mysql/pre-install.d/10-percona-apt-key b/integration/scripts/files/elements/ubuntu-mysql/pre-install.d/10-percona-apt-key
+index d62c605..ea642b9 100755
+--- a/integration/scripts/files/elements/ubuntu-mysql/pre-install.d/10-percona-apt-key
++++ b/integration/scripts/files/elements/ubuntu-mysql/pre-install.d/10-percona-apt-key
+@@ -1,6 +1,6 @@
+ #!/bin/bash
+ 
+-# CONTEXT: GUEST during PRE-CONSTRUCTION as ROOT
++#- CONTEXc: GUEST during PRE-CONSTRUCTION as ROOT
+ # PURPOSE: Setup apt-repo list so that we can connect to Percona's repo
+ 
+ set -e
+@@ -9,6 +9,10 @@ set -o xtrace
+ [ -n "${GUEST_USERNAME}" ] || die "GUEST_USERNAME needs to be set to the user for the guest image"
+ [ -n "${RELEASE}" ] || die "RELEASE must be set to a valid Ubuntu release (e.g. trusty)"
+ 
++if [ "$DIB_MYCOMMUNITY_EDITION" == "false" ]; then
++    exit 0
++fi
++
+ # Add Percona GPG key
+ mkdir -p /home/${GUEST_USERNAME}/.gnupg
+ 
+diff --git a/integration/scripts/files/elements/ubuntu-trusty-mysql/install.d/30-mysql b/integration/scripts/files/elements/ubuntu-trusty-mysql/install.d/30-mysql
+index 887bda2..aeb12f9 100755
+--- a/integration/scripts/files/elements/ubuntu-trusty-mysql/install.d/30-mysql
++++ b/integration/scripts/files/elements/ubuntu-trusty-mysql/install.d/30-mysql
+@@ -15,7 +15,7 @@ export DEBIAN_FRONTEND=noninteractive
+ if [[ $BRANCH_OVERRIDE == "stable/kilo" || $BRANCH_OVERRIDE == "stable/liberty" ]]; then
+     PXB_VERSION_OVERRIDE="-22"
+ fi
+-apt-get --allow-unauthenticated -y install libmysqlclient18 mysql-server-5.6 percona-xtrabackup${PXB_VERSION_OVERRIDE}
++apt-get --allow-unauthenticated -y install libmysqlclient18 mysql-server-$DIB_MYDBVERSION percona-xtrabackup${PXB_VERSION_OVERRIDE}
+ 
+ cat >/etc/mysql/conf.d/no_perf_schema.cnf <<_EOF_
+ [mysqld]
+diff --git a/integration/scripts/files/elements/ubuntu-xenial-mysql/install.d/30-mysql b/integration/scripts/files/elements/ubuntu-xenial-mysql/install.d/30-mysql
+index 75ccdc6..dca16cc 100755
+--- a/integration/scripts/files/elements/ubuntu-xenial-mysql/install.d/30-mysql
++++ b/integration/scripts/files/elements/ubuntu-xenial-mysql/install.d/30-mysql
+@@ -8,10 +8,9 @@ set -o xtrace
+ 
+ export DEBIAN_FRONTEND=noninteractive
+ 
+-add-apt-repository 'deb http://archive.ubuntu.com/ubuntu trusty universe'
+ apt-get -y  update
+ 
+-apt-get --allow-unauthenticated -y install mysql-client-5.6 mysql-server-5.6 percona-xtrabackup${PXB_VERSION_OVERRIDE}
++apt-get --allow-unauthenticated -y install mysql-client-$DIB_MYDBVERSION mysql-server-$DIB_MYDBVERSION percona-xtrabackup${PXB_VERSION_OVERRIDE}
+ 
+ cat >/etc/mysql/conf.d/no_perf_schema.cnf <<_EOF_
+ [mysqld]
+@@ -27,6 +26,5 @@ cat >/etc/mysql/my.cnf <<_EOF_
+ _EOF_
+ 
+ rm /etc/init/mysql.conf
+-systemctl daemon-reload
+ systemctl enable mysql
+ 

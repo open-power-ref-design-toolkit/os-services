@@ -23,7 +23,7 @@ function validate-tar {
     if tar $tarflgs $pkg setup.sh; then
         installScript=setup.sh
     else
-        echo "Tar file must contain a setup.sh file at root" 1>&2
+        echo "Error: tar file must contain a setup.sh file at root" 1>&2
         exit 1
     fi
     return $installScript
@@ -46,36 +46,29 @@ cloudUser=""
 branch=""
 gitUrl=""
 gitTag=""
-distroPkgName=""
-distroPkgVersion=""
-dibUser="ubuntu"
-dataStoreSuffix=""
+communityEdition=false
+dibUser=ubuntu
 
 cmd=$(basename $0)
 
 # These arguments apply to dbimage-make.sh and create-image-vm.sh
-# but not necessarily equally.  User arguments are passed from the
-# front end to the back end, but the former dbimage internally
-# calculates a few extra parms which are passed to the backend
-# such as the distro provided package name and version [-D and -V]
+# which run on different hosts.  They have the same command arguments.
+# Both commands source this file ensuring that there are no command
+# argument errors in the backend when create-image-vm.sh is invoked.
 
 OPTERR=0
 OPTIND=1
-while getopts ":i:d:v:p:u:D:V:b:" opt; do
+while getopts ":i:d:v:p:u:b:c" opt; do
     case "$opt" in
         i) ipAddrDib=$OPTARG
            ;;
         d) dbName=$OPTARG
            ;;
-        D) distroPkgName=$OPTARG
-           ;;
         v) dbVersion=$OPTARG
-           ;;
-        V) distroPkgVersion=$OPTARG
            ;;
         p) pkg=$OPTARG
            if [ ! -e "$pkg" ]; then
-               echo "Package file $pkg does not exist" 1>&2
+               echo "Error: package file $pkg does not exist" 1>&2
                exit 1
            fi
            IFS='.' read -r pkgName pkgType <<< "$pkg"
@@ -93,12 +86,12 @@ while getopts ":i:d:v:p:u:D:V:b:" opt; do
                    if file $pkg | grep -e Debian; then
                        installScript=apt-get
                    else
-                       echo "Invalid Debian package specified (-p $pkg)" 1>&2
+                       echo "Error: invalid Debian package specified (-p $pkg)" 1>&2
                        exit 1
                    fi
                    ;;
                *)
-                   echo "Unsupported package type $pkgType.  Must be one of tar, tgz, bz2, deb" 1>&2
+                   echo "Error: unsupported package type $pkgType.  Must be one of tar, tgz, bz2, deb" 1>&2
                    exit 1
            esac
            ;;
@@ -106,10 +99,12 @@ while getopts ":i:d:v:p:u:D:V:b:" opt; do
            ;;
         b) dibUser=$OPTARG
            ;;
-        :) echo "Invalid argument: -$OPTARG requires an argument." >&2
+        c) communityEdition=true
+           ;;
+        :) echo "Error: -$OPTARG requires an argument." >&2
            exit 1
            ;;
-       \?) echo "Invalid option: $OPTARG" 1>&2
+       \?) echo "Error: invalid option $OPTARG" 1>&2
            exit 1
            ;;
     esac
@@ -127,24 +122,46 @@ case "$dbName" in
 #       ;;
     *)
         if [ -z "$dbName" ]; then
-            echo "-d <db> must be specified.  One of $dbSupported" 1>&2
+            echo "Error: -d <db> must be specified.  One of $dbSupported" 1>&2
         else
-            echo "-d $dbName is not supported.  Must be one of $dbSupported" 1>&2
+            echo "Error: -d $dbName is not supported.  Must be one of $dbSupported" 1>&2
         fi
         exit 1
 esac
 
 if [ -n "$pkg" ] && [ -z "$dbVersion" ]; then
-    echo "-p <package> must be specified with -v <db-version>"
+    echo "Error: -p <package> must be specified with -v <db-version>"
     exit 1
+fi
+
+DISTRO_CODENAME=$(lsb_release -c | awk '{print $2}' | awk '{print tolower($0)}')
+if [ $? != 0 ] || [ "$DISTRO_CODENAME" != "xenial" ] && [ "$communityEdition" == "true" ]; then
+    echo "Error: community provided databases (-c) are only supported on Ubuntu 16.04"
+    exit 1
+fi
+
+if [ -n "$DIB_RELEASE" ]; then
+    case "$DIB_RELEASE" in
+        trusty)
+            if [ "$communityEdition" == "true" ]; then
+                echo "Error: -c cannot be specified with DIB_RELEASE=trusty"
+                exit 1
+            fi
+            DISTRO_NAME=ubuntu
+            ;;
+        xenial)
+            DISTRO_NAME=ubuntu
+            ;;
+        *)
+            echo "Error: invalid DIB_RELEASE - $DIB_RELEASE.  Must be one of trusty or xenial"
+            exit 1
+    esac
 fi
 
 # These variables are derived from command line argument
 echo "ipAddrDib=$ipAddrDib"
 echo "dbName=$dbName"
 echo "dbVersion=$dbVersion"
-echo "distroPkgName=$distroPkgName"
-echo "distroPkgVersion=$distroPkgVersion"
 echo "pkg=$pkg"
 echo "pkgType=$pkgType"
 echo "installScript=$installScript"
@@ -152,17 +169,16 @@ echo "cloudUser=$cloudUser"
 echo "gitUrl=$gitUrl"
 echo "gitTag=$gitTag"
 echo "dibUser=$dibUser"
+echo "communityEdition=$communityEdition"
 
 # These variables are derived from environment variables
 echo "dibRelease=$DIB_RELEASE"
 echo "distroName=$DISTRO_NAME"
-echo "dataStoreSuffix=$DBIMAGE_DATASTORE_SUFFIX"
+echo "dibDebug=$DIB_MYDEBUG"
 
 export DBIMAGE_IPADDR=$ipAddrDib
 export DBIMAGE_DBNAME=$dbName
 export DBIMAGE_DBVERSION=$dbVersion
-export DBIMAGE_DISTRODBNAME=$distroPkgName
-export DBIMAGE_DISTRODBVERSION=$distroPkgVersion
 export DBIMAGE_PKG=$pkg
 export DBIMAGE_PKGTYPE=$pkgType
 export DBIMAGE_INSTALLSCRIPT=$installScript
@@ -171,3 +187,4 @@ export DBIMAGE_GITURL=$gitUrl
 export DBIMAGE_GITTAG=$gitTag
 export DBIMAGE_DIBUSER=$dibUser
 export DBIMAGE_HOME=$HOME
+export DBIMAGE_COMMUNITY_EDITION=$communityEdition
