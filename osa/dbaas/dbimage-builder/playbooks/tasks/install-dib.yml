@@ -157,10 +157,9 @@
     recurse: yes
   when: "{{ src_trove_diffs }}"
   with_items:
-    - ubuntu-xenial-guest/extra-data.d/
-    - ubuntu-xenial-guest/install.d/
-    - ubuntu-trusty-guest/extra-data.d/
-    - ubuntu-trusty-guest/install.d/
+    - ubuntu-xenial-guest/
+    - ubuntu-trusty-guest/
+    - ubuntu-guest/
 
 - name: Configure diskimage-builder
   pip:

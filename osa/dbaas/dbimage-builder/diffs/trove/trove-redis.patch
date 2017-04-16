@@ -1,0 +1,180 @@
+diff --git a/integration/scripts/files/elements/ubuntu-redis/install.d/30-redis b/integration/scripts/files/elements/ubuntu-redis/install.d/30-redis
+index 84b091f..686a666 100755
+--- a/integration/scripts/files/elements/ubuntu-redis/install.d/30-redis
++++ b/integration/scripts/files/elements/ubuntu-redis/install.d/30-redis
+@@ -1,4 +1,4 @@
+-#!/bin/sh
++#!/bin/bash
+ 
+ # CONTEXT: GUEST during CONSTRUCTION as ROOT
+ # PURPOSE: Install controller base required packages
+@@ -7,6 +7,12 @@ set -ex
+ 
+ export DEBIAN_FRONTEND=noninteractive
+ 
++apt-get -y update
++
++if [ "$DIB_MYCOMMUNITY_EDITION" == 'false' ]; then
++    apt-get --allow-unauthenticated install -y redis-server
++fi
++
+ cat > "/etc/sysctl.d/10-redis-performance.conf" << _EOF_
+ # See 'http://redis.io/topics/admin' for best practices.
+ # Make sure to set the Linux kernel overcommit memory setting to 1.
+@@ -20,6 +26,14 @@ net.core.somaxconn=1024
+ 
+ _EOF_
+ 
++cat > "/etc/default/redis-server" << _EOF_
++# Call ulimit -n with this argument prior to invoking Redis itself.
++# This may be required for high-concurrency environments. Redis itself cannot
++# alter its limits as it is not being run as root.
++ULIMIT=65536
++
++_EOF_
++
+ cat > "/etc/rc.local" << _EOF_
+ # Make sure to disable Linux kernel feature transparent huge pages,
+ # it will affect greatly both memory usage and latency in a negative way.
+@@ -32,22 +46,102 @@ fi
+ 
+ _EOF_
+ 
+-add-apt-repository -y ppa:chris-lea/redis-server
+-apt-get -y update
+-apt-get --allow-unauthenticated install -y redis-server
++if [ "$DIB_MYCOMMUNITY_EDITION" == 'false' ]; then
++    # Install Python driver for Redis ('redis-py').
++    pip2 install redis
+ 
+-cat > "/etc/default/redis-server" << _EOF_
+-# Call ulimit -n with this argument prior to invoking Redis itself.
+-# This may be required for high-concurrency environments. Redis itself cannot
+-# alter its limits as it is not being run as root.
+-ULIMIT=65536
++    # By default, redis-py will attempt to use the HiredisParser if installed.
++    # Using Hiredis can provide up to a 10x speed improvement in parsing responses
++    # from the Redis server.
++    pip2 install hiredis
++
++    exit 0
++fi
++
++# Build Redis from community download website
++
++REDIS_NAME=$DIB_MYDBSRCPKG
++
++ARCH_SAV=$ARCH
++unset ARCH
++apt-get --allow-unauthenticated install -y build-essential tar wget
++cd /tmp
++wget http://download.redis.io/releases/$REDIS_NAME.tar.gz
++tar xvzf $REDIS_NAME.tar.gz
++cd $REDIS_NAME
++sed -i "s/DEBUG=/#DEBUG=/" ./src/Makefile
++sed -i "s/DEBUG?=/#DEBUG?=/" ./deps/hiredis/Makefile
++make distclean
++make
++make install
++export ARCH=$ARCH_SAV
++
++adduser --system --group --no-create-home redis
++
++# Create the data dirs
+ 
++REDIS_DATA_DIR=/var/lib/redis
++REDIS_LOG_DIR=/var/log/redis
++REDIS_LOG=$REDIS_LOG_DIR/redis.log
++REDIS_RUN_DIR=/var/run/redis
++REDIS_PID=$REDIS_RUN_DIR/redis-server.pid
++mkdir -p $REDIS_DATA_DIR
++chown redis:redis $REDIS_DATA_DIR
++chmod 770 $REDIS_DATA_DIR
++mkdir -p $REDIS_LOG_DIR
++chown redis:redis $REDIS_LOG_DIR
++chmod 775 $REDIS_LOG_DIR
++mkdir -p $REDIS_RUN_DIR
++chown redis:redis $REDIS_RUN_DIR
++
++# Set up a proper conf file to start
++
++REDIS_CONF_NAME=redis.conf
++REDIS_CONF_DIR=/etc/redis
++REDIS_CONF=$REDIS_CONF_DIR/$REDIS_CONF_NAME
++mkdir $REDIS_CONF_DIR
++cp /tmp/$REDIS_NAME/$REDIS_CONF_NAME $REDIS_CONF_DIR
++chown redis:redis $REDIS_CONF
++sed -i "s#dir .*#dir $REDIS_DATA_DIR#" $REDIS_CONF
++sed -i "s#pidfile .*#pidfile $REDIS_PID#" $REDIS_CONF
++sed -i "s#logfile .*#logfile $REDIS_LOG#" $REDIS_CONF
++sed -i "s/supervised no/supervised systemd/" $REDIS_CONF
++sed -i "s/daemonize no/daemonize yes/" $REDIS_CONF
++sed -i "s/protected-mode yes/protected-mode no/" $REDIS_CONF
++
++cat > "/lib/systemd/system/redis-server.service" << _EOF_
++[Unit]
++Description=Redis In-Memory Data Store
++After=network.target
++
++[Service]
++Type=forking
++PIDFile=$REDIS_PID
++User=redis
++Group=redis
++
++Environment=statedir=$REDIS_RUN_DIR
++PermissionsStartOnly=true
++ExecStartPre=/bin/mkdir -p \${statedir}
++ExecStartPre=/bin/chown -R redis:redis \${statedir}
++ExecStart=/usr/local/bin/redis-server $REDIS_CONF
++ExecReload=/bin/kill -USR2 \$MAINPID
++ExecStop=/usr/local/bin/redis-cli shutdown
++Restart=always
++
++[Install]
++WantedBy=multi-user.target
+ _EOF_
+ 
+ # Install Python driver for Redis ('redis-py').
++
+ pip2 install redis
+ 
+-# By default, redis-py will attempt to use the HiredisParser if installed.
+-# Using Hiredis can provide up to a 10x speed improvement in parsing responses
+-# from the Redis server.
+-pip2 install hiredis
++# Install redis-tools (client), so that a redis related package can be
++# registered with the redis datastore to circumvent Trove's automated
++# install operation when it detects that the code is not installed.
++# That would just replace what we built and installed from source code.
++# The ideal solution would be to build a redis-server package at the
++# newer code level.
++
++apt-get --allow-unauthenticated install -y redis-tools
+diff --git a/integration/scripts/files/elements/ubuntu-xenial-redis/install.d/31-fix-init-file b/integration/scripts/files/elements/ubuntu-xenial-redis/install.d/31-fix-init-file
+index 08442f6..85996c9 100755
+--- a/integration/scripts/files/elements/ubuntu-xenial-redis/install.d/31-fix-init-file
++++ b/integration/scripts/files/elements/ubuntu-xenial-redis/install.d/31-fix-init-file
+@@ -1,8 +1,14 @@
+-#!/bin/sh
++#!/bin/bash
+ 
+ set -e
+ set -o xtrace
+ 
++if [ "$DIB_MYCOMMUNITY_EDITION" == "true" ]; then
++    # The systemd file is created in ubuntu-redis when redis is built and installed
++    systemctl enable redis-server
++    exit 0
++fi
++
+ cat > /lib/systemd/system/redis-server.service << '_EOF_'
+ [Unit]
+ Description=Advanced key-value store
+@@ -26,3 +32,6 @@ Restart=always
+ [Install]
+ WantedBy=multi-user.target
+ _EOF_
++
++systemctl enable redis-server
++

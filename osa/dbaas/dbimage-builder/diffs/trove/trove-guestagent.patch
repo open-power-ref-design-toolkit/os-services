@@ -1,3 +1,19 @@
+diff --git a/integration/scripts/files/elements/ubuntu-guest/post-install.d/70-trove-guestagent b/integration/scripts/files/elements/ubuntu-guest/post-install.d/70-trove-guestagent
+new file mode 100755
+index 0000000..f47998e
+--- /dev/null
++++ b/integration/scripts/files/elements/ubuntu-guest/post-install.d/70-trove-guestagent
+@@ -0,0 +1,10 @@
++#!/bin/bash
++set -e
++set -o xtrace
++
++# CONTEXT: HOST after IMAGE BUILD as SCRIPT USER
++# PURPOSE: Enables LOG.debug in trove-guestagent
++
++if [ "$DIB_MYDEBUG" == "true" ]; then
++    sed -i "s/^debug =.*/debug = True/" /etc/trove/conf.d/trove-guestagent.conf
++fi
 diff --git a/integration/scripts/files/elements/ubuntu-trusty-guest/extra-data.d/70-trove-guestagent b/integration/scripts/files/elements/ubuntu-trusty-guest/extra-data.d/70-trove-guestagent
 new file mode 100755
 index 0000000..85233a9
@@ -112,7 +128,7 @@ index 0000000..85233a9
 +cp -r ${PATH_TROVE} ${TMP_HOOKS_PATH}
 +
 diff --git a/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/20-etc b/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/20-etc
-index 1a35015..125d919 100755
+index 1a35015..e24bc8e 100755
 --- a/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/20-etc
 +++ b/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/20-etc
 @@ -1,10 +1,5 @@
@@ -120,13 +136,14 @@ index 1a35015..125d919 100755
 -
  # CONTEXT: GUEST during CONSTRUCTION as ROOT
 -# PURPOSE: take "staged" trove-guest.conf file and put it in the init directory on guest image
-+# PURPOSE: Place the "staged" trove-guestagent.conf file in the guest image
- 
- dd if=/tmp/in_target.d/trove-guest.service of=/etc/systemd/system/trove-guest.service
+-
+-dd if=/tmp/in_target.d/trove-guest.service of=/etc/systemd/system/trove-guest.service
 -
 -systemctl enable trove-guest.service
 -
--
++# PURPOSE: Place the "staged" trove-guestagent.conf file in the guest image
+ 
++dd if=/tmp/in_target.d/trove-guest.service of=/lib/systemd/system/trove-guest.service
 diff --git a/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/70-trove-guestagent b/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/70-trove-guestagent
 new file mode 100755
 index 0000000..6f61733
