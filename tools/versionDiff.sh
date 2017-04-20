@@ -253,8 +253,8 @@ case "$apply_patches_or_not" in
         ;;
     a | all)
         echo "Applying all patches including the ones that result in failures"
-        do_apply_patches $all_patches
-        if [ $non_applicable_patches -ne 0 ]; then
+        do_apply_patches "${all_patches[@]}"
+        if [ $num_not_applicable -ne 0 ]; then
             echo "Patches which resulted in errors are:" \
                  "${non_applicable_patches[@]}"
             echo "You will have to manually resolve the issues and merge" \
