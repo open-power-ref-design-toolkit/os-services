@@ -1,7 +1,7 @@
 diff -Naur a/etc/ansible/roles/os_trove/defaults/main.yml b/etc/ansible/roles/os_trove/defaults/main.yml
---- a/etc/ansible/roles/os_trove/defaults/main.yml	2017-03-29 19:38:11.488567056 -0500
-+++ b/etc/ansible/roles/os_trove/defaults/main.yml	2017-03-29 14:10:24.943916007 -0500
-@@ -46,7 +46,10 @@
+--- a/etc/ansible/roles/os_trove/defaults/main.yml	2017-04-21 14:46:58.499599761 -0400
++++ b/etc/ansible/roles/os_trove/defaults/main.yml	2017-04-21 14:46:08.887598873 -0400
+@@ -46,23 +46,27 @@
  trove_service_region: RegionOne
  trove_service_host: "0.0.0.0"
  trove_service_port: 8779
@@ -11,9 +11,9 @@ diff -Naur a/etc/ansible/roles/os_trove/defaults/main.yml b/etc/ansible/roles/os
 +trove_service_internaluri_proto: "{{ openstack_service_internaluri_proto | default(trove_service_proto) }}"
 +trove_service_adminuri_proto: "{{ openstack_service_adminuri_proto | default(trove_service_proto) }}"
  trove_service_publicurl: "{{ trove_service_publicuri_proto }}://{{ external_lb_vip_address }}:{{ trove_service_port }}/v1.0/%(tenant_id)s"
- trove_service_internaluri_proto: http
+-trove_service_internaluri_proto: http
  trove_service_internalurl: "{{ trove_service_internaluri_proto }}://{{ internal_lb_vip_address }}:{{ trove_service_port }}/v1.0/%(tenant_id)s"
-@@ -54,15 +57,18 @@
+-trove_service_adminuri_proto: http
  trove_service_adminurl: "{{ trove_service_adminuri_proto }}://{{ internal_lb_vip_address }}:{{ trove_service_port }}/v1.0/%(tenant_id)s"
  trove_auth_url: "{{ keystone_service_internalurl }}"
  trove_nova_compute_url: "{{ trove_service_internaluri_proto }}://{{ internal_lb_vip_address }}:{{ nova_service_port }}/v2.1"
@@ -39,7 +39,7 @@ diff -Naur a/etc/ansible/roles/os_trove/defaults/main.yml b/etc/ansible/roles/os
  
  # Name of the virtual env to deploy into
  trove_venv_tag: untagged
-@@ -88,7 +94,9 @@
+@@ -88,7 +92,9 @@
  trove_apache_servertokens: "Prod"
  trove_apache_serversignature: "Off"
  trove_wsgi_threads: 1
@@ -50,7 +50,7 @@ diff -Naur a/etc/ansible/roles/os_trove/defaults/main.yml b/etc/ansible/roles/os
  
  # set trove_ssl to true to enable SSL configuration on the trove containers
  trove_ssl: false
-@@ -139,6 +147,8 @@
+@@ -139,6 +145,8 @@
    - python-keystoneclient
    - virtualenv
    - virtualenv-tools
@@ -59,7 +59,7 @@ diff -Naur a/etc/ansible/roles/os_trove/defaults/main.yml b/etc/ansible/roles/os
  
  trove_pip_packages:
    - MySQL-python
-@@ -148,6 +158,7 @@
+@@ -148,6 +156,7 @@
    - trove
    - python-troveclient
    - python-memcached
