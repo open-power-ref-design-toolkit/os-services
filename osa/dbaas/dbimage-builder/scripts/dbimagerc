@@ -36,7 +36,7 @@
 # set, unless the user manually establishes ssh access to the controller
 # prior to running this tool.
 
-#export DBIMAGE_CTRL_PASSWD=
+#export DBIMAGE_CTRL_PASSWD
 #export DBIMAGE_CTRL_PRIVATE_SSH_KEY=~/.ssh/<ctrl_rsa>
 
 # If dbimage-make.sh is installed on the same server where the guest image is
@@ -48,10 +48,18 @@
 #export DBIMAGE_DIB_PASSWD=
 #export DBIMAGE_DIB_PRIVATE_SSH_KEY=~/.ssh/<dibvm_rsa>
 
-# Request a cross-distro build.  This is an argument to diskimage-builder
-
-#export DIB_RELEASE=xenial
-
 # A component of the virtual guest image name as uploaded to Glance
 
 #export DBIMAGE_SOURCE=-dib
+
+#########  Below this line applies to diskimage-builder only  ###########
+
+# Request a cross-distro build.  For example, an Ubuntu 14.04 (trusty)
+# image built by a dibvm that is installed with Ubuntu 16.04 (xenial).
+# Distro code names are used.  Supported values are:
+#
+# export DIB_RELEASE=trusty
+
+# Enable trove-guestagent debug log messages in the datastore instance.
+
+#export DIB_MYDEBUG=true
