@@ -86,7 +86,7 @@ export DIB_MYCOMMUNITY_EDITION=$DBIMAGE_COMMUNITY_EDITION
 export DIB_MYDBVERSION=$DBIMAGE_DBVERSION
 
 CMD="disk-image-create"
-CMDARGS="--no-tmpfs -a $ARCH -o $HOME/img/$IMG $DISTRO_NAME vm heat-cfntools cloud-init-datasources $GUESTELE $DBELE"
+CMDARGS="--no-tmpfs -a $ARCH -o $HOME/img/$IMG $DISTRO_NAME vm cloud-init-datasources $GUESTELE $DBELE"
 
 # These environment variables are input parameters to trovedibrc
 export SERVICE_TYPE=$DBIMAGE_DBNAME
