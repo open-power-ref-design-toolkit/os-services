@@ -114,14 +114,6 @@
 - name: Get trove ("{{ trove_version }}") for guest image
   shell: "cp -r {{ dib_home }}/tools/trove {{ dib_home }}; cd ~/trove; git checkout {{ trove_version }}"
 
-- name: Get tripleo-image-elements (vers="{{ tripleo_image_elements_version }}")
-  git:
-    repo: https://git.openstack.org/openstack/tripleo-image-elements.git
-    dest: "{{ dib_home }}/tools/tripleo-image-elements"
-    version: "{{ tripleo_image_elements_version }}"
-  retries: 3
-  delay: 15
-
 - name: Apply diskimage-builder patches
   patch:
     src: "{{ item }}"
@@ -139,15 +131,6 @@
   when: "{{ src_trove_diffs }}"
   with_items:
     - "{{ src_trove_diffs | default('') }}"
-
-- name: Apply tripleo patches
-  patch:
-    src: "{{ item }}"
-    basedir: "{{ dib_home }}/tools/tripleo-image-elements"
-    strip: 1
-  when: "{{ src_tripleo_diffs }}"
-  with_items:
-    - "{{ src_tripleo_diffs | default('') }}"
 
 - name: Make new elements runnable
   file:
