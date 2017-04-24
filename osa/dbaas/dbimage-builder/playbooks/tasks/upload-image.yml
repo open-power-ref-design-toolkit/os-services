@@ -59,14 +59,13 @@
     src: "{{ baseDir }}/images/{{ outputImage }}.img"
     dest: "{{ mktemprc.stdout }}/{{ outputImage }}.img"
 
-- name: Upload image "{{ dbName }}-{{ dbVersion }}{{ imageSource }}-{{ ansible_date_time.date }}"
+- name: Upload image "{{ dbName }}{{ imageSource }}-{{ ansible_date_time.date }}"
   shell: >-
     /usr/bin/lxc-attach -n '{{ utility_container.stdout }}' -e --
     /bin/bash -c '
     source /root/openrc;
     glance image-create
-    --name {{ dbName }}-{{ dbVersion }}{{ imageSource }}-{{ ansible_date_time.date }}
-    --disk-format raw
+    --name {{ dbName }}{{ imageSource }}-{{ ansible_date_time.date }} --disk-format raw
     --container-format bare
     --file {{ mktemprc.stdout.split( baseUtilityDir )[-1] }}/{{ outputImage }}.img'
   register: glancerc

@@ -64,34 +64,15 @@ dbimage-make.sh
 
 ::
 
-  dbimage-make.sh -d db-name [ -v db-version ] [ -c ] [ -u cloud-user ]
-                             [ -i dib-ip-addr ] [ -p pkg ]
+  dbimage-make.sh -d db-name [ -v db-version ] [ -i dib-ip-addr ]
+                             [ -u user ] [ -p pkg ]
 
 This script creates a bootable O/S image containing the named
-database (-d) and database version (-v) and creates an OpenStack Trove
+database (-d) and database version (-v) and creates a Trove
 datastore from the image.
 
-The -v argument identifies the version of the database.  Only the
-first two components of the version are used.  For example, 1.2.
-
-The -c argument may be specified to generate a community provided
-version of the database.  The tool may not support a community
-version supported of the tool.
-
-If an invalid version is specified, the tool lists the supported
-versions, so one may query the supported versions by specifying
-an invalid version such as 0.0.
-
-The -u argument names an OpenStack user.  If this argument is
-specified, then the public ssh key for this user is obtained from
-OpenStack and is placed in virtual disk image in the
-file /home/<dib-user>/.ssh/authorized_keys.  Alternatively, the
-user can manually copy the public ssh key into
-dbimage-builder/etc/ssh/.
-
-The -i argument identifies a running virtual machine (VM) that should
-be used to create the virtual disk image.  This VM must be installed
-with Ubuntu 16.04.
+The -i argument identifies a running virtual machine (VM) that is
+used to create the virtual disk image.
 
 The VM associated with the -i argument is created by the user prior
 to invoking the dbimage-make.sh script.  This VM may be re-used to
@@ -100,6 +81,13 @@ specified, then the localhost is assumed.
 
 The -d argument must be one of
 mariadb, mongodb, mysql, postgresql, or redis.
+
+The -u argument names an OpenStack user.  If this argument is
+specified, then the public ssh key for this user is obtained from
+OpenStack and is placed in virtual disk image in the
+file /home/<dib-user>/.ssh/authorized_keys.  Alternatively, the
+user can manually copy the public ssh key into
+dbimage-builder/etc/ssh/.
 
 The -p argument is a database package that is provided by the user.
 This package is installed, instead of a package that is determined by

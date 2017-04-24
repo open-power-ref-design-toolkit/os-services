@@ -5,39 +5,41 @@
 #
 # This is invoked on the dibvm as ubuntu
 
-- debug: var=communityEdition
 - debug: var=dbName
-- debug: var=dbVersion
-- debug: var=pkg
-- debug: var=pkgDistroName
-- debug: var=srcPkgName
+- debug: var=ipAddrDib
 - debug: var=ipAddrController
+- debug: var=pkg
+- debug: var=pkgDistroVersion
+- debug: var=pkgDistroName
 - debug: var=cloudUser
+- debug: var=cross_build
 
 - name: Invoke diskimage-builder in the dibvm
   shell: |
     export PATH=$HOME/bin:$PATH
     export DISTRO_NAME="{{ distroName }}"
     export DIB_RELEASE="{{ dibRelease }}"
-    export DIB_MYDBSRCPKG="{{ srcPkgName }}"
-    export DIB_MYDBPKG="{{ pkgDistroName }}"
-    export DIB_MYDEBUG="{{ dibDebug }}"
-    ARGS="-i {{ ipAddrDib }} -d {{ dbName }}"
-    if [ -n "{{ dbVersion }}" ]; then
-        ARGS="$ARGS -v {{ dbVersion }}"
+    ipAddrDib="{{ ipAddrDib }}"
+    dbName="{{ dbName }}"
+    dbVersion="{{ dbVersion }}"
+    pkg="{{ pkg }}"
+    cloudUser="{{ cloudUser }}"
+    pkgDistroName="{{ pkgDistroName }}"
+    pkgDistroVersion="{{ pkgDistroVersion }}"
+    ARGS="-i $ipAddrDib -d $dbName"
+    if [ -n "$dbVersion" ]; then
+        ARGS="$ARGS -v $dbVersion"
     fi
-    if [ -n "{{ pkg }}" ]; then
-        ARGS="$ARGS -p {{ pkg }}"
+    if [ -n "$pkg" ]; then
+        ARGS="$ARGS -p $pkg"
     fi
-    if [ -n "{{ cloudUser }}" ]; then
-        ARGS="$ARGS -u {{ cloudUser }}"
+    if [ -n "$cloudUser" ]; then
+        ARGS="$ARGS -u $cloudUser"
     fi
-    if [ "{{ communityEdition|string|lower }}" == "true" ]; then
-        ARGS="$ARGS -c"
+    if [ -n "$pkgDistroName" ]; then
+        ARGS="$ARGS -D $pkgDistroName -V $pkgDistroVersion"
     fi
     create-image-vm.sh $ARGS 2>&1
-  args:
-    executable: /bin/bash
   register: dibrc
   failed_when: false
 
