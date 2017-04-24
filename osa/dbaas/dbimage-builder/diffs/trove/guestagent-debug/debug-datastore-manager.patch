@@ -1,0 +1,21 @@
+diff --git a/trove/guestagent/datastore/manager.py b/trove/guestagent/datastore/manager.py
+index 5d3e94d..aa868c5 100644
+--- a/trove/guestagent/datastore/manager.py
++++ b/trove/guestagent/datastore/manager.py
+@@ -270,6 +270,8 @@ class Manager(periodic_task.PeriodicTasks):
+                  config_contents, root_password, overrides,
+                  cluster_config, snapshot, modules):
+         LOG.info(_("Starting datastore prepare for '%s'.") % self.manager)
++        LOG.debug("packages=%s, databases=%s, device_path=%s, mount_point=%s" %
++                  (packages, databases, device_path, mount_point))
+         self.status.begin_install()
+         post_processing = True if cluster_config else False
+         try:
+@@ -358,6 +360,7 @@ class Manager(periodic_task.PeriodicTasks):
+             raise
+ 
+     def apply_overrides_on_prepare(self, context, overrides):
++        LOG.debug("apply_overrides_on_prepare: overrides=%s" % str(overrides))
+         self.update_overrides(context, overrides)
+         self.restart(context)
+ 
