@@ -18,7 +18,7 @@
 
 if [ "$1" == "--help" ]; then
     echo "Usage: create-image-vm.sh -i dibvm-ipaddr -d db-name -v db-version"
-    echo "          [ -c ] [ -D pkg-name -V pkg-version | -p pkg ] [ -u user ]"
+    echo "          [ -D distro-db-pkg-name -V distro-db-pkg-version | -p pkg ] [ -u user ]"
     echo ""
     echo "Upon successful completion, a raw disk image file is created in $HOME/img/"
     echo ""
@@ -51,39 +51,54 @@ case "$ARCH" in
         exit 1
 esac
 
-
-if [ -e /etc/centos-release ] ; then
-    DISTRO_REL=$(cat /etc/centos-release | awk '{print $4}')
-    IMG="centos_${DISTRO_REL}_${DBIMAGE_DBNAME}_${DBIMAGE_DBVERSION}"
-    DISTRO_NAME="centos7"
-    GUESTELE=
-    DBELE="${DBIMAGE_DBNAME}"
-elif [ -e /etc/redhat-release ] ; then
-    DISTRO_REL=$(cat /etc/redhat-release | awk '{print $7}')
-    IMG="rhel_${DISTRO_REL}_${DBIMAGE_DBNAME}_${DBIMAGE_DBVERSION}"
-    DISTRO_NAME="rhel7"
-    GUESTELE=
-    DBELE="${DBIMAGE_DBNAME}"
-else
-    DISTRO_NAME=$(lsb_release -i | awk '{print $3}' | awk '{print tolower($0)}')
-    if [ $? != 0 ]; then
-        echo "create-image-vm.sh failed, invalid Linux distributor - $DISTRO_NAME.  Ubuntu expected"
-        exit 1
-    fi
-    if [ -z "$DIB_RELEASE" ]; then
-        DIB_RELEASE=$(lsb_release -c | awk '{print $2}' | awk '{print tolower($0)}')
-    fi
-    IMG="${DISTRO_NAME}_${DIB_RELEASE}_${DBIMAGE_DBNAME}_${DBIMAGE_DBVERSION}"
+if [ -n "$DIB_RELEASE" ]; then
+    # Target image is specified via an environment variable
+    case "$DIB_RELEASE" in
+        trusty)
+            DISTRO_NAME=ubuntu
+            ;;
+        xenial)
+            DISTRO_NAME=ubuntu
+            ;;
+        *)
+            echo "create-image-vm.sh failed, invalid DIB_RELEASE - $DIB_RELEASE"
+            exit 1
+    esac
+    IMG="${DISTRO_NAME}_${DIB_RELEASE}_${DBIMAGE_DBNAME}"
     GUESTELE="${DISTRO_NAME}-${DIB_RELEASE}-guest"
     DBELE="${DISTRO_NAME}-${DIB_RELEASE}-${DBIMAGE_DBNAME}"
+else
+    # Image is based on the running distro
+    if [ -e /etc/centos-release ] ; then
+        DISTRO_REL=$(cat /etc/centos-release | awk '{print $4}')
+        IMG="centos_${DISTRO_REL}_${DBIMAGE_DBNAME}_${DBIMAGE_DBVERSION}"
+        DISTRO_NAME="centos7"
+        GUESTELE=
+        DBELE="${DBIMAGE_DBNAME}"
+    elif [ -e /etc/redhat-release ] ; then
+        DISTRO_REL=$(cat /etc/redhat-release | awk '{print $7}')
+        IMG="rhel_${DISTRO_REL}_${DBIMAGE_DBNAME}_${DBIMAGE_DBVERSION}"
+        DISTRO_NAME="rhel7"
+        GUESTELE=
+        DBELE="${DBIMAGE_DBNAME}"
+    else
+        DISTRO_NAME=$(lsb_release -i | awk '{print $3}' | awk '{print tolower($0)}')
+        if [ $? != 0 ]; then
+            echo "create-image-vm.sh failed, invalid Linux distributor - $DISTRO_NAME.  Ubuntu expected"
+            exit 1
+        fi
+        DISTRO_REL=$(lsb_release -r | awk '{print $2}')
+        DIB_RELEASE=$(lsb_release -c | awk '{print $2}' | awk '{print tolower($0)}')
+        IMG="${DISTRO_NAME}_${DISTRO_REL}_${DBIMAGE_DBNAME}_${DBIMAGE_DBVERSION}"
+        GUESTELE="${DISTRO_NAME}-${DIB_RELEASE}-guest"
+        DBELE="${DISTRO_NAME}-${DIB_RELEASE}-${DBIMAGE_DBNAME}"
+    fi
 fi
+export DISTRO_NAME
+export DIB_RELEASE
 
 # Generate output image name
 IMG=$(echo $IMG | tr '.' '_' | tr '-' '_')
-
-# Set environment variables for disk-image-create elements that are derived from command arguments
-export DIB_MYCOMMUNITY_EDITION=$DBIMAGE_COMMUNITY_EDITION
-export DIB_MYDBVERSION=$DBIMAGE_DBVERSION
 
 CMD="disk-image-create"
 CMDARGS="--no-tmpfs -a $ARCH -o $HOME/img/$IMG $DISTRO_NAME vm heat-cfntools cloud-init-datasources $GUESTELE $DBELE"
@@ -98,20 +113,14 @@ else
 fi
 
 # Create a file that can be manually invoked for debug purposes
-cat <<EOF > $HOME/cmd.sh
-#!/usr/bin/env bash
-export DIB_MYCOMMUNITY_EDITION=$DIB_MYCOMMUNITY_EDITION
-export DIB_MYDBVERSION=$DIB_MYDBVERSION
-export DIB_MYDBPKG=$DIB_MYDBPKG
-export DIB_MYDBSRCPKG=$DIB_MYDBSRCPKG
-export DIB_MYDEBUG=$DIB_MYDEBUG
+cat <<EOF > $HOME/cmd.log
 export DISTRO_NAME=$DISTRO_NAME
 export DIB_RELEASE=$DIB_RELEASE
 export SERVICE_TYPE=$SERVICE_TYPE
 export CONTROLLER_IP=$CONTROLLER_IP
-export DATASTORE_PKG_LOCATION=$DATASTORE_PKG_LOCATION
+export DATASTORE_PKG_LOCATION=$DATASTORE_PKG_LOCATION"
 source $SCRIPTS_DIR/trovedibrc
-$CMD $CMDARGS
+$CMD $CMDARGS"
 EOF
 
 # Caller scans stdout for this string and uses it to fetch the image

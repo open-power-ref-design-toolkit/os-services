@@ -24,7 +24,10 @@
     - vars/dbimage-args.yml
   tasks:
     - include: tasks/init-dibvm.yml
-    - include: tasks/validate-args-table.yml
+    - include: tasks/validate-args.yml
+      when: not cross_build
+    - include: tasks/validate-args-cross-build.yml
+      when: cross_build
     - include: tasks/pre-install-dib.yml
     - include: tasks/install-dib.yml
     - include: tasks/run-dib.yml
