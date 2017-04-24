@@ -74,6 +74,7 @@ dib_pip_packages:
 dib_version: 1.28.0
 trove_version: stable/newton
 trove_integration_version: 7.0.0
+tripleo_image_elements_version: 6.0.0
 
 # dibvm install options
 
@@ -95,6 +96,8 @@ src_trove_diffs:
   - "{{ baseDir }}/diffs/trove/trove-mariadb.patch"
   - "{{ baseDir }}/diffs/trove/trove-mysql.patch"
   - "{{ baseDir }}/diffs/trove/trove-redis.patch"
+
+src_tripleo_diffs:
 
 # Target locations in dibvm
 

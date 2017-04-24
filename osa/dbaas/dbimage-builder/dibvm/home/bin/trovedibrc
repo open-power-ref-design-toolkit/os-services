@@ -39,6 +39,7 @@ export PATH+=:$HOME/tools/diskimage-builder/bin
 export ELEMENTS_PATH=$HOME/elements
 export ELEMENTS_PATH+=:$TROVESTACK_SCRIPTS/files/elements
 export ELEMENTS_PATH+=:$HOME/tools/diskimage-builder/elements
+export ELEMENTS_PATH+=:$HOME/tools/tripleo-image-elements/elements
 
 export DIB_APT_CONF_DIR=/etc/apt/apt.conf.d
 export DIB_CLOUD_INIT_ETC_HOSTS=true
