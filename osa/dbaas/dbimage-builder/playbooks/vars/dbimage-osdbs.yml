@@ -7,7 +7,7 @@ osdb:                                   # All versions as of 4/14/17
     trusty: []                          # Requires uplevel percona-xtrabackup
     xenial:
       - version: 10.0                   # 10.0.29
-        pkg: mariadb-server-10.0
+        pkg: mariadb-server
     community:
       - version: 10.1                   # 10.1.22
         pkg: mariadb-server
@@ -20,25 +20,19 @@ osdb:                                   # All versions as of 4/14/17
         pkg: mongodb-server
     community: []
   mysql:
-    trusty:
-      - version: 5.6                    # 5.6.14
-        pkg: mysql-server-5.6
-      - version: 5.5                    # 5.5.54
-        pkg: mysql-server-5.5
+    trusty: []                          # Requires uplevel percona-xtrabackup
     xenial:
       - version: 5.7                    # 5.7.17
-        pkg: mysql-server-5.7
+        pkg: mysql-server
     community: []
   postgresql:
-    trusty:
-      - version: 9.3                    # 9.3.16
-        pkg: postgresql-9.3
+    trusty: []                          # Requires compilation of missing package
     xenial:
       - version: 9.5                    # 9.5.6
-        pkg: postgresql-9.5
+        pkg: postgresql
     community:
       - version: 9.6                    # 9.6.2
-        pkg: postgresql-9.6
+        pkg: postgresql
   redis:
     trusty:
       - version: 2.8                    # 2.8.4

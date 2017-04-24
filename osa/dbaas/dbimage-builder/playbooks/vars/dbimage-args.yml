@@ -58,7 +58,6 @@ dib_apt_packages:
   - graphviz
   - libsqlite3-dev
   - gettext
-#  - sshpass
   - screen
   - bridge-utils
   - unzip
@@ -89,12 +88,18 @@ src_ssh: "{{ baseDir }}/etc/ssh"
 
 src_dib_diffs:
 
-src_trove_diffs:
-  - "{{ baseDir }}/diffs/trove/15-reddwarf-dep.patch"
-  - "{{ baseDir }}/diffs/trove/trove-guestagent.patch"
-  - "{{ baseDir }}/diffs/trove/trove-mariadb.patch"
-  - "{{ baseDir }}/diffs/trove/trove-mysql.patch"
-  - "{{ baseDir }}/diffs/trove/trove-redis.patch"
+src_trove_integration_diffs:
+  - "{{ baseDir }}/diffs/trove/integration/15-reddwarf-dep.patch"
+  - "{{ baseDir }}/diffs/trove/integration/trove-guestagent.patch"
+  - "{{ baseDir }}/diffs/trove/integration/trove-mariadb.patch"
+  - "{{ baseDir }}/diffs/trove/integration/trove-mysql.patch"
+  - "{{ baseDir }}/diffs/trove/integration/trove-redis.patch"
+  - "{{ baseDir }}/diffs/trove/integration/trove-postgresql.patch"
+
+src_trove_guestagent_diffs:
+
+src_trove_guestagent_debug_diffs:
+  - "{{ baseDir }}/diffs/trove/guestagent-debug/debug-datastore-manager.patch"
 
 # Target locations in dibvm
 

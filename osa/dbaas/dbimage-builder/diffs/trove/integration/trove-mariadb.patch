@@ -1,20 +1,19 @@
 diff --git a/integration/scripts/files/elements/ubuntu-mariadb/pre-install.d/10-percona-apt-key b/integration/scripts/files/elements/ubuntu-mariadb/pre-install.d/10-percona-apt-key
-index 55b5ef8..2d31c5a 100755
+index 55b5ef8..cc94ae4 100755
 --- a/integration/scripts/files/elements/ubuntu-mariadb/pre-install.d/10-percona-apt-key
 +++ b/integration/scripts/files/elements/ubuntu-mariadb/pre-install.d/10-percona-apt-key
-@@ -9,6 +9,10 @@ set -o xtrace
+@@ -9,6 +9,9 @@ set -o xtrace
  [ -n "${GUEST_USERNAME}" ] || die "GUEST_USERNAME needs to be set to the user for the guest image"
  [ -n "${RELEASE}" ] || die "RELEASE must be set to either Trusty or Precise"
  
-+if [ "$DIB_MYCOMMUNITY_EDITION" == "false" ]; then
-+    exit 0
-+fi
++# Website below does not support ppc64le.  The fix is provided in Xenial
++exit 0
 +
  # Add Percona GPG key
  mkdir -p /home/${GUEST_USERNAME}/.gnupg
  
 diff --git a/integration/scripts/files/elements/ubuntu-xenial-mariadb/install.d/30-mariadb b/integration/scripts/files/elements/ubuntu-xenial-mariadb/install.d/30-mariadb
-index 521f3e6..033fe34 100755
+index 521f3e6..92a33e9 100755
 --- a/integration/scripts/files/elements/ubuntu-xenial-mariadb/install.d/30-mariadb
 +++ b/integration/scripts/files/elements/ubuntu-xenial-mariadb/install.d/30-mariadb
 @@ -1,4 +1,4 @@
@@ -23,7 +22,7 @@ index 521f3e6..033fe34 100755
  
  # CONTEXT: GUEST during CONSTRUCTION as ROOT
  # PURPOSE: Install controller base required packages
-@@ -8,32 +8,46 @@ set -o xtrace
+@@ -8,32 +8,50 @@ set -o xtrace
  
  export DEBIAN_FRONTEND=noninteractive
  
@@ -43,15 +42,13 @@ index 521f3e6..033fe34 100755
 -sudo echo -e "Package: *\nPin: origin ftp.osuosl.org\nPin-Priority: 1000" > /etc/apt/preferences.d/mariadb.pref
 +    # Pin MariaDB repository
 +    sudo echo -e "Package: *\nPin: origin ftp.osuosl.org\nPin-Priority: 1000" > /etc/apt/preferences.d/mariadb.pref
-+else
-+    EXTRA_PKG=libmariadb2
 +fi
  
  apt-get -y update
 -apt-get -y install socat percona-xtrabackup
 -apt-get -y install libmariadbclient18 mariadb-server
 +apt-get -y install socat percona-xtrabackup pwgen
-+apt-get -y install $EXTRA_PKG mariadb-client mariadb-server
++apt-get -y install mariadb-client mariadb-server
  
  cat >/etc/mysql/conf.d/no_perf_schema.cnf <<_EOF_
  [mysqld]
@@ -61,10 +58,16 @@ index 521f3e6..033fe34 100755
  
 -mv /etc/mysql/my.cnf.fallback /etc/mysql/my.cnf
 -chown mysql:mysql /etc/mysql/my.cnf
-+rm /etc/mysql/my.cnf                       # This is a symbolic link
++rm /etc/mysql/my.cnf                       # This is a symbolic link to /etc/alternatives/my.cnf
++
  cat >/etc/mysql/my.cnf <<_EOF_
- [mysql]
--
+-[mysql]
++#
++# This group is read both both by the client and the server
++# use it for options that affect everything
++#
++[client-server]
+ 
 +!includedir /etc/mysql/mariadb.conf.d/
  !includedir /etc/mysql/conf.d/
 +
@@ -73,7 +76,7 @@ index 521f3e6..033fe34 100755
 -rm /etc/init.d/mysql
 -systemctl daemon-reload
 -systemctl enable mariadb
-+# Generate random password for mysql root user for initial boot
++# Causes Trove to generate a password for mysql root user on first boot
 +pwgen -s 13 1 > /root/.mysql_secret
 +chown mysql:root /root/.mysql_secret
 +chmod 660 /root/.mysql_secret
