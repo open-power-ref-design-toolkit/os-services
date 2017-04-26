@@ -9,6 +9,8 @@
     - vars/dbimage-args.yml
   tasks:
     - include: tasks/init-deployer.yml
+    - include: tasks/validate-version.yml
+    - include: tasks/get-external-image-data.yml
 
 - name: Initialize controller
   hosts: controller
@@ -23,8 +25,6 @@
   vars_files:
     - vars/dbimage-args.yml
   tasks:
-    - include: tasks/init-dibvm.yml
-    - include: tasks/validate-args-table.yml
     - include: tasks/pre-install-dib.yml
     - include: tasks/install-dib.yml
     - include: tasks/run-dib.yml

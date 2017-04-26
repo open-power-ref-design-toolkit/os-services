@@ -28,7 +28,7 @@
     dest: "{{ dib_home }}"
     mode: "{{ item.mode }}"
   with_items:
-    - { src: "{{ src_trove }}/", mode: "0644" }
+    - { src: "{{ src_trove }}/trove-guestagent.conf", mode: "0644" }
     - { src: "{{ src_home }}/bin", mode: "0755" }
     - { src: "{{ baseDir }}/elements", mode: "0755" }
 

@@ -97,9 +97,11 @@ src_trove_integration_diffs:
   - "{{ baseDir }}/diffs/trove/integration/trove-postgresql.patch"
 
 src_trove_guestagent_diffs:
+  - "{{ baseDir }}/diffs/trove/guestagent/postgres-config.patch"
 
 src_trove_guestagent_debug_diffs:
-  - "{{ baseDir }}/diffs/trove/guestagent-debug/debug-datastore-manager.patch"
+  - "{{ baseDir }}/diffs/trove/guestagent-debug/debug-common.patch"
+  - "{{ baseDir }}/diffs/trove/guestagent-debug/debug-postgres.patch"
 
 # Target locations in dibvm
 

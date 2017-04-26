@@ -5,6 +5,20 @@
 #
 # This is invoked on the dibvm as ubuntu
 
+- name: Set dbVersion
+  set_fact:
+    dbVersion: "{{ hostvars[groups['deployer'][0]].dbVersion }}"
+  when: not dbVersion
+
+- name: Set srcPkgName
+  set_fact:
+    srcPkgName: "{{ hostvars[groups['deployer'][0]].srcPkgName }}"
+  when: srcPkgName is not defined
+
+- name: Set pkgDistroName
+  set_fact:
+    pkgDistroName: "{{ hostvars[groups['deployer'][0]].pkgDistroName }}"
+
 - debug: var=communityEdition
 - debug: var=dbName
 - debug: var=dbVersion

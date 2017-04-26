@@ -1,0 +1,67 @@
+diff --git a/trove/guestagent/datastore/experimental/postgresql/service/config.py b/trove/guestagent/datastore/experimental/postgresql/service/config.py
+index 644d368..8558d0a 100644
+--- a/trove/guestagent/datastore/experimental/postgresql/service/config.py
++++ b/trove/guestagent/datastore/experimental/postgresql/service/config.py
+@@ -58,6 +58,7 @@ class PgSqlConfig(PgSqlProcess):
+         revision_dir = guestagent_utils.build_file_path(
+             os.path.dirname(self.pgsql_config),
+             ConfigurationManager.DEFAULT_STRATEGY_OVERRIDES_SUB_DIR)
++        LOG.debug("PgSqlConfig: revision_dir=%s" % revision_dir)
+         self._configuration_manager = ConfigurationManager(
+             self.pgsql_config, self.PGSQL_OWNER, self.PGSQL_OWNER,
+             PropertiesCodec(
+@@ -73,6 +74,7 @@ class PgSqlConfig(PgSqlProcess):
+         in the case of PostgreSQL 9.4 for RHEL/CentOS
+         """
+         version = self.pg_version[1]
++        LOG.debug("pgsql_extra_bin_dir: version=%s" % version)
+         return {operating_system.DEBIAN: '/usr/lib/postgresql/%s/bin',
+                 operating_system.REDHAT: '/usr/pgsql-%s/bin',
+                 operating_system.SUSE: '/usr/bin'}[self.OS] % version
+@@ -92,11 +94,14 @@ class PgSqlConfig(PgSqlProcess):
+     def _find_config_file(self, name_pattern):
+         version_base = guestagent_utils.build_file_path(self.CONFIG_BASE,
+                                                         self.pg_version[1])
+-        return sorted(operating_system.list_files_in_directory(
++        flist = sorted(operating_system.list_files_in_directory(
+             version_base, recursive=True, pattern=name_pattern,
+             as_root=True), key=len)[0]
++        LOG.debug("_find_config_file: flist=%s" % str(flist))
++        return flist
+ 
+     def update_overrides(self, context, overrides, remove=False):
++        LOG.debug("update_overrides: overrides=%s remove=%s" % (str(overrides), str(remove)))
+         if remove:
+             self.configuration_manager.remove_user_override()
+         elif overrides:
+@@ -110,12 +115,14 @@ class PgSqlConfig(PgSqlProcess):
+         #
+         # NOTE: Do not use the 'SET' command as it only affects the current
+         # session.
++        LOG.debug("apply_overrides: %s" % str(overrides))
+         pgutil.psql("SELECT pg_reload_conf()")
+ 
+     def reset_configuration(self, context, configuration):
+         """Reset the PgSql configuration to the one given.
+         """
+         config_contents = configuration['config_contents']
++        LOG.debug("reset_configuration: config_contents=%s" % str(config_contents))
+         self.configuration_manager.save_configuration(config_contents)
+ 
+     def start_db_with_conf_changes(self, context, config_contents):
+@@ -123,6 +130,7 @@ class PgSqlConfig(PgSqlProcess):
+         if PgSqlAppStatus.get().is_running:
+             raise RuntimeError(_("The service is still running."))
+ 
++        LOG.debug("start_db_with_conf_changes: config_contents=%s" % str(config_contents))
+         self.configuration_manager.save_configuration(config_contents)
+         # The configuration template has to be updated with
+         # guestagent-controlled settings.
+@@ -141,6 +149,7 @@ class PgSqlConfig(PgSqlProcess):
+             'unix_socket_directories': self._quote(self.UNIX_SOCKET_DIR),
+             'listen_addresses': self._quote(','.join(self.LISTEN_ADDRESSES)),
+             'port': CONF.postgresql.postgresql_port}
++        LOG.debug("file_locations=%s" % str(file_locations))
+         self.configuration_manager.apply_system_override(file_locations)
+         self._apply_access_rules()
+ 
