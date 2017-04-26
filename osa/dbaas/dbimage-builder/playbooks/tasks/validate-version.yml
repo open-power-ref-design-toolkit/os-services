@@ -3,7 +3,7 @@
 #
 # ansible-playbook -i host_file dbimage-make.yml -u ubuntu -c ssh
 #
-# This is invoked on the dibvm under the ubuntu user
+# This is invoked on the deployer under the root user
 
 - name: Include OSDB table
   include_vars: "{{ baseDir }}/playbooks/vars/dbimage-osdbs.yml"
@@ -51,6 +51,7 @@
     fail:
       msg: "{{ dbName }} (vers={{ dbVersion }}) is not supported for {{ targetRelease }}!"
     when: pkgDistroName is not defined
+
   when: dbVersion
 
 - block:
@@ -71,6 +72,7 @@
     when:
       - not communityEdition
       - pkgDistroName is not defined
+
   when: not dbVersion
 
 - name: "These are the supported databases and versions"

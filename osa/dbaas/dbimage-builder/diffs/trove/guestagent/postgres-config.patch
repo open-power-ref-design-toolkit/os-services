@@ -1,0 +1,25 @@
+diff --git a/trove/guestagent/datastore/experimental/postgresql/service/config.py b/trove/guestagent/datastore/experimental/postgresql/service/config.py
+index 644d368..28d5c08 100644
+--- a/trove/guestagent/datastore/experimental/postgresql/service/config.py
++++ b/trove/guestagent/datastore/experimental/postgresql/service/config.py
+@@ -221,7 +221,6 @@ class PgSqlConfig(PgSqlProcess):
+             'wal_level': 'hot_standby',
+             'archive_mode ': 'on',
+             'max_wal_senders': 8,
+-            'checkpoint_segments ': 8,
+             'wal_keep_segments': 8,
+             'archive_command': arch_cmd
+         }
+diff --git a/trove/guestagent/strategies/replication/experimental/postgresql_impl.py b/trove/guestagent/strategies/replication/experimental/postgresql_impl.py
+index 9942a67..0a61534 100644
+--- a/trove/guestagent/strategies/replication/experimental/postgresql_impl.py
++++ b/trove/guestagent/strategies/replication/experimental/postgresql_impl.py
+@@ -280,7 +280,7 @@ class PostgresqlReplicationStreaming(
+         opts = {'hot_standby': 'on',
+                 'wal_level': 'hot_standby'}
+         # wal_log_hints for pg_rewind is only supported in 9.4+
+-        if self.pg_version[1] in ('9.4', '9.5'):
++        if self.pg_version[1] in ('9.4', '9.5', '9.6'):
+             opts['wal_log_hints'] = 'on'
+ 
+         service.configuration_manager.\

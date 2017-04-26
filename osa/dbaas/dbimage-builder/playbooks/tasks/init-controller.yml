@@ -7,17 +7,6 @@
 # This is invoked on a controller node as ubuntu and then
 # becomes root before any of these tasks are run
 
-- name: Get controller's public key
-  slurp:
-    src: "~/.ssh/id_rsa.pub"
-  register: public_key
-  failed_when: false
-
-- name: Set controller's public key
-  set_fact:
-    controller_pub_key: "{{ public_key.content | b64decode }}"
-  when: public_key | success
-
 - name: Get trove container name
   shell: /usr/bin/lxc-ls --filter trove_taskmanager_container
   register: trove_container
@@ -42,6 +31,17 @@
   when: findrc['files']
 
 - debug: var=trove_venv
+
+- name: Get controller's public key
+  slurp:
+    src: "~/.ssh/id_rsa.pub"
+  register: public_key
+  failed_when: false
+
+- name: Set controller's public key
+  set_fact:
+    controller_pub_key: "{{ public_key.content | b64decode }}"
+  when: public_key | success
 
 # Get cloud users key from Nova
 
