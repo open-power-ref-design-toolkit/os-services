@@ -1,19 +1,31 @@
-diff --git a/integration/scripts/files/elements/ubuntu-guest/post-install.d/70-trove-guestagent b/integration/scripts/files/elements/ubuntu-guest/post-install.d/70-trove-guestagent
+diff --git a/integration/scripts/files/elements/ubuntu-guest/install.d/70-trove-debug b/integration/scripts/files/elements/ubuntu-guest/install.d/70-trove-debug
 new file mode 100755
-index 0000000..f47998e
+index 0000000..128b7b8
 --- /dev/null
-+++ b/integration/scripts/files/elements/ubuntu-guest/post-install.d/70-trove-guestagent
-@@ -0,0 +1,10 @@
++++ b/integration/scripts/files/elements/ubuntu-guest/install.d/70-trove-debug
+@@ -0,0 +1,22 @@
 +#!/bin/bash
 +set -e
 +set -o xtrace
 +
-+# CONTEXT: HOST after IMAGE BUILD as SCRIPT USER
-+# PURPOSE: Enables LOG.debug in trove-guestagent
++# CONTEXT: GUEST during CONSTRUCTION as ROOT
++# PURPOSE: Enables LOG.debug() in trove-guestagent
 +
-+if [ "$DIB_MYDEBUG" == "true" ]; then
-+    sed -i "s/^debug =.*/debug = True/" /etc/trove/conf.d/trove-guestagent.conf
++if [ "$DIB_MYDEBUG" == "false" ]; then
++    exit 0
 +fi
++
++# This command will be conditionally invoked during boot from systemd or upstart
++
++cat > /home/$GUEST_USERNAME/trove-guest-enable-debug.sh << _EOF_
++#!/bin/bash
++
++sed -i "s/^debug =.*/debug = True/" /etc/trove/conf.d/trove-guestagent.conf
++
++_EOF_
++
++chown $GUEST_USERNAME:root /home/$GUEST_USERNAME/trove-guest-enable-debug.sh
++chmod 750 /home/$GUEST_USERNAME/trove-guest-enable-debug.sh
 diff --git a/integration/scripts/files/elements/ubuntu-trusty-guest/extra-data.d/70-trove-guestagent b/integration/scripts/files/elements/ubuntu-trusty-guest/extra-data.d/70-trove-guestagent
 new file mode 100755
 index 0000000..85233a9
@@ -128,22 +140,30 @@ index 0000000..85233a9
 +cp -r ${PATH_TROVE} ${TMP_HOOKS_PATH}
 +
 diff --git a/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/20-etc b/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/20-etc
-index 1a35015..e24bc8e 100755
+index 1a35015..e27ad9c 100755
 --- a/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/20-etc
 +++ b/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/20-etc
-@@ -1,10 +1,5 @@
- #!/bin/sh
+@@ -1,10 +1,14 @@
+-#!/bin/sh
 -
++#!/bin/bash
  # CONTEXT: GUEST during CONSTRUCTION as ROOT
 -# PURPOSE: take "staged" trove-guest.conf file and put it in the init directory on guest image
 -
 -dd if=/tmp/in_target.d/trove-guest.service of=/etc/systemd/system/trove-guest.service
--
--systemctl enable trove-guest.service
--
 +# PURPOSE: Place the "staged" trove-guestagent.conf file in the guest image
++#          and enable debug if specified during image building
  
-+dd if=/tmp/in_target.d/trove-guest.service of=/lib/systemd/system/trove-guest.service
+-systemctl enable trove-guest.service
++file=/lib/systemd/system/trove-guest.service
+ 
++dd if=/tmp/in_target.d/trove-guest.service of=$file
+ 
++if [ "$DIB_MYDEBUG" == "true" ]; then
++    sed -i "s/ExecStartPre=GUEST_DEBUG/ExecStartPre=\/home\/$GUEST_USERNAME\/trove-guest-enable-debug.sh/" $file
++else
++    sed -i "s/ExecStartPre=GUEST_DEBUG/ExecStartPre=\/bin\/true/" $file
++fi
 diff --git a/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/70-trove-guestagent b/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/70-trove-guestagent
 new file mode 100755
 index 0000000..6f61733
@@ -197,10 +217,10 @@ index 0000000..6f61733
 +systemctl enable trove-guest.service
 +
 diff --git a/integration/scripts/files/trove-guest.systemd.conf b/integration/scripts/files/trove-guest.systemd.conf
-index 47bc2cf..ff999f3 100644
+index 47bc2cf..2a3a6ad 100644
 --- a/integration/scripts/files/trove-guest.systemd.conf
 +++ b/integration/scripts/files/trove-guest.systemd.conf
-@@ -2,28 +2,27 @@
+@@ -2,28 +2,30 @@
  Description=Trove Guest
  After=syslog.target
  After=network.target
@@ -218,14 +238,16 @@ index 47bc2cf..ff999f3 100644
 -# If ~/trove-installed does not exist, copy the trove source from
 -# the user's development environment, then touch the sentinel file
 -ExecStartPre=/bin/bash -c "test -d /home/GUEST_USERNAME/trove-installed || sudo -u GUEST_USERNAME rsync -e 'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' -avz --exclude='.*' HOST_SCP_USERNAME@CONTROLLER_IP:PATH_TROVE/ /home/GUEST_USERNAME/trove && touch /home/GUEST_USERNAME/trove-installed"
--
++# guest_info and trove-guestagent.conf are injected.  Make sure all files are readable
++ExecStartPre=/usr/bin/sudo /bin/bash -c "test ! -d /etc/trove || chown -R GUEST_USERNAME:root /etc/trove && chmod -R ug+rw,o+r /etc/trove"
+ 
 -# If /etc/trove does not exist, create it and then copy the trove-guestagent.conf
 -# from /etc/trove on the user's development environment,
 -ExecStartPre=/bin/bash -c "test -d /etc/trove/conf.d || sudo mkdir -p /etc/trove/conf.d && sudo -u GUEST_USERNAME rsync -e 'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' -avz --exclude='.*' HOST_SCP_USERNAME@CONTROLLER_IP:/etc/trove/trove-guestagent.conf ~GUEST_USERNAME/ && sudo mv ~GUEST_USERNAME/trove-guestagent.conf /etc/trove/conf.d/trove-guestagent.conf"
 -
 -ExecStartPre=/bin/bash -c "sudo chown -R GUEST_USERNAME:root /etc/trove"
-+# guest_info is injected.  Make sure all files are readable
-+ExecStartPre=/usr/bin/sudo /bin/bash -c "test ! -d /etc/trove || chown -R GUEST_USERNAME:root /etc/trove && chmod -R ug+rw,o+r /etc/trove"
++# Optionally set debug logging in trove-guestagent
++ExecStartPre=GUEST_DEBUG
  
  ExecStart=/home/GUEST_USERNAME/trove/contrib/trove-guestagent --config-dir=/etc/trove/conf.d
  

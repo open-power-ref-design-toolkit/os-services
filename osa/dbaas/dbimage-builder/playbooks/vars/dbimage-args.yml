@@ -98,6 +98,7 @@ src_trove_integration_diffs:
 
 src_trove_guestagent_diffs:
   - "{{ baseDir }}/diffs/trove/guestagent/postgres-config.patch"
+  - "{{ baseDir }}/diffs/trove/guestagent/postgres-fix-ctrl-template.patch"
 
 src_trove_guestagent_debug_diffs:
   - "{{ baseDir }}/diffs/trove/guestagent-debug/debug-common.patch"
