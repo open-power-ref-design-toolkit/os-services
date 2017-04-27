@@ -12,4 +12,4 @@
 pip==9.0.1
 setuptools==33.1.1
 wheel==0.29.0
-os-client-config>=1.22.0
+os-client-config==1.26.0
