@@ -52,6 +52,21 @@ index d5b5f50..630886b 100755
  
  # Install the native Python client.
  apt-get --allow-unauthenticated -y install libpq-dev
+diff --git a/integration/scripts/files/elements/ubuntu-postgresql/post-install.d/30-postgresql b/integration/scripts/files/elements/ubuntu-postgresql/post-install.d/30-postgresql
+new file mode 100755
+index 0000000..c7197c5
+--- /dev/null
++++ b/integration/scripts/files/elements/ubuntu-postgresql/post-install.d/30-postgresql
+@@ -0,0 +1,9 @@
++#!/bin/bash
++
++set -e
++set -o xtrace
++
++# For support purposes.  This is the default config before it is changed by trove
++
++tar -cvf /home/$GUEST_USERNAME/postgresql-cfg-pretrove.tar /etc/postgresql
++
 diff --git a/integration/scripts/files/elements/ubuntu-postgresql/pre-install.d/10-postgresql-repo b/integration/scripts/files/elements/ubuntu-postgresql/pre-install.d/10-postgresql-repo
 index 132bc4f..2bc4f15 100755
 --- a/integration/scripts/files/elements/ubuntu-postgresql/pre-install.d/10-postgresql-repo
@@ -73,18 +88,12 @@ index 132bc4f..2bc4f15 100755
  deb http://apt.postgresql.org/pub/repos/apt/ ${RELEASE}-pgdg main
  EOL
 diff --git a/integration/scripts/files/elements/ubuntu-xenial-postgresql/install.d/31-fix-init-script b/integration/scripts/files/elements/ubuntu-xenial-postgresql/install.d/31-fix-init-script
-index c454d83..bde587b 100755
+index c454d83..4194170 100755
 --- a/integration/scripts/files/elements/ubuntu-xenial-postgresql/install.d/31-fix-init-script
 +++ b/integration/scripts/files/elements/ubuntu-xenial-postgresql/install.d/31-fix-init-script
-@@ -1,7 +1,8 @@
--#!/bin/sh
-+#!/bin/bash
- 
- set -e
+@@ -4,4 +4,5 @@ set -e
  set -o xtrace
  
--sed -i "s/PIDFile=\/var\/run\/postgresql\/%i.pid/PIDFile=\/var\/run\/postgresql\/postgresql.pid/" /lib/systemd/system/postgresql@.service
--
-+if [ "$DIB_MYCOMMUNITY_EDITION" == "true" ]; then
-+    sed -i "s/PIDFile=\/var\/run\/postgresql\/%i.pid/PIDFile=\/var\/run\/postgresql\/postgresql.pid/" /lib/systemd/system/postgresql@.service
-+fi
+ sed -i "s/PIDFile=\/var\/run\/postgresql\/%i.pid/PIDFile=\/var\/run\/postgresql\/postgresql.pid/" /lib/systemd/system/postgresql@.service
++rm /etc/init.d/postgresql
+ 

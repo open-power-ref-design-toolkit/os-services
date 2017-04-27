@@ -1,3 +1,122 @@
+diff --git a/trove/guestagent/common/configuration.py b/trove/guestagent/common/configuration.py
+index 8b98686..43f2c58 100644
+--- a/trove/guestagent/common/configuration.py
++++ b/trove/guestagent/common/configuration.py
+@@ -18,10 +18,12 @@ import os
+ import re
+ import six
+ 
++from oslo_log import log as logging
+ from trove.guestagent.common import guestagent_utils
+ from trove.guestagent.common import operating_system
+ from trove.guestagent.common.operating_system import FileMode
+ 
++LOG = logging.getLogger(__name__)
+ 
+ class ConfigurationManager(object):
+     """
+@@ -115,7 +117,12 @@ class ConfigurationManager(object):
+             self._base_config_path, codec=self._codec,
+             as_root=self._requires_root)
+ 
++        LOG.debug("parse_configuration: base_options=%s" % str(base_options))
++
+         updates = self._override_strategy.parse_updates()
++
++        LOG.debug("parse_configuration: updates=%s" % str(updates))
++
+         guestagent_utils.update_dict(updates, base_options)
+ 
+         return base_options
+@@ -135,6 +142,9 @@ class ConfigurationManager(object):
+             self._override_strategy.remove(self.SYSTEM_PRE_USER_GROUP)
+             self._override_strategy.remove(self.SYSTEM_POST_USER_GROUP)
+ 
++            LOG.debug("save_configuration, _base_config_path=%s, options=%s" %
++                      (str(self._base_config_path), str(options)))
++
+             operating_system.write_file(
+                 self._base_config_path, options, as_root=self._requires_root)
+             operating_system.chown(
+@@ -184,23 +194,28 @@ class ConfigurationManager(object):
+         return self._override_strategy.get(self.USER_GROUP, change_id)
+ 
+     def _apply_override(self, group_name, change_id, options):
++
+         if not isinstance(options, dict):
+             # Deserialize the options into a dict if not already.
+             self._apply_override(
+                 group_name, change_id, self._codec.deserialize(options))
+         else:
++            LOG.debug("_apply_override: group_name=%s, change_id=%s, options=%s" %
++                      (str(group_name), str(change_id), str(options)))
+             self._override_strategy.apply(group_name, change_id, options)
+             self.refresh_cache()
+ 
+     def remove_system_override(self, change_id=DEFAULT_CHANGE_ID):
+         """Revert a 'system' configuration change.
+         """
++        LOG.debug("remove_system_override: change_id=%s" % str(change_id))
+         self._remove_override(self.SYSTEM_POST_USER_GROUP, change_id)
+         self._remove_override(self.SYSTEM_PRE_USER_GROUP, change_id)
+ 
+     def remove_user_override(self, change_id=DEFAULT_CHANGE_ID):
+         """Revert a 'user' configuration change.
+         """
++        LOG.debug("remove_user_override: change_id=%s" % str(change_id))
+         self._remove_override(self.USER_GROUP, change_id)
+ 
+     def _remove_override(self, group_name, change_id):
+@@ -210,7 +225,6 @@ class ConfigurationManager(object):
+     def refresh_cache(self):
+         self._value_cache = self.parse_configuration()
+ 
+-
+ @six.add_metaclass(abc.ABCMeta)
+ class ConfigurationOverrideStrategy(object):
+     """ConfigurationOverrideStrategy handles configuration files.
+@@ -335,12 +349,18 @@ class ImportOverrideStrategy(ConfigurationOverrideStrategy):
+         self._codec = codec
+         self._requires_root = requires_root
+ 
++        LOG.debug("ImportOverrideStrategy.configure: "\
++            "_base_config_path=%s, _revision_dir= %s, _revision_ext=%s" %
++            (str(base_config_path), str(self._revision_dir), str(self._revision_ext)))
++
+     def exists(self, group_name, change_id):
+         return self._find_revision_file(group_name, change_id) is not None
+ 
+     def apply(self, group_name, change_id, options):
+         self._initialize_import_directory()
+         revision_file = self._find_revision_file(group_name, change_id)
++        LOG.debug("apply: revision_file=%s, group_name=%s, change_id=%s" %
++                 (str(revision_file), str(group_name), str(change_id)))
+         if revision_file is None:
+             # Create a new file.
+             last_revision_index = self._get_last_file_index(group_name)
+@@ -496,6 +516,11 @@ class OneFileOverrideStrategy(ConfigurationOverrideStrategy):
+         self._base_revision_file = guestagent_utils.build_file_path(
+             self._revision_dir, self.BASE_REVISION_NAME, self.REVISION_EXT)
+ 
++        LOG.debug("OneFileOverrideStrategy.configure: _import_strategy=%s, "\
++            "_base_config_path=%s, _base_revision_file = %s" %
++            (str(self._import_strategy), str(base_config_path),
++            str(self._base_revision_file)))
++
+         self._import_strategy.configure(
+             base_config_path, owner, group, codec, requires_root)
+ 
+@@ -535,6 +560,10 @@ class OneFileOverrideStrategy(ConfigurationOverrideStrategy):
+         base_revision = operating_system.read_file(
+             self._base_revision_file, codec=self._codec,
+             as_root=self._requires_root)
++
++        LOG.debug("_regenerate_base_configuration: base_revision=%s" %
++            str(base_revision))
++
+         changes = self._import_strategy.parse_updates()
+         updated_revision = guestagent_utils.update_dict(changes, base_revision)
+         operating_system.write_file(
 diff --git a/trove/guestagent/datastore/manager.py b/trove/guestagent/datastore/manager.py
 index 5d3e94d..aa868c5 100644
 --- a/trove/guestagent/datastore/manager.py

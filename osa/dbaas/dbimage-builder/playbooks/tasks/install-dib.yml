@@ -162,6 +162,7 @@
     - ubuntu-xenial-guest/
     - ubuntu-trusty-guest/
     - ubuntu-guest/
+    - ubuntu-postgresql/
   when: "{{ src_trove_integration_diffs }}"
 
 - name: Configure diskimage-builder
