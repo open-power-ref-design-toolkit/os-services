@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2016 IBM Corp.
+# Copyright 2016, 2017 IBM Corp.
 #
 # All Rights Reserved.
 #
@@ -241,7 +241,7 @@ if real_genesis_inventory_present; then
     # Call the pre-deploy playbook to do additional pre-OSA prep.
     echo "Run pre-OSA prep..."
     pushd playbooks >/dev/null 2>&1
-    ansible-playbook -i ${GENESIS_DIR}/scripts/python/yggdrasil/inventory.py pre-deploy.yml
+    ansible-playbook -i ${GENESIS_DIR}/scripts/python/inventory.py pre-deploy.yml
     rc=$?
     if [ $rc != 0 ]; then
         echo "playbooks/pre-deploy.yml failed, rc=$rc"
