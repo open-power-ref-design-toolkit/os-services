@@ -1,3 +1,25 @@
+diff --git a/trove/guestagent/datastore/experimental/postgresql/pgutil.py b/trove/guestagent/datastore/experimental/postgresql/pgutil.py
+index 43eb637..7ac1f18 100644
+--- a/trove/guestagent/datastore/experimental/postgresql/pgutil.py
++++ b/trove/guestagent/datastore/experimental/postgresql/pgutil.py
+@@ -168,7 +168,7 @@ class UserQuery(object):
+         create_clause = "CREATE USER \"{name}\"".format(name=name)
+         with_clause = cls._build_with_clause(
+             password, encrypt_password, *options)
+-        return ''.join([create_clause, with_clause])
++        return ' '.join([create_clause, with_clause])
+ 
+     @classmethod
+     def _build_with_clause(cls, password, encrypt_password=None, *options):
+@@ -203,7 +203,7 @@ class UserQuery(object):
+         alter_clause = "ALTER USER \"{name}\"".format(name=name)
+         with_clause = cls._build_with_clause(
+             password, encrypt_password, *options)
+-        return ''.join([alter_clause, with_clause])
++        return ' '.join([alter_clause, with_clause])
+ 
+     @classmethod
+     def update_name(cls, old, new):
 diff --git a/trove/guestagent/datastore/experimental/postgresql/service/config.py b/trove/guestagent/datastore/experimental/postgresql/service/config.py
 index 644d368..28d5c08 100644
 --- a/trove/guestagent/datastore/experimental/postgresql/service/config.py
@@ -10,6 +32,18 @@ index 644d368..28d5c08 100644
              'wal_keep_segments': 8,
              'archive_command': arch_cmd
          }
+diff --git a/trove/guestagent/datastore/experimental/postgresql/service/users.py b/trove/guestagent/datastore/experimental/postgresql/service/users.py
+index 0c61bbe..8c8f494 100644
+--- a/trove/guestagent/datastore/experimental/postgresql/service/users.py
++++ b/trove/guestagent/datastore/experimental/postgresql/service/users.py
+@@ -51,6 +51,7 @@ class PgSqlUsers(PgSqlAccess):
+             'CREATEROLE',
+             'INHERIT',
+             'REPLICATION',
++            'BYPASSRLS',
+             'LOGIN']
+ 
+     def _create_admin_user(self, context, databases=None):
 diff --git a/trove/guestagent/strategies/replication/experimental/postgresql_impl.py b/trove/guestagent/strategies/replication/experimental/postgresql_impl.py
 index 9942a67..0a61534 100644
 --- a/trove/guestagent/strategies/replication/experimental/postgresql_impl.py
