@@ -284,4 +284,4 @@ horizon_keystone_admin_roles:
 tmp_dir: "/tmp/dbaas"
 ui_enabled: "{{ horizon_lib_dir | dirname | replace('untagged', openstack_release) }}/site-packages/openstack_dashboard/local/enabled"
 ui_artwork: "{{ horizon_lib_dir | dirname | replace('untagged', openstack_release) }}/site-packages/static/dashboard/img"
-TOP_PCLD_DIR: "{{ lookup('env', 'TOP_PCLD_DIR') }}"
+top_level_os_services_dir: "{{ lookup('env', 'TOP_PCLD_DIR') | default('/root/os-services', true) }}"

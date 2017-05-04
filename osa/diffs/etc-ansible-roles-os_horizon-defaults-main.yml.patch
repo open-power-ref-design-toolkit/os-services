@@ -1,6 +1,6 @@
 diff -Naur a/etc/ansible/roles/os_horizon/defaults/main.yml b/etc/ansible/roles/os_horizon/defaults/main.yml
---- a/etc/ansible/roles/os_horizon/defaults/main.yml	2017-03-23 12:38:54.944018880 -0400
-+++ b/etc/ansible/roles/os_horizon/defaults/main.yml	2017-03-23 12:36:45.976507642 -0400
+--- a/etc/ansible/roles/os_horizon/defaults/main.yml	2017-05-16 09:31:10.050752581 -0400
++++ b/etc/ansible/roles/os_horizon/defaults/main.yml	2017-05-16 09:30:16.642633192 -0400
 @@ -31,10 +31,15 @@
  magnum_dashboard_git_repo: https://git.openstack.org/openstack/magnum-ui
  magnum_dashboard_git_install_branch: stable/newton
@@ -54,4 +54,4 @@ diff -Naur a/etc/ansible/roles/os_horizon/defaults/main.yml b/etc/ansible/roles/
 +tmp_dir: "/tmp/dbaas"
 +ui_enabled: "{{ horizon_lib_dir | dirname | replace('untagged', openstack_release) }}/site-packages/openstack_dashboard/local/enabled"
 +ui_artwork: "{{ horizon_lib_dir | dirname | replace('untagged', openstack_release) }}/site-packages/static/dashboard/img"
-+TOP_PCLD_DIR: "{{ lookup('env', 'TOP_PCLD_DIR') }}"
++top_level_os_services_dir: "{{ lookup('env', 'TOP_PCLD_DIR') | default('/root/os-services', true) }}"

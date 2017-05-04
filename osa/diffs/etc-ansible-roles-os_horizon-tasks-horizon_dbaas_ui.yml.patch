@@ -1,6 +1,6 @@
 diff -Naur a/etc/ansible/roles/os_horizon/tasks/horizon_dbaas_ui.yml b/etc/ansible/roles/os_horizon/tasks/horizon_dbaas_ui.yml
 --- a/etc/ansible/roles/os_horizon/tasks/horizon_dbaas_ui.yml	1969-12-31 19:00:00.000000000 -0500
-+++ b/etc/ansible/roles/os_horizon/tasks/horizon_dbaas_ui.yml	2017-03-24 15:17:10.987938263 -0400
++++ b/etc/ansible/roles/os_horizon/tasks/horizon_dbaas_ui.yml	2017-05-04 17:05:38.187055909 -0400
 @@ -0,0 +1,54 @@
 +---
 +# Copyright 2017, IBM US, Inc.
@@ -20,13 +20,13 @@ diff -Naur a/etc/ansible/roles/os_horizon/tasks/horizon_dbaas_ui.yml b/etc/ansib
 +# Copy the images files from the local host to the horizon host
 +- name: Copy ui images to Horizon img directory
 +  copy:
-+    src: "{{ TOP_PCLD_DIR }}/osa/dbaas_ui/IDL-Images/"
++    src: "{{ top_level_os_services_dir }}/osa/dbaas_ui/IDL-Images/"
 +    dest: "{{ ui_artwork }}"
 +
 +# Copy the enabling files from the local host to the horizon host
 +- name: Copy ui Horizon  enabling code into enabled
 +  copy:
-+    src: "{{ TOP_PCLD_DIR }}/osa/dbaas_ui/enabled_ui/"
++    src: "{{ top_level_os_services_dir }}/osa/dbaas_ui/enabled_ui/"
 +    dest: "{{ ui_enabled }}"
 +
 +# Create a temp directory for the pip install code
@@ -39,7 +39,7 @@ diff -Naur a/etc/ansible/roles/os_horizon/tasks/horizon_dbaas_ui.yml b/etc/ansib
 +# Copy the pip code to the temp directory
 +- name: copy pip install code to server
 +  copy:
-+    src: "{{ TOP_PCLD_DIR }}/osa/dbaas_ui/"
++    src: "{{ top_level_os_services_dir }}/osa/dbaas_ui/"
 +    dest: "{{ tmp_dir }}"
 +
 +# Install the core DBaaS UI code
