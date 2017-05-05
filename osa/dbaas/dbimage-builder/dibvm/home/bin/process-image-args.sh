@@ -42,7 +42,7 @@ dbVersion=""
 pkg=""
 pkgType=""
 installScript=""
-cloudUser=""
+cloudKey=""
 branch=""
 gitUrl=""
 gitTag=""
@@ -58,7 +58,7 @@ cmd=$(basename $0)
 
 OPTERR=0
 OPTIND=1
-while getopts ":i:d:v:p:u:b:c" opt; do
+while getopts ":i:d:v:p:k:b:c" opt; do
     case "$opt" in
         i) ipAddrDib=$OPTARG
            ;;
@@ -95,7 +95,7 @@ while getopts ":i:d:v:p:u:b:c" opt; do
                    exit 1
            esac
            ;;
-        u) cloudUser=$OPTARG
+        k) cloudKey=$OPTARG
            ;;
         b) dibUser=$OPTARG
            ;;
@@ -165,7 +165,7 @@ echo "dbVersion=$dbVersion"
 echo "pkg=$pkg"
 echo "pkgType=$pkgType"
 echo "installScript=$installScript"
-echo "cloudUser=$cloudUser"
+echo "cloudKey=$cloudKey"
 echo "gitUrl=$gitUrl"
 echo "gitTag=$gitTag"
 echo "dibUser=$dibUser"
@@ -182,7 +182,7 @@ export DBIMAGE_DBVERSION=$dbVersion
 export DBIMAGE_PKG=$pkg
 export DBIMAGE_PKGTYPE=$pkgType
 export DBIMAGE_INSTALLSCRIPT=$installScript
-export DBIMAGE_USER=$cloudUser
+export DBIMAGE_CLOUD_KEY=$cloudKey
 export DBIMAGE_GITURL=$gitUrl
 export DBIMAGE_GITTAG=$gitTag
 export DBIMAGE_DIBUSER=$dibUser

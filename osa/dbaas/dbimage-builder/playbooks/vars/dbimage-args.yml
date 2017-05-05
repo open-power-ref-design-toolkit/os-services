@@ -8,7 +8,7 @@ dbVersion: "{{ '.'.join(lookup('env', 'DBIMAGE_DBVERSION').split('.', 2)[:2]) | 
 pkg: "{{ lookup('env', 'DBIMAGE_PKG') }}"
 pkgType: "{{ lookup('env', 'DBIMAGE_PKGTYPE') }}"
 installScript: "{{ lookup('env', 'DBIMAGE_INSTALLSCRIPT') }}"
-cloudUser: "{{ lookup('env', 'DBIMAGE_USER') }}"
+cloudKey: "{{ lookup('env', 'DBIMAGE_CLOUD_KEY') }}"
 gitUrl: "{{ lookup('env', 'DBIMAGE_GITURL') }}"
 gitTag: "{{ lookup('env', 'DBIMAGE_GITTAG') }}"
 baseDir: "{{ lookup('env', 'DBIMAGE_DIR') }}"

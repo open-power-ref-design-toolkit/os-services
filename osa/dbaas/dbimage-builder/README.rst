@@ -2,18 +2,24 @@
 dbimage-builder
 ===============
 
-The **dbimage-builder.sh** command creates a bootable
+The **dbimage-make.sh** command creates a bootable
 virtual disk image that is configured to provide
 a given database.  The list of databases is:
 **mariadb, mongodb, mysql, postgresql, and redis**.
+
 This list is expected to grow over time, so check back on the
 availability of other databases.  Upon successful completion,
 this command uploads the image to the OpenStack infrastucture.
 It is from these images that running database instances are created.
 
-A second set of commands **dbflavors-show.sh**, **dbflavor-change.sh**,
-and **dbflavor-upload.sh** create database flavors
-that are used to control the size of database instance.  A
+Images are reusable across cloud instances.  The
+**dbimage-upload.sh** command uploads an image that
+was previously created by **dbimage-make.sh**.  The image is
+updated with requisite OpenStack Trove data to properly function.
+
+An additional set of commands **dbflavors-show.sh**, **dbflavor-change.sh**,
+and **dbflavor-upload.sh** are provided to create database flavors, which
+are used to control the size of database instance.  A
 predefined set of these flavors are provided.  The user can
 list them, change them at the attribute level (cpu, memory,
 storage) and then activate them with the OpenStack
@@ -64,7 +70,7 @@ dbimage-make.sh
 
 ::
 
-  dbimage-make.sh -d db-name [ -v db-version ] [ -c ] [ -u cloud-user ]
+  dbimage-make.sh -d db-name [ -v db-version ] [ -c ] [ -k key-name ]
                              [ -i dib-ip-addr ] [ -p pkg ]
 
 This script creates a bootable O/S image containing the named
@@ -82,12 +88,10 @@ If an invalid version is specified, the tool lists the supported
 versions, so one may query the supported versions by specifying
 an invalid version such as 0.0.
 
-The -u argument names an OpenStack user.  If this argument is
-specified, then the public ssh key for this user is obtained from
+The -k argument names a ssh key pair that is registered with OpenStack.
+If this argument is specified, then the public ssh key is obtained from
 OpenStack and is placed in virtual disk image in the
-file /home/<dib-user>/.ssh/authorized_keys.  Alternatively, the
-user can manually copy the public ssh key into
-dbimage-builder/etc/ssh/.
+file /home/<dib-user>/.ssh/authorized_keys. This is intended for DBA access.
 
 The -i argument identifies a running virtual machine (VM) that should
 be used to create the virtual disk image.  This VM must be installed

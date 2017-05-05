@@ -26,7 +26,7 @@
 - debug: var=pkgDistroName
 - debug: var=srcPkgName
 - debug: var=ipAddrController
-- debug: var=cloudUser
+- debug: var=cloudKey
 
 - name: Invoke diskimage-builder in the dibvm
   shell: |
@@ -43,8 +43,8 @@
     if [ -n "{{ pkg }}" ]; then
         ARGS="$ARGS -p {{ pkg }}"
     fi
-    if [ -n "{{ cloudUser }}" ]; then
-        ARGS="$ARGS -u {{ cloudUser }}"
+    if [ -n "{{ cloudKey }}" ]; then
+        ARGS="$ARGS -k {{ cloudKey }}"
     fi
     if [ "{{ communityEdition|string|lower }}" == "true" ]; then
         ARGS="$ARGS -c"

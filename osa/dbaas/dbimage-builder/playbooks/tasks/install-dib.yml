@@ -84,16 +84,16 @@
     manage_dir: false
   when: hostvars[ groups['controller'][0]].controller_pub_key
 
-- name: Set authorized key for clouduser in alternate location
+- name: Set authorized key for {{ cloudKey | quote }} in alternate location
   authorized_key:
     user: "{{ dibUser }}"
     state: present
-    key: "{{ hostvars[groups['controller'][0]].clouduser_pub_key }}"
+    key: "{{ hostvars[groups['controller'][0]].cloud_pub_key }}"
     path: "{{ dib_home }}/dibuser/authorized_keys"
     manage_dir: false
   when:
-    - cloudUser
-    - hostvars[groups['controller'][0]].clouduser_pub_key is defined
+    - cloudKey != ''
+    - hostvars[groups['controller'][0]].cloud_pub_key is defined
 
 - name: Get diskimage-builder (vers={{ dib_version }})
   git:

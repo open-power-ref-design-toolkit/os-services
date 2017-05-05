@@ -19,12 +19,12 @@
 export DBIMAGE_SOURCE=${DBIMAGE_SOURCE:-"-dib"}
 
 if [ "$1" == "--help" ]; then
-    echo "Usage: dbimage-make.sh -d db-name [ -v db-version ] [ -u cloud-user ]"
+    echo "Usage: dbimage-make.sh -d db-name [ -v db-version ] [ -k key-name ]"
     echo "                 [ -i dib-ip-addr ] [ -b dib-user ] [ -p pkg ] [ -c ]"
     echo ""
     echo "The dib-ip-addr argument is the ipaddr of the virtual machine where the image is built"
-    echo "The dib-user is the remote ssh user on the vm under which the image is built.  The default is ubuntu."
-    echo "The public key of the cloud-user is placed in the image.  This would be the DBA or Developer that administers the image"
+    echo "The dib-user argument is the remote ssh user on the vm under which the image is built.  The default is ubuntu."
+    echo "The key-name argument identifies a Nova ssh key pair.  If specified, the public key is placed in the image."
     echo "The -c argument indicates that the user wants the more recent community provided database if supported"
     echo ""
     echo "See the README.rst file for more information"

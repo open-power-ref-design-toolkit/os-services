@@ -18,7 +18,7 @@
 
 if [ "$1" == "--help" ]; then
     echo "Usage: create-image-vm.sh -i dibvm-ipaddr -d db-name -v db-version"
-    echo "          [ -c ] [ -D pkg-name -V pkg-version | -p pkg ] [ -u user ]"
+    echo "          [ -c ] [ -D pkg-name -V pkg-version | -p pkg ] [ -k key-name ]"
     echo ""
     echo "Upon successful completion, a raw disk image file is created in $HOME/img/"
     echo ""
