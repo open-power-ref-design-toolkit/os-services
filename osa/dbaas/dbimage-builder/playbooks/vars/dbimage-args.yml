@@ -90,19 +90,22 @@ src_dib_diffs:
 
 src_trove_integration_diffs:
   - "{{ baseDir }}/diffs/trove/integration/15-reddwarf-dep.patch"
-  - "{{ baseDir }}/diffs/trove/integration/trove-guestagent.patch"
-  - "{{ baseDir }}/diffs/trove/integration/trove-mariadb.patch"
-  - "{{ baseDir }}/diffs/trove/integration/trove-mysql.patch"
-  - "{{ baseDir }}/diffs/trove/integration/trove-redis.patch"
-  - "{{ baseDir }}/diffs/trove/integration/trove-postgresql.patch"
+  - "{{ baseDir }}/diffs/trove/integration/element-guestagent.patch"
+  - "{{ baseDir }}/diffs/trove/integration/element-mariadb.patch"
+  - "{{ baseDir }}/diffs/trove/integration/element-mysql.patch"
+  - "{{ baseDir }}/diffs/trove/integration/element-redis.patch"
+  - "{{ baseDir }}/diffs/trove/integration/element-postgresql.patch"
 
 src_trove_guestagent_diffs:
   - "{{ baseDir }}/diffs/trove/guestagent/postgres-config.patch"
   - "{{ baseDir }}/diffs/trove/guestagent/postgres-fix-ctrl-template.patch"
+  - "{{ baseDir }}/diffs/trove/guestagent/mariadb-systemd.patch"
+  - "{{ baseDir }}/diffs/trove/guestagent/mariadb-reload.patch"
 
 src_trove_guestagent_debug_diffs:
   - "{{ baseDir }}/diffs/trove/guestagent-debug/debug-common.patch"
   - "{{ baseDir }}/diffs/trove/guestagent-debug/debug-postgres.patch"
+  - "{{ baseDir }}/diffs/trove/guestagent-debug/debug-mariadb.patch"
 
 # Target locations in dibvm
 

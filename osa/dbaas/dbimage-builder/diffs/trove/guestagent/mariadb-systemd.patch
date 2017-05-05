@@ -1,0 +1,13 @@
+diff --git a/trove/guestagent/datastore/mysql_common/service.py b/trove/guestagent/datastore/mysql_common/service.py
+index 96c9330..6188091 100644
+--- a/trove/guestagent/datastore/mysql_common/service.py
++++ b/trove/guestagent/datastore/mysql_common/service.py
+@@ -596,7 +596,7 @@ class BaseMySqlApp(object):
+ 
+     @property
+     def service_candidates(self):
+-        return ["mysql", "mysqld", "mysql-server"]
++        return ["mysql", "mysqld", "mysql-server", "mariadb"]
+ 
+     @property
+     def mysql_service(self):
