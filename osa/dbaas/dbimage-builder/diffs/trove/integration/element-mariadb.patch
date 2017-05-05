@@ -12,8 +12,11 @@ index 55b5ef8..cc94ae4 100755
  # Add Percona GPG key
  mkdir -p /home/${GUEST_USERNAME}/.gnupg
  
+diff --git a/integration/scripts/files/elements/ubuntu-xenial-mariadb/element-deps b/integration/scripts/files/elements/ubuntu-xenial-mariadb/element-deps
+old mode 100644
+new mode 100755
 diff --git a/integration/scripts/files/elements/ubuntu-xenial-mariadb/install.d/30-mariadb b/integration/scripts/files/elements/ubuntu-xenial-mariadb/install.d/30-mariadb
-index 521f3e6..92a33e9 100755
+index 521f3e6..b55a6e2 100755
 --- a/integration/scripts/files/elements/ubuntu-xenial-mariadb/install.d/30-mariadb
 +++ b/integration/scripts/files/elements/ubuntu-xenial-mariadb/install.d/30-mariadb
 @@ -1,4 +1,4 @@
@@ -22,7 +25,7 @@ index 521f3e6..92a33e9 100755
  
  # CONTEXT: GUEST during CONSTRUCTION as ROOT
  # PURPOSE: Install controller base required packages
-@@ -8,32 +8,50 @@ set -o xtrace
+@@ -8,32 +8,17 @@ set -o xtrace
  
  export DEBIAN_FRONTEND=noninteractive
  
@@ -47,44 +50,94 @@ index 521f3e6..92a33e9 100755
  apt-get -y update
 -apt-get -y install socat percona-xtrabackup
 -apt-get -y install libmariadbclient18 mariadb-server
-+apt-get -y install socat percona-xtrabackup pwgen
-+apt-get -y install mariadb-client mariadb-server
- 
- cat >/etc/mysql/conf.d/no_perf_schema.cnf <<_EOF_
- [mysqld]
- performance_schema = off
-+
- _EOF_
- 
+-
+-cat >/etc/mysql/conf.d/no_perf_schema.cnf <<_EOF_
+-[mysqld]
+-performance_schema = off
+-_EOF_
+-
 -mv /etc/mysql/my.cnf.fallback /etc/mysql/my.cnf
 -chown mysql:mysql /etc/mysql/my.cnf
-+rm /etc/mysql/my.cnf                       # This is a symbolic link to /etc/alternatives/my.cnf
-+
- cat >/etc/mysql/my.cnf <<_EOF_
+-cat >/etc/mysql/my.cnf <<_EOF_
 -[mysql]
-+#
-+# This group is read both both by the client and the server
-+# use it for options that affect everything
-+#
-+[client-server]
- 
-+!includedir /etc/mysql/mariadb.conf.d/
- !includedir /etc/mysql/conf.d/
-+
- _EOF_
- 
+-
+-!includedir /etc/mysql/conf.d/
+-_EOF_
+-
 -rm /etc/init.d/mysql
 -systemctl daemon-reload
 -systemctl enable mariadb
-+# Causes Trove to generate a password for mysql root user on first boot
-+pwgen -s 13 1 > /root/.mysql_secret
-+chown mysql:root /root/.mysql_secret
-+chmod 660 /root/.mysql_secret
++apt-get -y install socat percona-xtrabackup pwgen
++apt-get -y install mariadb-client mariadb-server
+diff --git a/integration/scripts/files/elements/ubuntu-xenial-mariadb/install.d/70-mariadb b/integration/scripts/files/elements/ubuntu-xenial-mariadb/install.d/70-mariadb
+new file mode 100755
+index 0000000..2e5b971
+--- /dev/null
++++ b/integration/scripts/files/elements/ubuntu-xenial-mariadb/install.d/70-mariadb
+@@ -0,0 +1,66 @@
++#!/bin/bash
++
++# CONTEXT: GUEST during CONSTRUCTION as ROOT after GUEST_USERNAME is created
++# PURPOSE: Install controller base required packages
++
++set -e
++set -o xtrace
++
++# Save original configuration for debug purposes
++tar -cvf /home/$GUEST_USERNAME/mariadb-cfg-pretrove.tar /etc/mysql
++
++cat >/etc/mysql/conf.d/no_perf_schema.cnf <<_EOF_
++[mysqld]
++performance_schema = off
++
++_EOF_
++
++# /etc/mysql/my.cnf is is a symbolic link to /etc/alternatives/my.cnf
++mv /etc/mysql/my.cnf.fallback /etc/mysql/my.cnf
++
++if [ "$DIB_MYCOMMUNITY_EDITION" == "true" ]; then
++
++    cat >/etc/mysql/my.cnf <<_EOF_
++[mysql]
++
++!includedir /etc/mysql/conf.d/
++_EOF_
++
++    rm /etc/init.d/mysql
++    systemctl enable mariadb
++else
++
++    cat >/etc/mysql/my.cnf <<_EOF_
++[client]
++port = 3306
++socket = /var/run/mysqld/mysqld.sock
++
++[mysqld_safe]
++pid-file = /var/run/mysqld/mysqld.pid
++socket = /var/run/mysqld/mysqld.sock
++
++[mysqld]
++user = mysql
++port = 3306
++basedir = /usr
++datadir = /var/lib/mysql/data
++tmpdir = /var/tmp
++pid-file = /var/run/mysqld/mysqld.pid
++socket = /var/run/mysqld/mysqld.sock
++skip-external-locking = 1
++
++!includedir /etc/mysql/conf.d/
++_EOF_
++
++    # Causes Trove to reset the password for mysql root user to '' on first boot
++    PASSWORD="$(pwgen -s 13 1)"
++    echo "# The random password set for the root user at localhost: $PASSWORD" > /root/.mysql_secret
++    chown mysql:root /root/.mysql_secret
++    chmod 660 /root/.mysql_secret
++
++#    echo "root:$PASSWORD"|chpasswd
++fi
 +
 +chown -R mysql:root /etc/mysql /var/log/mysql
 +chmod -R g+rw /etc/mysql /var/log/mysql
 +
-+if [ "$DIB_MYCOMMUNITY_EDITION" == "true" ]; then
-+    rm /etc/init.d/mysql
-+    systemctl enable mariadb
-+fi

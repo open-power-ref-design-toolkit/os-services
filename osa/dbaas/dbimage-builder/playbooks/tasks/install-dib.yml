@@ -163,6 +163,7 @@
     - ubuntu-trusty-guest/
     - ubuntu-guest/
     - ubuntu-postgresql/
+    - ubuntu-xenial-mariadb/
   when: "{{ src_trove_integration_diffs }}"
 
 - name: Configure diskimage-builder

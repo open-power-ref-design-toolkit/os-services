@@ -1,0 +1,142 @@
+diff --git a/trove/guestagent/datastore/experimental/mariadb/service.py b/trove/guestagent/datastore/experimental/mariadb/service.py
+index b1bb4f0..e18ea79 100644
+--- a/trove/guestagent/datastore/experimental/mariadb/service.py
++++ b/trove/guestagent/datastore/experimental/mariadb/service.py
+@@ -36,6 +36,7 @@ class MariaDBApp(galera_service.GaleraApp):
+     @property
+     def service_candidates(self):
+         service_candidates = super(MariaDBApp, self).service_candidates
++        LOG.debug("MariaDBApp services_candidates=%s" % service_candidates)
+         return {
+             operating_system.DEBIAN: service_candidates,
+             operating_system.REDHAT: ["mariadb"],
+@@ -54,6 +55,7 @@ class MariaDBApp(galera_service.GaleraApp):
+             result['cmd_bootstrap_galera_cluster'] = (
+                 "sudo systemctl start %s@bootstrap.service"
+                 % result['service'])
++        LOG.debug("mysql_service: result=%s" % str(result))
+         return result
+ 
+     @property
+@@ -99,7 +101,6 @@ class MariaDBRootAccess(mysql_service.BaseMySqlRootAccess):
+             mysql_service.BaseLocalSqlClient,
+             MariaDBApp(mysql_service.BaseMySqlAppStatus.get()))
+ 
+-
+ class MariaDBAdmin(mysql_service.BaseMySqlAdmin):
+     def __init__(self):
+         super(MariaDBAdmin, self).__init__(
+diff --git a/trove/guestagent/datastore/mysql_common/manager.py b/trove/guestagent/datastore/mysql_common/manager.py
+index b670dd0..454d0fd 100644
+--- a/trove/guestagent/datastore/mysql_common/manager.py
++++ b/trove/guestagent/datastore/mysql_common/manager.py
+@@ -85,6 +85,8 @@ class MySqlManager(manager.Manager):
+         slow_query_log_file = self.build_log_file_name(
+             self.GUEST_LOG_DEFS_SLOW_QUERY_LABEL, owner,
+             datastore_dir=datastore_dir)
++        LOG.debug("datastore_log_defs: datastore_dir=%s, general_log=%s, error_log=%s, slow_query_log=%s" %
++                  (datastore_dir, error_log_file, general_log_file, slow_query_log_file))
+         return {
+             self.GUEST_LOG_DEFS_GENERAL_LABEL: {
+                 self.GUEST_LOG_TYPE_LABEL: guest_log.LogType.USER,
+@@ -200,6 +202,10 @@ class MySqlManager(manager.Manager):
+                    config_contents, root_password, overrides,
+                    cluster_config, snapshot):
+         """This is called from prepare in the base class."""
++
++        LOG.debug("do_prepare: device_path=%s, packages=%s, backup_info=%s, cluster_config=%s" %
++                  (device_path, packages, str(backup_info), str(cluster_config)))
++
+         app = self.mysql_app(self.mysql_app_status.get())
+         app.install_if_needed(packages)
+         if device_path:
+diff --git a/trove/guestagent/datastore/mysql_common/service.py b/trove/guestagent/datastore/mysql_common/service.py
+index 96c9330..c64d009 100644
+--- a/trove/guestagent/datastore/mysql_common/service.py
++++ b/trove/guestagent/datastore/mysql_common/service.py
+@@ -181,9 +181,11 @@ class BaseLocalSqlClient(object):
+     def __init__(self, engine, use_flush=True):
+         self.engine = engine
+         self.use_flush = use_flush
++        LOG.debug("BaseLocalSqlClient.init: engine=%s, use_flush=%s" % (str(engine), str(use_flush)))
+ 
+     def __enter__(self):
+         self.conn = self.engine.connect()
++        LOG.debug("BaseLocalSqlClient.enter conn=%s" % (str(self.conn)))
+         self.trans = self.conn.begin()
+         return self.conn
+ 
+@@ -198,6 +200,7 @@ class BaseLocalSqlClient(object):
+         self.conn.close()
+ 
+     def execute(self, t, **kwargs):
++        LOG.debug("BaseLocalSqlClient.execute: statement=%s, args=%s" % (t, str(kwargs)))
+         try:
+             return self.conn.execute(t, kwargs)
+         except Exception:
+@@ -215,6 +218,8 @@ class BaseMySqlAdmin(object):
+         self._local_sql_client = local_sql_client
+         self._mysql_root_access = mysql_root_access
+         self._mysql_app = mysql_app(local_sql_client)
++        LOG.debug("BaseMySqlAdmin: local_sql_client=%s, mysql_root_access=%s, mysql_app=%s" %
++                  (str(local_sql_client), str(mysql_root_access), str(mysql_app)))
+ 
+     @property
+     def local_sql_client(self):
+@@ -661,12 +666,14 @@ class BaseMySqlApp(object):
+         g = sql_query.Grant(permissions='ALL', user=ADMIN_USER_NAME,
+                             host=localhost, grant_option=True, clear=password)
+         t = text(str(g))
++        LOG.debug("Client sql_query statement=%s" % t)
+         client.execute(t)
+         LOG.debug("Trove admin user '%s' created." % ADMIN_USER_NAME)
+ 
+     @staticmethod
+     def _generate_root_password(client):
+         """Generate and set a random root password and forget about it."""
++        LOG.debug("Generating mysql root password")
+         localhost = "localhost"
+         uu = sql_query.SetPassword(
+             "root", host=localhost,
+@@ -691,12 +698,14 @@ class BaseMySqlApp(object):
+         self.start_mysql()
+ 
+     def secure(self, config_contents):
+-        LOG.debug("Securing MySQL now.")
++        LOG.debug("Securing MySQL now - config_contents=%s" % config_contents)
+         clear_expired_password()
+         LOG.debug("Generating admin password.")
+         admin_password = utils.generate_random_password()
++
+         engine = sqlalchemy.create_engine(
+             CONNECTION_STR_FORMAT % ('root', ''), echo=True)
++
+         with self.local_sql_client(engine, use_flush=False) as client:
+             self._create_admin_user(client, admin_password)
+ 
+@@ -714,6 +723,8 @@ class BaseMySqlApp(object):
+         LOG.debug("MySQL secure complete.")
+ 
+     def _reset_configuration(self, configuration, admin_password=None):
++        LOG.debug("_reset_configuration: configuration=%s, admin_password=%s" %
++                  (configuration, admin_password))
+         if not admin_password:
+             # Take the current admin password from the base configuration file
+             # if not given.
+@@ -1031,6 +1042,8 @@ class BaseMySqlRootAccess(object):
+     def __init__(self, local_sql_client, mysql_app):
+         self._local_sql_client = local_sql_client
+         self._mysql_app = mysql_app
++        LOG.debug("BaseMySqlRootAccess: __init__ local_sql_client=%s, mysql_app=%s" %
++                  (str(local_sql_client), str(mysql_app)))
+ 
+     @property
+     def mysql_app(self):
+@@ -1052,6 +1065,7 @@ class BaseMySqlRootAccess(object):
+         """Enable the root user global access and/or
+            reset the root password.
+         """
++        LOG.debug("BaseMySqlRootAccess: enable_root")
+         user = models.MySQLRootUser(root_password)
+         with self.local_sql_client(self.mysql_app.get_engine()) as client:
+             print(client)
