@@ -1,5 +1,5 @@
 # The default branch, release tag, or commit to be cloned
 __ceph_tag=v2.2.0
 __opsmgr_tag=v3.0.0
-__genesis_tag=v1.2.1
+__genesis_tag=1.2.1
 
