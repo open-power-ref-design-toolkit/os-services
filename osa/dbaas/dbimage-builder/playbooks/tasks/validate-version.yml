@@ -20,12 +20,23 @@
 
 - debug: var=targetRelease
 
+- debug: var=enterpriseEdition
+
 - debug: var=communityEdition
 
 - debug: var=dbVersion
 
 - block:
-  - name: Validate user specified version ({{ dbVersion }}) for community based {{ dbName }}
+  - name: Validate user specified version ({{ dbVersion }}) for enterprise edition {{ dbName }}
+    set_fact:
+      pkgDistroName: "{{ item['pkg'] }}"
+    with_items: "{{ osdb[dbName]['enterprise'] }}"
+    when:
+      - enterpriseEdition
+      - pkgDistroName is not defined
+      - "{{ item['version'] }} == {{ dbVersion }}"
+
+  - name: Validate user specified version ({{ dbVersion }}) for community edition {{ dbName }}
     set_fact:
       pkgDistroName: "{{ item['pkg'] }}"
     with_items: "{{ osdb[dbName]['community'] }}"
@@ -40,6 +51,7 @@
     with_items: "{{ osdb[dbName][targetRelease] }}"
     when:
       - not communityEdition
+      - not enterpriseEdition
       - pkgDistroName is not defined
       - "{{ item['version'] }} == {{ dbVersion }}"
 
@@ -55,7 +67,16 @@
   when: dbVersion
 
 - block:
-  - name: Define package variables for community provided version of {{ dbName }}
+  - name: Define package variables for enterprise version of {{ dbName }}
+    set_fact:
+      pkgDistroName: "{{ item['pkg'] }}"
+      dbVersion: "{{ item['version'] }}"
+    with_items: "{{ osdb[dbName]['enterprise'] }}"
+    when:
+      - enterpriseEdition
+      - pkgDistroName is not defined
+
+  - name: Define package variables for community version of {{ dbName }}
     set_fact:
       pkgDistroName: "{{ item['pkg'] }}"
       dbVersion: "{{ item['version'] }}"
@@ -71,6 +92,7 @@
     with_items: "{{ osdb[dbName][targetRelease] }}"
     when:
       - not communityEdition
+      - not enterpriseEdition
       - pkgDistroName is not defined
 
   when: not dbVersion
@@ -78,6 +100,13 @@
 - name: "These are the supported databases and versions"
   debug: var=osdb
   when: pkgDistroName is not defined
+
+- name: Halt on unsupported package
+  fail:
+    msg: "The enterprise edition of {{ dbName }} is not supported for {{ targetRelease }}!"
+  when:
+    - pkgDistroName is not defined
+    - enterpriseEdition
 
 - name: Halt on unsupported package
   fail:
@@ -90,6 +119,14 @@
   fail:
     msg: "{{ dbName }} is not supported for {{ targetRelease }}!"
   when: pkgDistroName is not defined
+
+- name: "Set source package for enterprise provided packages"
+  set_fact:
+    srcPkgName: "{{ item['srcPkg'] | default('') }}"
+  with_items: "{{ osdb[dbName]['enterprise'] }}"
+  when:
+    - enterpriseEdition
+    - item['srcPkg'] is defined
 
 - name: "Set source package for community provided packages"
   set_fact:

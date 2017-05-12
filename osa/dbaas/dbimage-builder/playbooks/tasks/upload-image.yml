@@ -54,6 +54,16 @@
     src: "{{ baseDir }}/images/{{ outputImage }}.img"
     dest: "{{ mktemprc.stdout }}/{{ outputImage }}.img"
 
+- name: Update image name for community edition
+  set_fact:
+    imageSource: "-c{{ imageSource }}"
+  when: communityEdition
+
+- name: Update image name for enterprise edition
+  set_fact:
+    imageSource: "-e{{ imageSource }}"
+  when: enterpriseEdition
+
 - name: Upload image "{{ dbName }}-{{ dbVersion }}{{ imageSource }}-{{ ansible_date_time.date }}"
   shell: >-
     /usr/bin/lxc-attach -n '{{ utility_container.stdout }}' -e --

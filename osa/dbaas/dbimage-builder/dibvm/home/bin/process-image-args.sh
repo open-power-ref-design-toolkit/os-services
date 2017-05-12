@@ -47,6 +47,7 @@ branch=""
 gitUrl=""
 gitTag=""
 communityEdition=false
+enterpriseEdition=false
 dibUser=ubuntu
 
 cmd=$(basename $0)
@@ -58,7 +59,7 @@ cmd=$(basename $0)
 
 OPTERR=0
 OPTIND=1
-while getopts ":i:d:v:p:k:b:c" opt; do
+while getopts ":i:d:v:p:k:b:ce" opt; do
     case "$opt" in
         i) ipAddrDib=$OPTARG
            ;;
@@ -101,6 +102,8 @@ while getopts ":i:d:v:p:k:b:c" opt; do
            ;;
         c) communityEdition=true
            ;;
+        e) enterpriseEdition=true
+           ;;
         :) echo "Error: -$OPTARG requires an argument." >&2
            exit 1
            ;;
@@ -131,6 +134,11 @@ esac
 
 if [ -n "$pkg" ] && [ -z "$dbVersion" ]; then
     echo "Error: -p <package> must be specified with -v <db-version>"
+    exit 1
+fi
+
+if [ "$enterpriseEdition" == "true" ] && [ "$communityEdition" == "true" ]; then
+    echo "Error: -c and -e cannot both be specified"
     exit 1
 fi
 
@@ -170,6 +178,7 @@ echo "gitUrl=$gitUrl"
 echo "gitTag=$gitTag"
 echo "dibUser=$dibUser"
 echo "communityEdition=$communityEdition"
+echo "enterpriseEdition=$enterpriseEdition"
 
 # These variables are derived from environment variables
 echo "dibRelease=$DIB_RELEASE"
@@ -188,3 +197,4 @@ export DBIMAGE_GITTAG=$gitTag
 export DBIMAGE_DIBUSER=$dibUser
 export DBIMAGE_HOME=$HOME
 export DBIMAGE_COMMUNITY_EDITION=$communityEdition
+export DBIMAGE_ENTERPRISE_EDITION=$enterpriseEdition
