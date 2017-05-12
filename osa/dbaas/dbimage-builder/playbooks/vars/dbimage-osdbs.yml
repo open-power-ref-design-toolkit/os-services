@@ -9,20 +9,24 @@ osdb:                                   # All versions as of 4/14/17
     community:
       - version: 10.1                   # 10.1.22
         pkg: mariadb-server
+    enterprise: []
   mongodb:
-    trusty:
-      - version: 2.4                    # 2.4.9
-        pkg: mongodb-server
-    xenial:
-      - version: 2.6                    # 2.6.10
-        pkg: mongodb-server
-    community: []
+    trusty: []
+    xenial: []
+    community:
+      - version: 3.4                    # 3.4.4
+        pkg: python-pymongo-doc         # This is a substitute pkg to avoid Trove re-installs
+        srcPkg: mongodb-src-r3.4.4      # as this database is built from source code
+    enterprise:
+      - version: 3.4                    # 3.4.4
+        pkg: mongodb-enterprise
   mysql:
     trusty: []                          # Requires uplevel percona-xtrabackup
     xenial:
       - version: 5.7                    # 5.7.17
         pkg: mysql-server
     community: []
+    enterprise: []
   postgresql:
     trusty: []                          # Requires compilation of missing package
     xenial:
@@ -31,14 +35,14 @@ osdb:                                   # All versions as of 4/14/17
     community:
       - version: 9.6                    # 9.6.2
         pkg: postgresql
+    enterprise: []
   redis:
-    trusty:
-      - version: 2.8                    # 2.8.4
-        pkg: redis-server
+    trusty: []
     xenial:
       - version: 3.0                    # 3.0.6
         pkg: redis-server
     community:
       - version: 3.2                    # 3.2.8
-        pkg: redis-tools                # This is a substitute package to avoid Trove installs
+        pkg: redis-tools                # This is a substitute pkg to avoid Trove re-installs
         srcPkg: redis-3.2.8             # as this database is built from source code
+    enterprise: []

@@ -19,6 +19,7 @@
   set_fact:
     pkgDistroName: "{{ hostvars[groups['deployer'][0]].pkgDistroName }}"
 
+- debug: var=enterpriseEdition
 - debug: var=communityEdition
 - debug: var=dbName
 - debug: var=dbVersion
@@ -48,6 +49,9 @@
     fi
     if [ "{{ communityEdition|string|lower }}" == "true" ]; then
         ARGS="$ARGS -c"
+    fi
+    if [ "{{ enterpriseEdition|string|lower }}" == "true" ]; then
+        ARGS="$ARGS -e"
     fi
     create-image-vm.sh $ARGS 2>&1
   args:

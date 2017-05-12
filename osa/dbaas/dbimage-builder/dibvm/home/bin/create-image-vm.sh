@@ -18,7 +18,7 @@
 
 if [ "$1" == "--help" ]; then
     echo "Usage: create-image-vm.sh -i dibvm-ipaddr -d db-name -v db-version"
-    echo "          [ -c ] [ -D pkg-name -V pkg-version | -p pkg ] [ -k key-name ]"
+    echo "         [ -c | -e ] [ -D pkg-name -V pkg-version | -p pkg ] [ -k key-name ]"
     echo ""
     echo "Upon successful completion, a raw disk image file is created in $HOME/img/"
     echo ""
@@ -78,11 +78,18 @@ else
     DBELE="${DISTRO_NAME}-${DIB_RELEASE}-${DBIMAGE_DBNAME}"
 fi
 
+if [ "$DBIMAGE_COMMUNITY_EDITION" == "true" ]; then
+    IMG+="_c"
+elif [ "$DBIMAGE_ENTERPRISE_EDITION" == "true" ]; then
+    IMG+="_e"
+fi
+
 # Generate output image name
 IMG=$(echo $IMG | tr '.' '_' | tr '-' '_')
 
 # Set environment variables for disk-image-create elements that are derived from command arguments
 export DIB_MYCOMMUNITY_EDITION=$DBIMAGE_COMMUNITY_EDITION
+export DIB_MYENTERPRISE_EDITION=$DBIMAGE_ENTERPRISE_EDITION
 export DIB_MYDBVERSION=$DBIMAGE_DBVERSION
 
 CMD="disk-image-create"
@@ -97,14 +104,31 @@ else
     export DATASTORE_PKG_LOCATION="$HOME/pkg"
 fi
 
+# Turn on debug within diskimage-builder
+export DIB_DEBUG_TRACE=1
+
+# Specify the size of the mongodb image explicitly, since the default algorithm
+# apparently uses the file system size which is bloated since mongodb is compiled
+# and the build tree is >20 GBs.  The build tree is removed after the artifacts
+# are installed, but this is not reflected in the size of the filesystem.  Set
+# the image size explicitly to 5 GBs.
+if [ "$DBIMAGE_DBNAME" == "mongodb" ]; then
+    export DIB_IMAGE_SIZE=5
+else
+    export DIB_IMAGE_SIZE=
+fi
+
 # Create a file that can be manually invoked for debug purposes
 cat <<EOF > $HOME/cmd.sh
 #!/usr/bin/env bash
 export DIB_MYCOMMUNITY_EDITION=$DIB_MYCOMMUNITY_EDITION
+export DIB_MYENTERPRISE_EDITION=$DIB_MYENTERPRISE_EDITION
 export DIB_MYDBVERSION=$DIB_MYDBVERSION
 export DIB_MYDBPKG=$DIB_MYDBPKG
 export DIB_MYDBSRCPKG=$DIB_MYDBSRCPKG
 export DIB_MYDEBUG=$DIB_MYDEBUG
+export DIB_DEBUG_TRACE=$DIB_DEBUG_TRACE
+export DIB_IMAGE_SIZE=$DIB_IMAGE_SIZE
 export DISTRO_NAME=$DISTRO_NAME
 export DIB_RELEASE=$DIB_RELEASE
 export SERVICE_TYPE=$SERVICE_TYPE
