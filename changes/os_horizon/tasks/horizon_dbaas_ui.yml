@@ -16,13 +16,13 @@
 # Copy the images files from the local host to the horizon host
 - name: Copy ui images to Horizon img directory
   copy:
-    src: "{{ TOP_PCLD_DIR }}/osa/dbaas_ui/IDL-Images/"
+    src: "{{ top_level_os_services_dir }}/osa/dbaas_ui/IDL-Images/"
     dest: "{{ ui_artwork }}"
 
 # Copy the enabling files from the local host to the horizon host
 - name: Copy ui Horizon  enabling code into enabled
   copy:
-    src: "{{ TOP_PCLD_DIR }}/osa/dbaas_ui/enabled_ui/"
+    src: "{{ top_level_os_services_dir }}/osa/dbaas_ui/enabled_ui/"
     dest: "{{ ui_enabled }}"
 
 # Create a temp directory for the pip install code
@@ -35,7 +35,7 @@
 # Copy the pip code to the temp directory
 - name: copy pip install code to server
   copy:
-    src: "{{ TOP_PCLD_DIR }}/osa/dbaas_ui/"
+    src: "{{ top_level_os_services_dir }}/osa/dbaas_ui/"
     dest: "{{ tmp_dir }}"
 
 # Install the core DBaaS UI code
