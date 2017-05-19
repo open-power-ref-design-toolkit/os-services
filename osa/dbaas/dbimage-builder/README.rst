@@ -4,22 +4,25 @@ dbimage-builder
 
 The **dbimage-make.sh** command creates a bootable
 virtual disk image that is configured to provide
-a given database.  The list of databases is:
+a user specified database from the following list:
 **mariadb, mongodb, mysql, postgresql, and redis**.
-
 This list is expected to grow over time, so check back on the
 availability of other databases.  Upon successful completion,
 this command uploads the image to the OpenStack infrastucture.
 It is from these images that running database instances are created.
 
-Images are reusable across cloud instances.  The
-**dbimage-upload.sh** command uploads an image that
-was previously created by **dbimage-make.sh**.  The image is
-updated with requisite OpenStack Trove data to properly function.
+The images that are produced by **dbimage-make.sh** are
+reusable across cloud instances.  The **dbimage-upload.sh**
+is provided for this purpose.  Basically, it applies the
+same operations that were performed by **dbimage-make-sh**,
+after having created the image.  This is a big time savings
+and ensures that the exact same bits are re-applied to the new
+cloud, excluding the few bits that are updated - ie.
+trove-guestagent meta data.
 
 An additional set of commands **dbflavors-show.sh**, **dbflavor-change.sh**,
 and **dbflavor-upload.sh** are provided to create database flavors, which
-are used to control the size of database instance.  A
+are used to control the size of the database instance.  A
 predefined set of these flavors are provided.  The user can
 list them, change them at the attribute level (cpu, memory,
 storage) and then activate them with the OpenStack
@@ -70,7 +73,7 @@ dbimage-make.sh
 
 ::
 
-  dbimage-make.sh -d db-name [ -v db-version ] [ -c ] [ -k key-name ]
+  dbimage-make.sh -d db-name [ -v db-version ] [ -c | -e ] [ -k key-name ]
                              [ -i dib-ip-addr ] [ -p pkg ]
 
 This script creates a bootable O/S image containing the named
@@ -78,15 +81,34 @@ database (-d) and database version (-v) and creates an OpenStack Trove
 datastore from the image.
 
 The -v argument identifies the version of the database.  Only the
-first two components of the version are used.  For example, 1.2.
+first two components of the version are used.  For example, the user
+may specify version 1.2.7.  In this case, the tool would internally
+use 1.2 and may even select version 1.2.8 as the distro generally
+only provides one version of each package at any given major
+minor number where the third component is a fix level.
 
-The -c argument may be specified to generate a community provided
-version of the database.  The tool may not support a community
-version supported of the tool.
+The -c argument may be specified to select the *community* edition
+of a database if one is provided and supported by this tool.
 
-If an invalid version is specified, the tool lists the supported
-versions, so one may query the supported versions by specifying
-an invalid version such as 0.0.
+The -e argument may be specified to select the *enterprise* edition
+of a database if one is provided and supported by this tool.
+
+When the command arguments -c and -e are not specified, the selection
+defaults to a distro provided database if one is provided and
+supported by the tool.
+
+The tool internally maintains a lookup table of supported versions
+per source of each database.  At least one source is supported per
+database and in many cases more than one.
+
+When a requests results in no supported package, the list of supported
+packages is displayed enabling the user to quickly manipulate the
+selection criteria to build the desired database image.
+
+Enterprise Editions of databases are usually conveyed with
+terms and conditions on use.  It is assumed by this tool that the
+user has read those terms and conditions and complies with them
+if the user builds a guest database image using the -e argument.
 
 The -k argument names a ssh key pair that is registered with OpenStack.
 If this argument is specified, then the public ssh key is obtained from
@@ -211,7 +233,7 @@ Considering the above, the tool can be run three different ways:
 
 The deployer must have at least 1 VCPU and 20 GBs of storage.
 
-The dibvm must have at least 2 VCPUs, 2GBS RAM, and 50 GBs of storage.
+The dibvm must have at least 4 VCPUs, 12 GBS RAM, and 100 GBs of storage.
 
 To run outside the control plane, one does::
 
@@ -304,21 +326,6 @@ the user does not need to specify either the DBIMAGE_CTRL_PRIVATE_SSH_KEY,
 DBIMAGE_CTRL_PASSWD, nor DBIMAGE_ANSIBLE_SSH_PROMPT as the tool
 automatically detects the collocation of the deployer and
 controller and sets up ssh access.
-
-Cross-distro builds
--------------------
-
-A cross-distro build involves using the Ubuntu 16.04
-ppc64le VM to create an Ubuntu 14.04 ppc64le image. This
-is possible because the underlying tool, diskimage-builder,
-uses a chrooted environment to produce the image.
-The target O/S image is downloaded, installed in a directory
-which is mounted, and then chroot'd.
-A cross-build based on trusty is performed by::
-
-  export DIB_RELEASE=trusty
-  export DBIMAGE_CONTROLLER_IP=<a.b.c.d>
-  ./scripts/dbimage-builder -i <ipaddr-ubuntu-16.04-ppc64le> -d redis
 
 Image name customization
 ------------------------

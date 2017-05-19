@@ -54,12 +54,6 @@
 
 #########  Below this line applies to diskimage-builder only  ###########
 
-# Request a cross-distro build.  For example, an Ubuntu 14.04 (trusty)
-# image built by a dibvm that is installed with Ubuntu 16.04 (xenial).
-# Distro code names are used.  Supported values are:
-#
-# export DIB_RELEASE=trusty
-
 # Enable trove-guestagent debug log messages in the datastore instance.
 
 #export DIB_MYDEBUG=true

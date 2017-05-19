@@ -16,6 +16,7 @@ ipAddrController: "{{ lookup('env', 'DBIMAGE_CONTROLLER_IP') }}"
 dibUser: "{{ lookup('env', 'DBIMAGE_DIBUSER') }}"
 dbimageHome: "{{ lookup('env', 'DBIMAGE_HOME') }}"
 communityEdition: "{{ lookup('env', 'DBIMAGE_COMMUNITY_EDITION') | bool }}"
+enterpriseEdition: "{{ lookup('env', 'DBIMAGE_ENTERPRISE_EDITION') | bool }}"
 
 # Environment variables set by the user directed at diskimage-builder
 
@@ -95,6 +96,16 @@ src_trove_integration_diffs:
   - "{{ baseDir }}/diffs/trove/integration/element-mysql.patch"
   - "{{ baseDir }}/diffs/trove/integration/element-redis.patch"
   - "{{ baseDir }}/diffs/trove/integration/element-postgresql.patch"
+  - "{{ baseDir }}/diffs/trove/integration/element-mongodb.patch"
+
+trove_integration_elements_with_new_files:
+  - ubuntu-xenial-guest/
+  - ubuntu-trusty-guest/
+  - ubuntu-guest/
+  - ubuntu-postgresql/
+  - ubuntu-xenial-mariadb/
+  - ubuntu-trusty-mongodb/
+  - ubuntu-xenial-mongodb/
 
 src_trove_guestagent_diffs:
   - "{{ baseDir }}/diffs/trove/guestagent/postgres-config.patch"

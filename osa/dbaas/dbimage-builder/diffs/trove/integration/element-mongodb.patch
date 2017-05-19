@@ -1,0 +1,327 @@
+diff --git a/integration/scripts/files/elements/ubuntu-mongodb/install.d/20-mongodb b/integration/scripts/files/elements/ubuntu-mongodb/install.d/20-mongodb
+index 4ab5c34..c35ca52 100755
+--- a/integration/scripts/files/elements/ubuntu-mongodb/install.d/20-mongodb
++++ b/integration/scripts/files/elements/ubuntu-mongodb/install.d/20-mongodb
+@@ -1,8 +1,84 @@
+-#!/bin/sh
++#!/bin/bash
+ 
+ set -e
+ set -o xtrace
+ 
+ export DEBIAN_FRONTEND=noninteractive
+ 
+-apt-get --allow-unauthenticated -y install mongodb-org=3.2.6
++MONGODB_CONF_DIR=/etc
++MONGODB_CONF_NAME=mongod.conf
++MONGODB_CONF=$MONGODB_CONF_DIR/$MONGODB_CONF_NAME
++MONGOS_CONF_NAME=mongos.conf
++MONGOS_CONF=$MONGODB_CONF_DIR/$MONGOS_CONF_NAME
++
++ESC_MONGODB_CONF="${MONGODB_CONF//\//\\/}"
++ESC_MONGOS_CONF="${MONGOS_CONF//\//\\/}"
++
++# /var/run -> /run.  Create /run/mongodb as the creation of /var/run/mongodb
++# is not reflected in the generated image.  Failure may be related to a
++# missing bind mount in the chroot'd environment
++mkdir -p /run/mongodb $MONGODB_RUN_DIR
++
++if [ "$DIB_MYENTERPRISE_EDITION" == "true" ]; then
++    apt-get install -y mongodb-enterprise
++    # mongodb-enterprise package should create mongodb user
++    chown -R mongodb:mongodb /run/mongodb $MONGODB_RUN_DIR
++    sed -i "s/ExecStart=.*/ExecStart=\/usr\/bin\/mongod --quiet --config $ESC_MONGODB_CONF/" /lib/systemd/system/mongod.service
++    systemctl enable mongod.service
++    exit 0
++fi
++
++if [ "$DIB_MYCOMMUNITY_EDITION" == "false" ]; then
++    exit 0
++fi
++
++# Install build and runtime prerequisites
++apt-get --allow-unauthenticated install -y build-essential scons tar wget \
++    libcurl3 libgssapi-krb5-2 libldap-2.4-2 libpcap0.8 libpci3 libsasl2-2 \
++    libsensors4 libsnmp30 libssl1.0.0 libwrap0 libboost-filesystem-dev \
++    libboost-program-options-dev libboost-system-dev libboost-thread-dev
++
++# Build and install mongodb from source code from mongodb.org
++
++ARCH_SAV=$ARCH
++MONGODB_NAME=$DIB_MYDBSRCPKG
++
++cd /tmp
++wget https://fastdl.mongodb.org/src/$MONGODB_NAME.tar.gz
++tar xvzf $MONGODB_NAME.tar.gz
++cd $MONGODB_NAME
++
++unset ARCH
++scons core
++scons --prefix=/usr install
++export ARCH=$ARCH_SAV
++
++adduser --system --group --no-create-home mongodb
++
++# Create the data dirs
++
++MONGODB_DATA_DIR=/var/lib/mongodb
++MONGODB_LOG_DIR=/var/log/mongodb
++MONGODB_RUN_DIR=/var/run/mongodb
++
++mkdir -p $MONGODB_DATA_DIR
++chown -R mongodb:mongodb $MONGODB_DATA_DIR
++chmod 750 $MONGODB_DATA_DIR
++mkdir -p $MONGODB_LOG_DIR
++chown -R mongodb:mongodb $MONGODB_LOG_DIR
++
++chown -R mongodb:mongodb /run/mongodb $MONGODB_RUN_DIR
++
++cp /tmp/$MONGODB_NAME/debian/mongod.service /lib/systemd/system/mongod.service
++cp /tmp/$MONGODB_NAME/debian/mongod.service /lib/systemd/system/mongos.service
++
++sed -i "s/ExecStart=.*/ExecStart=\/usr\/bin\/mongod --quiet --config $ESC_MONGODB_CONF/" /lib/systemd/system/mongod.service
++
++sed -i "s/ExecStart=.*/ExecStart=\/usr\/bin\/mongos --quiet --config $ESC_MONGOS_CONF/" /lib/systemd/system/mongos.service
++
++# Clean the build tree to minimize the size of the image and to avoid running out of space when creating the image
++rm /tmp/$MONGODB_NAME.tar.gz
++rm -rf /tmp/$MONGODB_NAME
++
++systemctl enable mongod.service
++systemctl enable mongos.service
+diff --git a/integration/scripts/files/elements/ubuntu-mongodb/install.d/25-trove-mongo-dep b/integration/scripts/files/elements/ubuntu-mongodb/install.d/25-trove-mongo-dep
+index a8b3ddc..6774019 100755
+--- a/integration/scripts/files/elements/ubuntu-mongodb/install.d/25-trove-mongo-dep
++++ b/integration/scripts/files/elements/ubuntu-mongodb/install.d/25-trove-mongo-dep
+@@ -6,4 +6,9 @@
+ set -e
+ set -o xtrace
+ 
+-pip2 install pymongo>=3.0.2,!=3.1
++pip2 install 'pymongo>=3.0.2,!=3.1'
++
++if [ "$DIB_MYCOMMUNITY_EDITION" == "true" ]; then
++    # This is the registered package to prevent Trove from re-installing mongodb
++    apt-get --allow-unauthenticated install -y python-pymongo-doc
++fi
+diff --git a/integration/scripts/files/elements/ubuntu-mongodb/install.d/30-mongodb-conf b/integration/scripts/files/elements/ubuntu-mongodb/install.d/30-mongodb-conf
+index afb5828..cef03d2 100755
+--- a/integration/scripts/files/elements/ubuntu-mongodb/install.d/30-mongodb-conf
++++ b/integration/scripts/files/elements/ubuntu-mongodb/install.d/30-mongodb-conf
+@@ -3,10 +3,6 @@
+ set -e
+ set -o xtrace
+ 
+-# Remove the default pid file
+-rm -f /var/run/mongodb.pid
+-
+-
+ cat > /etc/mongod.conf << '_EOF_'
+ storage.dbPath: /var/lib/mongodb
+ security.authorization: enabled
+@@ -17,7 +13,6 @@ systemLog.logAppend: true
+ systemLog.path: /var/log/mongodb/mongod.log
+ _EOF_
+ 
+-
+ cat > /etc/mongos.conf << '_EOF_'
+ security.authorization: enabled
+ systemLog.destination: file
+diff --git a/integration/scripts/files/elements/ubuntu-mongodb/pre-install.d/10-mongodb-apt-key b/integration/scripts/files/elements/ubuntu-mongodb/pre-install.d/10-mongodb-apt-key
+index 1345f50..4d69fb6 100755
+--- a/integration/scripts/files/elements/ubuntu-mongodb/pre-install.d/10-mongodb-apt-key
++++ b/integration/scripts/files/elements/ubuntu-mongodb/pre-install.d/10-mongodb-apt-key
+@@ -1,14 +1,21 @@
+-#!/bin/sh
++#!/bin/bash
+ 
+ set -e
+ set -o xtrace
+ 
+-[ -n "${RELEASE}" ] || die "RELEASE must be set to either Precise or Quantal"
++[ -n "${RELEASE}" ] || die "RELEASE must be set to either trusty or xenial"
+ 
+-apt-get --allow-unauthenticated -y install software-properties-common
++if [ "$DIB_MYCOMMUNITY_EDITION" == "true" ]; then
++    # For ppc64le, we build and install from source code as there are no ppc64le packages at the community website
++    exit 0
++fi
+ 
+-apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv EA312927
++if [ "$DIB_MYENTERPRISE_EDITION" == "true" ]; then
++    apt-get --allow-unauthenticated -y install software-properties-common
+ 
+-echo "deb http://repo.mongodb.org/apt/ubuntu "$(lsb_release -sc)"/mongodb-org/3.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.2.list
++    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 0C49F3730359A14518585931BC711F9BA15703C6
+ 
+-apt-get -y update
++    echo "deb http://repo.mongodb.com/apt/ubuntu "$(lsb_release -sc)"/mongodb-enterprise/3.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-enterprise.list
++
++    apt-get -y update
++fi
+diff --git a/integration/scripts/files/elements/ubuntu-xenial-mongodb/element-deps b/integration/scripts/files/elements/ubuntu-xenial-mongodb/element-deps
+new file mode 100755
+index 0000000..6a5964e
+--- /dev/null
++++ b/integration/scripts/files/elements/ubuntu-xenial-mongodb/element-deps
+@@ -0,0 +1 @@
++ubuntu-mongodb
+diff --git a/integration/scripts/files/elements/ubuntu-xenial-mongodb/install.d/10-mongodb-thp b/integration/scripts/files/elements/ubuntu-xenial-mongodb/install.d/10-mongodb-thp
+new file mode 100755
+index 0000000..3229917
+--- /dev/null
++++ b/integration/scripts/files/elements/ubuntu-xenial-mongodb/install.d/10-mongodb-thp
+@@ -0,0 +1,17 @@
++#!/bin/bash
++
++set -e
++set -o xtrace
++
++cat > "/etc/rc.local" << _EOF_
++# Make sure to disable Linux kernel feature transparent huge pages,
++# it will affect greatly both memory usage and latency in a negative way.
++if test -f /sys/kernel/mm/transparent_hugepage/defrag; then
++  echo never > /sys/kernel/mm/transparent_hugepage/defrag
++fi
++if test -f /sys/kernel/mm/transparent_hugepage/enabled; then
++  echo never > /sys/kernel/mm/transparent_hugepage/enabled
++fi
++
++_EOF_
++
+diff --git a/integration/scripts/files/elements/ubuntu-mongodb/install.d/10-mongodb-thp b/integration/scripts/files/elements/ubuntu-mongodb/install.d/10-mongodb-thp
+deleted file mode 100755
+index 48d6c8b..0000000
+--- a/integration/scripts/files/elements/ubuntu-mongodb/install.d/10-mongodb-thp
++++ /dev/null
+@@ -1,42 +0,0 @@
+-#!/bin/sh
+-
+-set -e
+-set -o xtrace
+-
+-export DEBIAN_FRONTEND=noninteractive
+-
+-cat > /etc/init.d/disable-transparent-hugepages << '_EOF_'
+-#!/bin/sh
+-### BEGIN INIT INFO
+-# Provides:          disable-transparent-hugepages
+-# Required-Start:    $local_fs
+-# Required-Stop:
+-# X-Start-Before:    mongod mongodb-mms-automation-agent
+-# Default-Start:     2 3 4 5
+-# Default-Stop:      0 1 6
+-# Short-Description: Disable Linux transparent huge pages
+-# Description:       Disable Linux transparent huge pages, to improve
+-#                    database performance.
+-### END INIT INFO
+-
+-case $1 in
+-  start)
+-    if [ -d /sys/kernel/mm/transparent_hugepage ]; then
+-      thp_path=/sys/kernel/mm/transparent_hugepage
+-    elif [ -d /sys/kernel/mm/redhat_transparent_hugepage ]; then
+-      thp_path=/sys/kernel/mm/redhat_transparent_hugepage
+-    else
+-      return 0
+-    fi
+-
+-    echo 'never' > ${thp_path}/enabled
+-    echo 'never' > ${thp_path}/defrag
+-
+-    unset thp_path
+-    ;;
+-esac
+-_EOF_
+-
+-chmod 755 /etc/init.d/disable-transparent-hugepages
+-
+-update-rc.d disable-transparent-hugepages defaults
+diff --git a/integration/scripts/files/elements/ubuntu-mongodb/install.d/41-mongod-init b/integration/scripts/files/elements/ubuntu-mongodb/install.d/41-mongod-init
+deleted file mode 100755
+index 77a1292..0000000
+--- a/integration/scripts/files/elements/ubuntu-mongodb/install.d/41-mongod-init
++++ /dev/null
+@@ -1,46 +0,0 @@
+-#!/bin/sh
+-
+-set -e
+-set -o xtrace
+-
+-cat > /etc/init/mongod.conf << '_EOF_'
+-limit fsize unlimited unlimited
+-limit cpu unlimited unlimited
+-limit as unlimited unlimited
+-limit nofile 64000 64000
+-limit rss unlimited unlimited
+-limit nproc 64000 64000
+-
+-kill timeout 300 # wait 300s between SIGTERM and SIGKILL.
+-
+-pre-start script
+-  mkdir -p /var/run/mongodb/
+-  touch /var/run/mongodb/mongod.pid
+-  chown mongodb -R /var/run/mongodb/
+-end script
+-
+-start on runlevel [2345]
+-stop on runlevel [06]
+-
+-script
+-  CONF=/etc/mongod.conf
+-
+-  # Handle NUMA access to CPUs (SERVER-3574)
+-  # This verifies the existence of numactl as well as testing that the command works
+-  NUMACTL_ARGS="--interleave=all"
+-  if which numactl >/dev/null 2>/dev/null && numactl $NUMACTL_ARGS ls / >/dev/null 2>/dev/null
+-  then
+-    NUMACTL="$(which numactl) -- $NUMACTL_ARGS"
+-    DAEMON_OPTS=${DAEMON_OPTS:-"--config $CONF"}
+-  else
+-    NUMACTL=""
+-    DAEMON_OPTS="-- "${DAEMON_OPTS:-"--config $CONF"}
+-  fi
+-
+-  exec start-stop-daemon --start \
+-        --chuid mongodb \
+-        --pidfile /var/run/mongod.pid \
+-        --make-pidfile \
+-        --exec $NUMACTL /usr/bin/mongod $DAEMON_OPTS
+-end script
+-_EOF_
+diff --git a/integration/scripts/files/elements/ubuntu-mongodb/install.d/42-mongos-init b/integration/scripts/files/elements/ubuntu-mongodb/install.d/42-mongos-init
+deleted file mode 100755
+index dc91fdb..0000000
+--- a/integration/scripts/files/elements/ubuntu-mongodb/install.d/42-mongos-init
++++ /dev/null
+@@ -1,30 +0,0 @@
+-#!/bin/sh
+-
+-set -e
+-set -o xtrace
+-
+-cat > /etc/init/mongos.conf << '_EOF_'
+-limit fsize unlimited unlimited
+-limit cpu unlimited unlimited
+-limit as unlimited unlimited
+-limit nofile 64000 64000
+-limit rss unlimited unlimited
+-limit nproc 64000 64000
+-
+-pre-start script
+-  mkdir -p /var/run/mongodb/
+-  touch /var/run/mongodb/mongos.pid
+-  chown mongodb -R /var/run/mongodb/
+-end script
+-
+-start on runlevel [2345]
+-stop on runlevel [06]
+-
+-script
+-    exec start-stop-daemon --start \
+-        --chuid mongodb \
+-        --pidfile /var/run/mongos.pid \
+-        --make-pidfile \
+-        --exec  /usr/bin/mongos -- --config /etc/mongos.conf
+-end script
+-_EOF_

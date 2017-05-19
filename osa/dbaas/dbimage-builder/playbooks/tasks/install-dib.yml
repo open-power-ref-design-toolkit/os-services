@@ -54,15 +54,16 @@
   args:
     creates: "{{ dib_home }}/dibuser/id_rsa"
 
-- name: Set path to public key
-  set_fact:
-    dib_pub_key: "{{ dib_home }}/dibuser/id_rsa.pub"
+- name: Get key for dibUser
+  slurp:
+    src: "{{ dib_home }}/dibuser/id_rsa.pub"
+  register: dib_pub_key
 
 - name: Set authorized key for dibuser in alternate location
   authorized_key:
     user: "{{ dibUser }}"
     state: present
-    key: "{{ lookup('file', dib_pub_key) }}"
+    key: "{{ dib_pub_key.content | b64decode }}"
     path: "{{ dib_home }}/dibuser/authorized_keys"
     manage_dir: false
 
@@ -152,18 +153,13 @@
     - dibDebug == 'true'
     - "{{ src_trove_guestagent_debug_diffs }}"
 
-- name: Make new elements runnable
+- name: Prepare elements that have new files
   file:
     path: "{{ dib_home }}/tools/trove/integration/scripts/files/elements/{{ item }}"
     state: directory
     mode: "a+x"
     recurse: yes
-  with_items:
-    - ubuntu-xenial-guest/
-    - ubuntu-trusty-guest/
-    - ubuntu-guest/
-    - ubuntu-postgresql/
-    - ubuntu-xenial-mariadb/
+  with_items: "{{ trove_integration_elements_with_new_files }}"
   when: "{{ src_trove_integration_diffs }}"
 
 - name: Configure diskimage-builder
