@@ -54,8 +54,8 @@ Debugging hints
 The os-services project clones the projects associated with the DEPLOY_XXX environment
 variables. The location of these projects can be externally specified as shown below::
 
-    > export GIT_CEPH_URL=git://github.com/open-power-ref-design-toolkit/ceph-services.git
-    > export GIT_OPSMGR_URL=git://github.com/open-power-ref-design-toolkit/opsmgr.git
+    > export GIT_CEPH_URL=https://github.com/open-power-ref-design-toolkit/ceph-services.git
+    > export GIT_OPSMGR_URL=https://github.com/open-power-ref-design-toolkit/opsmgr.git
 
 The release tag or branch may be set via the following variables::
 
