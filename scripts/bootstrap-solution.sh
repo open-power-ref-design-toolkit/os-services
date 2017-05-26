@@ -20,7 +20,7 @@
 # export ANSIBLE_HOST_KEY_CHECKING=False
 #
 
-OS_SERVICES=git://github.com/open-power-ref-design-toolkit/os-services.git
+OS_SERVICES=${OS_SERVICES:-"https://github.com/open-power-ref-design-toolkit/os-services.git"}
 
 apt-get update >/dev/null 2>&1
 type git >/dev/null 2>&1 || apt-get install -qq -y git
