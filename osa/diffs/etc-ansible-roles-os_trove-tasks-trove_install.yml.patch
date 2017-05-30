@@ -1,6 +1,6 @@
 diff -Naur a/etc/ansible/roles/os_trove/tasks/trove_install.yml b/etc/ansible/roles/os_trove/tasks/trove_install.yml
---- a/etc/ansible/roles/os_trove/tasks/trove_install.yml	2017-01-30 06:50:40.255617110 -0500
-+++ b/etc/ansible/roles/os_trove/tasks/trove_install.yml	2017-01-29 12:11:51.229205763 -0500
+--- a/etc/ansible/roles/os_trove/tasks/trove_install.yml	2017-05-29 05:34:46.269715500 -0400
++++ b/etc/ansible/roles/os_trove/tasks/trove_install.yml	2017-05-29 05:31:52.413712391 -0400
 @@ -45,7 +45,7 @@
  
  - name: Install required pip packages
@@ -10,3 +10,23 @@ diff -Naur a/etc/ansible/roles/os_trove/tasks/trove_install.yml b/etc/ansible/ro
      state: "{{ trove_pip_package_state }}"
      extra_args: >-
        {{ (pip_install_upper_constraints is defined) | ternary('--constraint ' + pip_install_upper_constraints | default(''),'') }}
+@@ -55,11 +55,18 @@
+   retries: 5
+   delay: 2
+ 
++- name: Retrieve checksum for venv download
++  uri:
++    url: "{{ trove_venv_download_url | replace('tgz', 'checksum') }}"
++    return_content: yes
++  register: trove_venv_checksum
++  when: trove_venv_download | bool
++
+ - name: Attempt venv download
+   get_url:
+     url: "{{ trove_venv_download_url }}"
+     dest: "/var/cache/{{ trove_venv_download_url | basename }}"
+-    checksum: "sha1:{{ lookup('url', trove_venv_download_url | replace('tgz', 'checksum')) }}"
++    checksum: "sha1:{{ trove_venv_checksum.content | trim }}"
+   register: trove_get_venv
+   when: trove_venv_download | bool
+ 

@@ -1,0 +1,23 @@
+diff -Naur a/etc/ansible/roles/os_glance/tasks/glance_install.yml b/etc/ansible/roles/os_glance/tasks/glance_install.yml
+--- a/etc/ansible/roles/os_glance/tasks/glance_install.yml	2017-05-29 05:34:39.689715382 -0400
++++ b/etc/ansible/roles/os_glance/tasks/glance_install.yml	2017-05-29 05:26:22.417706490 -0400
+@@ -44,11 +44,18 @@
+   retries: 5
+   delay: 2
+ 
++- name: Retrieve checksum for venv download
++  uri:
++    url: "{{ glance_venv_download_url | replace('tgz', 'checksum') }}"
++    return_content: yes
++  register: glance_venv_checksum
++  when: not glance_developer_mode | bool
++
+ - name: Attempt venv download
+   get_url:
+     url: "{{ glance_venv_download_url }}"
+     dest: "/var/cache/{{ glance_venv_download_url | basename }}"
+-    checksum: "sha1:{{ lookup('url', glance_venv_download_url | replace('tgz', 'checksum')) }}"
++    checksum: "sha1:{{ glance_venv_checksum.content | trim }}"
+   register: glance_get_venv
+   when: not glance_developer_mode | bool
+ 
