@@ -2179,6 +2179,72 @@ class TestGenerateCeilometer(unittest.TestCase):
         mock_dump.assert_called_once_with(expected, 'user_var_ceilometer.yml')
 
 
+@mock.patch.object(guc.OSAFileGenerator, '_dump_yml')
+class TestGenerateDeploymentEnvVariables(unittest.TestCase):
+
+    def setUp(self):
+        super(TestGenerateDeploymentEnvVariables, self).setUp()
+        self.ofg = guc.OSAFileGenerator('input-file', 'output-dir')
+        # Initialize dictionaries here and update them in the
+        # individual test cases, as required
+        self.ofg.gen_dict = {
+            'deployment-environment': {
+                'http_proxy': 'http://ubuntu:pa$$w0rd@1.2.3.4:3128/',
+                'https_proxy': 'http://ubuntu:pa$$w0rd@1.2.3.4:3128/'
+            }
+        }
+        self.ofg.user_config['global_overrides'] = {
+            'internal_lb_vip_address': '11.22.33.44',
+            'external_lb_vip_address': '22.33.44.55'
+        }
+        self.expected = {
+            'deployment_environment_variables': {
+                'http_proxy': 'http://ubuntu:pa$$w0rd@1.2.3.4:3128/',
+                'https_proxy': 'http://ubuntu:pa$$w0rd@1.2.3.4:3128/',
+                'no_proxy': 'localhost,127.0.0.1,11.22.33.44,22.33.44.55'
+            }
+        }
+
+    def test_generate_correct_no_proxy_input(self, mock_dump):
+        """ In the input, no_proxy is defined with all required ip addresses.
+            In this case, generate_deployment_env_vars() should generate
+            no_proxy with the defined value as is.
+        """
+        self.ofg.gen_dict['deployment-environment']['no_proxy'] = (
+            'localhost,127.0.0.1,11.22.33.44,22.33.44.55'
+        )
+        self.ofg.generate_deployment_env_vars()
+        mock_dump.assert_called_once_with(self.expected,
+                                          'user_var_deploy_env.yml')
+
+    def test_generate_no_proxy_input_not_defined(self, mock_dump):
+        """ In the input, no_proxy is not defined even though http_proxy
+            is defined. In this case, generate_deployment_env_vars() should
+            define no_proxy with the required ip addresses.
+        """
+        self.ofg.generate_deployment_env_vars()
+        mock_dump.assert_called_once_with(self.expected,
+                                          'user_var_deploy_env.yml')
+
+    def test_generate_no_proxy_input_incomplete(self, mock_dump):
+        """ In the input, no_proxy is defined but it is not having all the
+            required ip addresses. In this case, generate_deployment_env_vars()
+            should append the missing required ip addresses to no_proxy.
+        """
+        self.ofg.gen_dict['deployment-environment']['no_proxy'] = (
+            '127.0.0.1,22.33.44.55'
+        )
+        # Because some of the required values are missing in no_proxy, the
+        # remaining addresses will be appended to it and this the expected
+        # value will have the addresses in a different order as given below.
+        self.expected['deployment_environment_variables']['no_proxy'] = (
+            '127.0.0.1,22.33.44.55,localhost,11.22.33.44'
+        )
+        self.ofg.generate_deployment_env_vars()
+        mock_dump.assert_called_once_with(self.expected,
+                                          'user_var_deploy_env.yml')
+
+
 class TestGenerateCeph(unittest.TestCase):
 
     @mock.patch.object(guc.OSAFileGenerator, '_dump_yml')
