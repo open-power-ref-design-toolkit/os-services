@@ -185,155 +185,177 @@ echo "Running OSA playbooks"
 cd ${OSA_DIR}/playbooks/
 
 # Setup the hosts and build the basic containers
-run_ansible setup-hosts.yml
-rc=$?
-if [ $rc != 0 ]; then
-    echo "Failed setup-hosts.yml"
-    exit 2
-fi
-echo "OSA playbook setup-hosts.yml successful"
-
-# Setup the infrastructure
-i=0
-prevFailingContainer=""
-failingContainer=""
-done="False"
-while [ "$done" == "False" ] && [ $i -lt 4 ]; do
-    run_ansible setup-infrastructure.yml
-    rc=$?
-    if [ $rc == 0 ]; then
-        echo "OSA playbook setup-infrastructure.yml successful"
-        done="True"
-        break
-    fi
-
-    failingContainer=`cat ~/setup-infrastructure.retry`
-    if [ $? != 0 ]; then
-        i=$((i+1))
-        continue
-    fi
-
-    if [ "$failingContainer" == "$prevFailingContainer" ]; then
-        echo "Failed setup-infrastructure.yml again with the same failures rc=$rc container=$failingContainer"
-        exit 3
-    fi
-    prevFailingContainer=$failingContainer
-
-    echo "Failed setup-infrastructure.yml rc=$rc, rebuild failing container $failingContainer ..."
-
-    rebuild_container $failingContainer
+if ! stage_complete setup-hosts; then
+    run_ansible setup-hosts.yml
     rc=$?
     if [ $rc != 0 ]; then
-        echo "Failed rebuild_container rc=$rc container=$failingContainer"
-        exit 4
+        echo "Failed setup-hosts.yml"
+        exit 2
     fi
-
-    rm -f ~/setup-infrastructure.retry
-
-    i=$((i+1))
-done
-if [ "$done" == "False" ]; then
-    echo "Failed setup-infrastructure.yml too many times!!!"
-    exit 5
+    record_success setup-hosts
+    echo "OSA playbook setup-hosts.yml successful"
+else
+    echo "Stage 'setup-hosts' already completed."
 fi
 
-# This section is duplicated from OSA/run-playbooks
-# Note that switching to run-playbooks may inadvertently convert to repo build from repo clone.
-# When running in an AIO, we need to drop the following iptables rule in any neutron_agent containers
-# to ensure that instances can communicate with the neutron metadata service.
-# This is necessary because in an AIO environment there are no physical interfaces involved in
-# instance -> metadata requests, and this results in the checksums being incorrect.
-if [[ "$DEPLOY_AIO" == "yes" ]]; then
-    ansible neutron_agent -m command \
-        -a '/sbin/iptables -t mangle -A POSTROUTING -p tcp --sport 80 -j CHECKSUM --checksum-fill'
-    ansible neutron_agent -m shell \
-        -a 'DEBIAN_FRONTEND=noninteractive apt-get -qq -y install iptables-persistent'
+
+# Setup the infrastructure
+if ! stage_complete setup-infrastructure; then
+    i=0
+    prevFailingContainer=""
+    failingContainer=""
+    done="False"
+    while [ "$done" == "False" ] && [ $i -lt 4 ]; do
+        run_ansible setup-infrastructure.yml
+        rc=$?
+        if [ $rc == 0 ]; then
+            echo "OSA playbook setup-infrastructure.yml successful"
+            done="True"
+            break
+        fi
+
+        failingContainer=`cat ~/setup-infrastructure.retry`
+        if [ $? != 0 ]; then
+            i=$((i+1))
+            continue
+        fi
+
+        if [ "$failingContainer" == "$prevFailingContainer" ]; then
+            echo "Failed setup-infrastructure.yml again with the same failures rc=$rc container=$failingContainer"
+            exit 3
+        fi
+        prevFailingContainer=$failingContainer
+
+        echo "Failed setup-infrastructure.yml rc=$rc, rebuild failing container $failingContainer ..."
+
+        rebuild_container $failingContainer
+        rc=$?
+        if [ $rc != 0 ]; then
+            echo "Failed rebuild_container rc=$rc container=$failingContainer"
+            exit 4
+        fi
+
+        rm -f ~/setup-infrastructure.retry
+
+        i=$((i+1))
+    done
+    if [ "$done" == "False" ]; then
+        echo "Failed setup-infrastructure.yml too many times!!!"
+        exit 5
+    fi
+
+    # This section is duplicated from OSA/run-playbooks
+    # Note that switching to run-playbooks may inadvertently convert to repo build from repo clone.
+    # When running in an AIO, we need to drop the following iptables rule in any neutron_agent containers
+    # to ensure that instances can communicate with the neutron metadata service.
+    # This is necessary because in an AIO environment there are no physical interfaces involved in
+    # instance -> metadata requests, and this results in the checksums being incorrect.
+    if [[ "$DEPLOY_AIO" == "yes" ]]; then
+        ansible neutron_agent -m command \
+            -a '/sbin/iptables -t mangle -A POSTROUTING -p tcp --sport 80 -j CHECKSUM --checksum-fill'
+        ansible neutron_agent -m shell \
+            -a 'DEBIAN_FRONTEND=noninteractive apt-get -qq -y install iptables-persistent'
+    fi
+
+    record_success setup-infrastructure
+else
+    echo "Stage 'setup-infrastructure' already completed."
 fi
 
 # Setup openstack
-i=0
-prevFailingContainer=""
-failingContainer=""
-done="False"
-while [ "$done" == "False" ] && [ $i -lt 4 ]; do
+if ! stage_complete setup-opnestack; then
+    i=0
+    prevFailingContainer=""
+    failingContainer=""
+    done="False"
+    while [ "$done" == "False" ] && [ $i -lt 4 ]; do
 
-    # For DEBUG purposes all echo statements start with either "Failed" or "Rebuild"
-    # To see flow in log file, grep -e "^Failed" -e "^Rebuild" -e "^ValueError" <log-file>
+        # For DEBUG purposes all echo statements start with either "Failed" or "Rebuild"
+        # To see flow in log file, grep -e "^Failed" -e "^Rebuild" -e "^ValueError" <log-file>
 
-    echo "Rebuild run setup-openstack.yml cnt=$i"
-    run_ansible setup-openstack.yml
-    rc=$?
-    if [ $rc == 0 ]; then
-        echo "OSA playbook setup-openstack.yml successful"
-        done="True"
-        break
-    fi
-
-    # Check for last iteration
-    if [ $i -eq 3 ]; then
-        break
-    fi
-
-    failingContainer=`cat ~/setup-openstack.retry`
-    if [ "$failingContainer" == "$prevFailingContainer" ]; then
-        echo "Failed setup-openstack.yml again rc=$rc container=$failingContainer"
-        exit 6
-    fi
-
-    echo "Failed setup-openstack.yml rc=$rc, rebuild failing container(s) $failingContainer ..."
-
-    failedAgain=""
-    for container in $failingContainer; do
-        # For node errors, we run setup-openstack.yml at the top of the while loop above
-        if [ "$container" == "aio1" ] || [ "$container" == "$HOSTNAME" ]; then
-            echo "Rebuild skip $container on node $failingNode"
-            failedAgain="$failedAgain $container"
-            continue;
-        fi
-
-        # This destroys container and re-builds it
-        rebuild_container $container
+        echo "Rebuild run setup-openstack.yml cnt=$i"
+        run_ansible setup-openstack.yml
         rc=$?
-        if [ $rc != 0 ]; then
-            echo "Failed rebuild_container rc=$rc container=${container}"
-            exit 7
+        if [ $rc == 0 ]; then
+            echo "OSA playbook setup-openstack.yml successful"
+            done="True"
+            break
         fi
 
-        run_ansible setup-openstack.yml -l $failingNode -l $container
-        rc=$?
-        if [ $rc != 0 ]; then
-            echo "Failed setup-openstack.yml -l $failingNode -l $container rc=$rc, continueing ..."
-            failedAgain="$failedAgain $container"
-            continue
+        # Check for last iteration
+        if [ $i -eq 3 ]; then
+            break
         fi
-        echo "Rebuild setup-openstack.yml successful for container $container on node $failingNode"
+
+        failingContainer=`cat ~/setup-openstack.retry`
+        if [ "$failingContainer" == "$prevFailingContainer" ]; then
+            echo "Failed setup-openstack.yml again rc=$rc container=$failingContainer"
+            exit 6
+        fi
+
+        echo "Failed setup-openstack.yml rc=$rc, rebuild failing container(s) $failingContainer ..."
+
+        failedAgain=""
+        for container in $failingContainer; do
+            # For node errors, we run setup-openstack.yml at the top of the while loop above
+            if [ "$container" == "aio1" ] || [ "$container" == "$HOSTNAME" ]; then
+                echo "Rebuild skip $container on node $failingNode"
+                failedAgain="$failedAgain $container"
+                continue;
+            fi
+
+            # This destroys container and re-builds it
+            rebuild_container $container
+            rc=$?
+            if [ $rc != 0 ]; then
+                echo "Failed rebuild_container rc=$rc container=${container}"
+                exit 7
+            fi
+
+            run_ansible setup-openstack.yml -l $failingNode -l $container
+            rc=$?
+            if [ $rc != 0 ]; then
+                echo "Failed setup-openstack.yml -l $failingNode -l $container rc=$rc, continueing ..."
+                failedAgain="$failedAgain $container"
+                continue
+            fi
+            echo "Rebuild setup-openstack.yml successful for container $container on node $failingNode"
+        done
+
+        prevFailingContainer=$failedAgain
+        rm -f ~/setup-openstack.retry
+
+        i=$((i+1))
     done
-
-    prevFailingContainer=$failedAgain
-    rm -f ~/setup-openstack.retry
-
-    i=$((i+1))
-done
-if [ "$done" == "False" ]; then
-    echo "Failed setup-openstack.yml too many times!!!"
-    exit 8
+    if [ "$done" == "False" ]; then
+        echo "Failed setup-openstack.yml too many times!!!"
+        exit 8
+    fi
+    record_success setup-openstack
+else
+    echo "Stage 'setup-openstack' already completed."
 fi
 
 # The post-deploy.yml playbook copies /etc/openstack_deploy to each controller node enabling
 # each to assume the role of operational management.  Copying the data allows each node to
 # recreate the configuration. The data pertains to inventory, user variables, and user secrets.
-
-echo "Invoking post-deploy playbooks"
-pushd $PCLD_DIR/playbooks >/dev/null 2>&1
-run_ansible -i $OSA_DIR/playbooks/inventory/dynamic_inventory.py post-deploy.yml
-rc=$?
-if [ $rc != 0 ]; then
-    echo "scripts/create-cluster-osa.sh failed, invoking post-deploy playbooks rc=$rc"
-    echo "Non-fatal error, continuing..."
-    echo "Manual recovery procedure:"
-    echo "1) For each controller, scp -r /etc/openstack-deploy root@controller:/etc"
+if ! stage_complete post-deploy; then
+    echo "Invoking post-deploy playbooks"
+    pushd $PCLD_DIR/playbooks >/dev/null 2>&1
+    run_ansible -i $OSA_DIR/playbooks/inventory/dynamic_inventory.py post-deploy.yml
+    rc=$?
+    if [ $rc != 0 ]; then
+        echo "scripts/create-cluster-osa.sh failed, invoking post-deploy playbooks rc=$rc"
+        echo "Non-fatal error, continuing..."
+        echo "Manual recovery procedure:"
+        echo "1) For each controller, scp -r /etc/openstack-deploy root@controller:/etc"
+    else
+        record_success post-deploy
+    fi
+    popd >/dev/null 2>&1
+else
+    echo "Stage 'post-deploy' already completed."
 fi
-popd >/dev/null 2>&1
 
 if [[ "$DEPLOY_TEMPEST" == "yes" ]]; then
     run_ansible os-tempest-install.yml

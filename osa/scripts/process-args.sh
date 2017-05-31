@@ -96,6 +96,28 @@ function exit_on_error {
     fi
 }
 
+
+STAGE_FILE=${TOP_PCLD_DIR}/cluster-progress.txt
+function record_success {
+    stage=$1
+
+    if stage_complete $stage ; then
+        echo "Stage '$stage' already completed."
+    else
+        echo "$stage" >> ${STAGE_FILE}
+    fi
+
+}
+
+function stage_complete {
+    stage=$1
+    if [ -e ${STAGE_FILE} ] && (grep $stage ${STAGE_FILE} >/dev/null) ; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 function set_passwd {
     FILE=$1
     KEY=$2
