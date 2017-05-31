@@ -1,0 +1,27 @@
+diff -Naur a/opt/openstack-ansible/playbooks/rabbitmq-install.yml b/opt/openstack-ansible/playbooks/rabbitmq-install.yml
+--- a/opt/openstack-ansible/playbooks/rabbitmq-install.yml	2017-05-31 05:12:47.788781828 -0400
++++ b/opt/openstack-ansible/playbooks/rabbitmq-install.yml	2017-05-31 03:30:46.632672374 -0400
+@@ -30,6 +30,7 @@
+     - role: "system_crontab_coordination"
+   vars:
+     is_metal: "{{ properties.is_metal|default(false) }}"
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   tags:
+     - rabbitmq
+ 
+@@ -60,6 +61,7 @@
+       rsyslog_client_config_name: "99-rabbitmq-rsyslog-client.conf"
+       tags:
+         - rsyslog
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   tags:
+     - rabbitmq
+ 
+@@ -73,6 +75,7 @@
+          password: "{{ rabbitmq_monitoring_password }}"
+          state: "present"
+       when: rabbitmq_monitoring_password is defined
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   tags:
+     - rabbitmq-config
+     - rabbitmq

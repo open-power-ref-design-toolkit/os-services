@@ -1,0 +1,10 @@
+diff -Naur a/opt/openstack-ansible/playbooks/os-cinder-install.yml b/opt/openstack-ansible/playbooks/os-cinder-install.yml
+--- a/opt/openstack-ansible/playbooks/os-cinder-install.yml	2017-05-31 05:12:47.788781828 -0400
++++ b/opt/openstack-ansible/playbooks/os-cinder-install.yml	2017-05-31 03:30:46.632672374 -0400
+@@ -127,5 +127,6 @@
+     cinder_galera_user: cinder
+     cinder_galera_database: cinder
+     cinder_galera_address: "{{ galera_address }}"
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   tags:
+     - cinder

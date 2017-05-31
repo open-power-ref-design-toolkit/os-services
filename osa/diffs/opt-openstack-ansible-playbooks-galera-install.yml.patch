@@ -1,0 +1,18 @@
+diff -Naur a/opt/openstack-ansible/playbooks/galera-install.yml b/opt/openstack-ansible/playbooks/galera-install.yml
+--- a/opt/openstack-ansible/playbooks/galera-install.yml	2017-05-31 05:12:47.784781828 -0400
++++ b/opt/openstack-ansible/playbooks/galera-install.yml	2017-05-31 03:30:46.628672374 -0400
+@@ -35,6 +35,7 @@
+     - include: common-tasks/package-cache-proxy.yml
+   vars:
+     is_metal: "{{ properties.is_metal|default(false) }}"
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   tags:
+     - galera
+ 
+@@ -66,5 +67,6 @@
+     galera_address: 127.0.0.1
+     galera_server_id: "{{ inventory_hostname | string_2_int }}"
+     galera_wsrep_node_name: "{{ container_name }}"
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   tags:
+     - galera

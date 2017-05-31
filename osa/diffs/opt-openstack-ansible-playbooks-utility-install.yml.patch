@@ -1,0 +1,10 @@
+diff -Naur a/opt/openstack-ansible/playbooks/utility-install.yml b/opt/openstack-ansible/playbooks/utility-install.yml
+--- a/opt/openstack-ansible/playbooks/utility-install.yml	2017-05-31 05:12:47.792781829 -0400
++++ b/opt/openstack-ansible/playbooks/utility-install.yml	2017-05-31 03:30:46.632672374 -0400
+@@ -100,5 +100,6 @@
+       when: utility_ssh_private_key is defined
+   vars:
+     is_metal: "{{ properties.is_metal|default(false) }}"
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   tags:
+     - utility

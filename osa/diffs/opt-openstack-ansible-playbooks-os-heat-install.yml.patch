@@ -1,0 +1,10 @@
+diff -Naur a/opt/openstack-ansible/playbooks/os-heat-install.yml b/opt/openstack-ansible/playbooks/os-heat-install.yml
+--- a/opt/openstack-ansible/playbooks/os-heat-install.yml	2017-05-31 05:12:47.788781828 -0400
++++ b/opt/openstack-ansible/playbooks/os-heat-install.yml	2017-05-31 03:30:46.632672374 -0400
+@@ -77,5 +77,6 @@
+     heat_galera_user: heat
+     heat_galera_database: heat
+     heat_galera_address: "{{ galera_address }}"
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   tags:
+     - heat

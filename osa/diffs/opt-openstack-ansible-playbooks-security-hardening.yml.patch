@@ -1,0 +1,10 @@
+diff -Naur a/opt/openstack-ansible/playbooks/security-hardening.yml b/opt/openstack-ansible/playbooks/security-hardening.yml
+--- a/opt/openstack-ansible/playbooks/security-hardening.yml	2017-05-31 05:12:47.788781828 -0400
++++ b/opt/openstack-ansible/playbooks/security-hardening.yml	2017-05-31 03:30:46.632672374 -0400
+@@ -24,5 +24,6 @@
+   roles:
+     - role: "openstack-ansible-security"
+       when: apply_security_hardening | bool
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   tags:
+     - security
