@@ -28,6 +28,12 @@ OSA_USER_VAR_RABBITMQ = 'user_var_rabbitmq.yml'
 OSA_USER_VAR_CEILOMETER = 'user_var_ceilometer.yml'
 OSA_USER_VAR_CEPH = 'user_var_ceph.yml'
 
+# deployment_environment_variables go into user_var_deploy_env.yml.
+# OpenStack-Ansible applies these environment variables during deployment
+# phase only. These environment variables are not available in hosts
+# and containers once the deployment is completed.
+OSA_USER_VAR_DEPLOY_ENV = 'user_var_deploy_env.yml'
+
 SWIFT_MINIMUM_HARDWARE = 'swift-minimum-hardware'
 SWIFT = 'swift'
 PRIVATE_COMPUTE_CLOUD = 'private-compute-cloud'
@@ -905,6 +911,41 @@ class OSAFileGenerator(object):
         # automatically added as a monitor node.
         return self._get_controllers()
 
+    def define_no_proxy(self, env_vars_dict):
+        """ Define the variable 'no_proxy' if not already defined and
+            append the required addresses to it if missing. """
+        internal_lb_addr = self.user_config['global_overrides'][
+            'internal_lb_vip_address']
+        external_lb_addr = self.user_config['global_overrides'][
+            'external_lb_vip_address']
+        required_addresses = ["localhost", "127.0.0.1",
+                              internal_lb_addr, external_lb_addr]
+        no_proxy_value = env_vars_dict.get('no_proxy')
+        if not no_proxy_value:
+            env_vars_dict['no_proxy'] = ",".join(required_addresses)
+        else:
+            addresses = no_proxy_value.split(",")
+            changed = False
+            for addr in required_addresses:
+                if addr not in addresses:
+                    addresses.append(addr)
+                    changed = True
+            if changed:
+                env_vars_dict['no_proxy'] = ','.join(addresses)
+
+    def generate_deployment_env_vars(self):
+        """Generate user variable file for deployment environment variables."""
+        env_vars_dict = self.gen_dict.get('deployment-environment')
+        if env_vars_dict:
+            if 'http_proxy' in env_vars_dict or 'https_proxy' in env_vars_dict:
+                # Make sure no_proxy is defined and has the required
+                # addresses
+                self.define_no_proxy(env_vars_dict)
+            settings = {
+                'deployment_environment_variables': env_vars_dict
+            }
+            self._dump_yml(settings, OSA_USER_VAR_DEPLOY_ENV)
+
 
 def process_inventory(inv_name, output_dir):
     """Process the input inventory file.
@@ -922,6 +963,7 @@ def process_inventory(inv_name, output_dir):
     generator.generate_haproxy()
     generator.generate_ceilometer()
     generator.generate_ceph()
+    generator.generate_deployment_env_vars()
 
 
 def parse_command():
