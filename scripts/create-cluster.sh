@@ -61,15 +61,30 @@ fi
 
 # Configure ceph-ansible
 if is_positive $DEPLOY_CEPH; then
-    run_project_script ceph-services create-cluster-ceph.sh $ARGS
-    exit_on_error $? 5
+    if ! stage_complete ceph-services; then
+        run_project_script ceph-services create-cluster-ceph.sh $ARGS
+        exit_on_error $? 5
+        record_success ceph-services
+    else
+        echo "Stage 'ceph-services' already completed."
+    fi
 fi
 
-run_project_script osa create-cluster-osa.sh $ARGS required
-exit_on_error $? 6
+if ! stage_complete create-cluster-osa; then
+    run_project_script osa create-cluster-osa.sh $ARGS required
+    exit_on_error $? 6
+    record_success create-cluster-osa
+else
+    echo "Stage 'create-cluster-osa' already completed."
+fi
 
 # Configure opsmgr - ELK, Nagios, and Horizon extensions
 if is_positive $DEPLOY_OPSMGR; then
-    run_project_script opsmgr create-cluster-opsmgr.sh $ARGS
-    exit_on_error $? 7
+    if ! stage_complete opsmgr; then
+        run_project_script opsmgr create-cluster-opsmgr.sh $ARGS
+        exit_on_error $? 7
+        record_success opsmgr
+    else
+        echo "Stage 'opsmgr' already completed."
+    fi
 fi
