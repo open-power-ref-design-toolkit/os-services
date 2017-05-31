@@ -26,6 +26,12 @@ from trove_dashboard import api as trove_api
 
 
 def parse_element_and_value_text(element_and_value):
+    # Parses a string of element/values in the form:
+    # xx::yy -- we don't care what is in yy (so you are
+    # allowed to nest an element/value combination within
+    # the value of an element/value -- thus
+    # xx::yy::zz is allowed -- we'll just return:
+    # xx and yy::zz.)
     if element_and_value:
         element, element_value = element_and_value.split('::', 1)
         return element.strip(), element_value.strip()
@@ -65,9 +71,7 @@ def create_instance_choices(request, allowed_states=None, instanceID=None):
         all_instances = [retrieve_instance(request, instanceID)]
     else:
         all_instances = retrieve_instances(request, allowed_states)
-
-    if not instanceID:
-        # Initial (and default) value instructs the user to select an instance
+        # Initial (and default) choice instructs the user to select an instance
         instance_choices.append((None, _("Select an instance")))
 
     for instance in all_instances:
@@ -201,6 +205,41 @@ def create_inst_vol_size_choices(request, allowed_states=None, instID=None):
         messages.error(request, msg)
 
     return instance_choices
+
+
+def create_db_instance_choices(request,
+                               instanceID=None):
+    # builds a database instance choice that also includes the current
+    # version for that database.
+    # The choice has a combined value of the instanc ID,
+    # database, and current flavor ID.
+    instance_choices = []
+
+    if instanceID:
+        all_instances = [retrieve_instance(request, instanceID)]
+
+    for inst in all_instances:
+        displayValue = inst.name + \
+            " (" + inst.datastore['type'] + \
+            "):  Version: " + inst.datastore['version']
+        choiceValue = inst.id
+
+        # If an instance id was passed in
+        if instanceID:
+            # Then only append elements if the instance IDs match
+            # (should only be one)
+            if inst.id.startswith(instanceID):
+                    instance_choices.append((choiceValue, displayValue))
+
+    # If nothing ended up getting added to the list of choices
+    if len(instance_choices) == 0:
+        # Should only occurs when an instance ID was passed in....
+        instance_choices.append((None, _("Selected instance not available")))
+        msg = _('Selected instance could not be retrieved.')
+        messages.error(request, msg)
+
+    if instanceID:
+        return instance_choices, all_instances
 
 
 def retrieve_flavors(request):
@@ -407,12 +446,12 @@ def create_database_choices(request, instance_id=None, databaseName=None):
             # available' message
             database_choices.append((None, _("No databases available")))
     elif len(database_choices) == 1:
-        if not databaseName:
-            # We were called without a database name, and there's only a single
-            # element in our list.  In this scenario, we put in a default
-            # value on telling the user to select a item...but there's
-            # nothing there -- remove the 'select a database' default value
-            # and add a 'no databases available' message.
+        if not databaseName and not instance_id:
+            # We were called without a database name, and without an instance.
+            # There's only a single element on the list.  In this scenario,
+            # we put in a default value on telling the user to select a item.
+            # BUT there's nothing there -- remove the 'select a database'
+            # default value and add a 'no databases available' message.
             database_choices.pop()
             database_choices.append((None, _("No databases available")))
 
@@ -830,6 +869,118 @@ class ResizeVolumeForm(forms.SelfHandlingForm):
         msg = ('Resize volume for instance %(instance_name)s started.'
                % {'instance_name': instance_name})
         messages.success(request, msg)
+        return True
+
+
+class UpgradeInstanceForm(forms.SelfHandlingForm):
+    instance = forms.ChoiceField(
+        label=_("Database Instance and Version"),
+        required=True)
+
+    version = forms.ChoiceField(label=_("Available Versions"))
+
+    orig_version = forms.CharField(widget=forms.HiddenInput())
+
+    def __init__(self, request, *args, **kwargs):
+        __method__ = "forms.UpgradeInstanceForm.__init__"
+        super(UpgradeInstanceForm, self).__init__(request, *args, **kwargs)
+
+        instID = None
+
+        # If an initial instance id was passed in, retrieve it
+        # and use it to prime the field
+        if 'initial' in kwargs:
+            if kwargs['initial'] and 'instance_id' in kwargs['initial']:
+                instID = kwargs['initial']['instance_id']
+            # if instID is none, check data to see if it is set
+            if instID is None:
+                instID = kwargs['data']['instance']
+
+        if instID:
+            self.fields['instance'].initial = instID
+            self.fields['instance'].widget.attrs['readonly'] = True
+
+        # find instance associated with instance id
+        instance_choices, instances = create_db_instance_choices(
+            request,
+            instanceID=instID)
+        self.fields['instance'].choices = instance_choices
+
+        for inst in instances:
+            # Populate field with choices
+            version_choices = []
+            try:
+                # Retrieve the available datastore versions
+                ds_versions = trove_api.trove.datastore_version_list(
+                    request,
+                    inst.datastore['type'])
+            except Exception as e:
+                logging.error("%s: Exception received trying to retrieve "
+                              "datastore versions for datastore %s. "
+                              "Exception is: %s", __method__,
+                              inst.datastore['type'], e)
+
+            orig_version = inst.datastore['version']
+
+            for avail_version in ds_versions:
+                if avail_version.name > orig_version:
+                    version_choices.append((avail_version.name,
+                                            avail_version.name))
+
+            if len(version_choices) >= 1:
+                self.fields['version'].choices = version_choices
+            else:
+                msg = _("No newer database versions are available")
+                self.fields['version'].choices = [(None, msg)]
+
+            self.fields['orig_version'].initial = orig_version
+
+    def clean(self):
+        selected_version = self.data['version']
+
+        if not selected_version:
+            msg = _("Select an version to upgrade.")
+            self._errors['version'] = self.error_class([msg])
+
+        orig_version = self.data['orig_version']
+
+        if selected_version <= orig_version:
+            msg = _("Select a version that is newer than the current version.")
+            self._errors['version'] = self.error_class([msg])
+
+    def handle(self, request, data):
+        __method__ = 'forms.UpgradeInstanceForm.handle'
+
+        selected_instance = data['instance']
+        selected_version = data['version']
+
+        # Need the instance name in both success/failure cases.
+        # Retrieve it now (will be instance_id if we couldn't retrieve it).
+
+        instance_name = retrieve_instance(request, selected_instance).name
+
+        # Perform the resize instance attempt
+        try:
+            trove_api.trove.troveclient(request).instances.upgrade(
+                selected_instance,
+                selected_version)
+
+        except Exception as e:
+            failure_message = ("Attempt to upgrade instance %(instance_name)s"
+                               " was not successful.  Details of the"
+                               " error: %(reason)s"
+                               % {'instance_name': instance_name, 'reason': e})
+            logging.error("%s: Exception received trying to upgrade "
+                          "instance %s Exception is: %s",
+                          __method__, instance_name, e)
+            exceptions.handle(self.request, failure_message)
+            # Return true to close the dialog
+            return True
+
+        msg = ('Upgrading instance %(instance_name)s started.'
+               % {'instance_name': instance_name})
+        messages.success(request, msg)
+
         return True
 
 

@@ -149,6 +149,19 @@ class ResizeVolumeLink(tables.LinkAction):
     def allowed(self, request, instance=None):
         return (instance.status == 'ACTIVE')
 
+"""
+class UpgradeInstanceLink(tables.LinkAction):
+    name = "upgradeInstance"
+    verbose_name = _("Upgrade Instance")
+    url = "horizon:project:database:upgrade_instance"
+    classes = ("ajax-modal",)
+    icon = "sort-amount-desc"
+
+    def allowed(self, request, instance=None):
+        return (instance.status == 'ACTIVE' or
+                instance.status == 'SHUTOFF')
+"""
+
 
 class DeleteInstanceLink(tables.LinkAction):
     # Always allowed in table of instances
@@ -641,6 +654,7 @@ class InstancesTable(tables.DataTable):
                        ResizeInstanceLink,
                        ResizeVolumeLink,
                        RestartInstanceLink,
+                       # UpgradeInstanceLink,
                        ManageRootLink,
                        DeleteInstanceLink,)
 

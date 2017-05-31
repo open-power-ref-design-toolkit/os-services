@@ -191,6 +191,28 @@ class RenameInstanceView(forms.ModalFormView):
         return build_db_url('?tab=database_page__instances')
 
 
+class UpgradeInstanceView(forms.ModalFormView):
+    template_name = 'project/database/upgrade_instance.html'
+    modal_header = _("Upgrade Instance")
+    form_id = "upgrade_instance_form"
+    form_class = project_forms.UpgradeInstanceForm
+    submit_label = _("Upgrade")
+    submit_url = reverse_lazy("horizon:project:database:upgrade_instance")
+    success_url = reverse_lazy('horizon:project:database:index')
+    page_title = _("Upgrade Instance")
+
+    def get_initial(self):
+        # Need the instance id to prime the dialog if passed in
+        if "instance_id" in self.kwargs:
+            return {'instance_id': self.kwargs['instance_id']}
+        else:
+            return
+
+    def get_success_url(self):
+        # On successful completion, navigate to the instances tab
+        return build_db_url('?tab=database_page__instances')
+
+
 class DeleteInstanceView(forms.ModalFormView):
     template_name = 'project/database/delete_instance.html'
     modal_header = _("Delete Instance")

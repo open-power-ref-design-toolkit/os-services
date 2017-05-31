@@ -52,6 +52,11 @@ urlpatterns = patterns(
     url(r'^(?P<instance_id>[^/]+)/rename_instance/$',
         views.RenameInstanceView.as_view(), name='rename_instance'),
 
+    url(r'^upgrade_instance',
+        views.UpgradeInstanceView.as_view(), name='upgrade_instance'),
+    url(r'^(?P<instance_id>[^/]+)/upgrade_instance/$',
+        views.UpgradeInstanceView.as_view(), name='upgrade_instance'),
+
     url(r'^delete_instance',
         views.DeleteInstanceView.as_view(), name='delete_instance'),
     url(r'^(?P<instance_id>[^/]+)/delete_instance/$',
