@@ -1,6 +1,6 @@
 diff -Naur a/opt/openstack-ansible/playbooks/os-neutron-install.yml b/opt/openstack-ansible/playbooks/os-neutron-install.yml
---- a/opt/openstack-ansible/playbooks/os-neutron-install.yml	2017-03-24 09:21:25.831991823 -0400
-+++ b/opt/openstack-ansible/playbooks/os-neutron-install.yml	2017-03-24 09:09:57.775979520 -0400
+--- a/opt/openstack-ansible/playbooks/os-neutron-install.yml	2017-05-31 05:12:47.788781828 -0400
++++ b/opt/openstack-ansible/playbooks/os-neutron-install.yml	2017-05-31 03:30:46.632672374 -0400
 @@ -19,6 +19,33 @@
    max_fail_percentage: 20
    user: root
@@ -51,3 +51,10 @@ diff -Naur a/opt/openstack-ansible/playbooks/os-neutron-install.yml b/opt/openst
        when: inventory_hostname not in groups['neutron_agent']
      - include: common-tasks/rabbitmq-vhost-user.yml
        static: no
+@@ -125,5 +156,6 @@
+   vars:
+     is_metal: "{{ properties.is_metal|default(false) }}"
+     bind_prefix: "{{ provider_network_bind_prefix|default('') }}"
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   tags:
+     - neutron

@@ -1,0 +1,10 @@
+diff -Naur a/opt/openstack-ansible/playbooks/openstack-hosts-setup.yml b/opt/openstack-ansible/playbooks/openstack-hosts-setup.yml
+--- a/opt/openstack-ansible/playbooks/openstack-hosts-setup.yml	2017-05-31 05:12:47.788781828 -0400
++++ b/opt/openstack-ansible/playbooks/openstack-hosts-setup.yml	2017-05-31 03:30:46.628672374 -0400
+@@ -28,5 +28,6 @@
+         msg: "The only supported platforms for this release are Ubuntu 14.04 LTS (Trusty) and Ubuntu 16.04 LTS (Xenial)"
+   roles:
+     - role: "openstack_hosts"
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   tags:
+     - openstack-hosts

@@ -1,0 +1,18 @@
+diff -Naur a/opt/openstack-ansible/playbooks/haproxy-install.yml b/opt/openstack-ansible/playbooks/haproxy-install.yml
+--- a/opt/openstack-ansible/playbooks/haproxy-install.yml	2017-05-31 05:12:47.784781828 -0400
++++ b/opt/openstack-ansible/playbooks/haproxy-install.yml	2017-05-31 03:30:46.628672374 -0400
+@@ -33,6 +33,7 @@
+     - "{{ haproxy_keepalived_vars_file | default('vars/configs/keepalived_haproxy.yml') }}"
+   vars:
+     is_metal: "{{ properties.is_metal|default(false) }}"
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   tags:
+     - haproxy-config
+     - haproxy
+@@ -73,5 +74,6 @@
+     - vars/configs/haproxy_config.yml
+   vars:
+     is_metal: "{{ properties.is_metal|default(false) }}"
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   tags:
+     - haproxy

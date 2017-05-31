@@ -1,0 +1,9 @@
+diff -Naur a/opt/openstack-ansible/playbooks/etcd-install.yml b/opt/openstack-ansible/playbooks/etcd-install.yml
+--- a/opt/openstack-ansible/playbooks/etcd-install.yml	2017-05-31 05:12:47.784781828 -0400
++++ b/opt/openstack-ansible/playbooks/etcd-install.yml	2017-05-31 03:30:46.628672374 -0400
+@@ -29,3 +29,5 @@
+     - role: "system_crontab_coordination"
+   vars:
+     is_metal: "{{ properties.is_metal|default(false) }}"
++  environment: "{{ deployment_environment_variables | default({}) }}"
++

@@ -1,0 +1,10 @@
+diff -Naur a/opt/openstack-ansible/playbooks/repo-server.yml b/opt/openstack-ansible/playbooks/repo-server.yml
+--- a/opt/openstack-ansible/playbooks/repo-server.yml	2017-05-31 05:12:47.788781828 -0400
++++ b/opt/openstack-ansible/playbooks/repo-server.yml	2017-05-31 03:30:46.632672374 -0400
+@@ -69,5 +69,6 @@
+     - defaults/repo_packages/openstack_services.yml
+   vars:
+     is_metal: "{{ properties.is_metal|default(false) }}"
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   tags:
+     - repo-server

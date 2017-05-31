@@ -1,0 +1,10 @@
+diff -Naur a/opt/openstack-ansible/playbooks/os-glance-install.yml b/opt/openstack-ansible/playbooks/os-glance-install.yml
+--- a/opt/openstack-ansible/playbooks/os-glance-install.yml	2017-05-31 05:12:47.788781828 -0400
++++ b/opt/openstack-ansible/playbooks/os-glance-install.yml	2017-05-31 03:30:46.632672374 -0400
+@@ -97,5 +97,6 @@
+     glance_galera_user: glance
+     glance_galera_database: glance
+     glance_galera_address: "{{ galera_address }}"
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   tags:
+     - glance

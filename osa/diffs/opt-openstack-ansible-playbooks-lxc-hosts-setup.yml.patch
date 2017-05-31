@@ -1,0 +1,10 @@
+diff -Naur a/opt/openstack-ansible/playbooks/lxc-hosts-setup.yml b/opt/openstack-ansible/playbooks/lxc-hosts-setup.yml
+--- a/opt/openstack-ansible/playbooks/lxc-hosts-setup.yml	2017-05-31 05:12:47.788781828 -0400
++++ b/opt/openstack-ansible/playbooks/lxc-hosts-setup.yml	2017-05-31 03:30:46.628672374 -0400
+@@ -55,5 +55,6 @@
+     - defaults/repo_packages/openstack_services.yml
+   vars:
+     pip_lock_to_internal_repo: False
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   tags:
+     - lxc-hosts
