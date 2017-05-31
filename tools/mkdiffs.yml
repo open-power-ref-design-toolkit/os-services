@@ -115,6 +115,11 @@ projects:
     target_location: /etc/ansible/roles/galera_server
     src_location: galera_server
   - project:
+    git: https://git.openstack.org/openstack/openstack-ansible-galera_client
+    branch: 14.1.1
+    target_location: /etc/ansible/roles/galera_client
+    src_location: galera_client
+  - project:
     git: https://git.openstack.org/openstack/openstack-ansible-pip_install
     branch: 14.1.1
     target_location: /etc/ansible/roles/pip_install

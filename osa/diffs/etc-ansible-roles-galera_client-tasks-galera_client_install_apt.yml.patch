@@ -1,0 +1,59 @@
+diff -Naur a/etc/ansible/roles/galera_client/tasks/galera_client_install_apt.yml b/etc/ansible/roles/galera_client/tasks/galera_client_install_apt.yml
+--- a/etc/ansible/roles/galera_client/tasks/galera_client_install_apt.yml	2017-05-31 11:29:55.380850495 -0500
++++ b/etc/ansible/roles/galera_client/tasks/galera_client_install_apt.yml	2017-05-31 11:27:56.113464111 -0500
+@@ -26,6 +26,7 @@
+ - name: Update apt if needed
+   apt:
+     update_cache: yes
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   when: >
+     "ansible_date_time.epoch|float - apt_cache_stat.stat.mtime > {{cache_timeout}}"
+   tags:
+@@ -36,6 +37,7 @@
+     pkg: "apt-transport-https"
+     state: "{{ galera_client_package_state }}"
+     update_cache: yes
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   tags:
+     - galera-client-apt-packages
+ 
+@@ -46,6 +48,7 @@
+     data: "{{ item.data | default(omit) }}"
+     url: "{{ item.url | default(omit) }}"
+     state: "present"
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   with_items: "{{ galera_client_gpg_keys }}"
+   register: add_keys
+   until: add_keys|success
+@@ -61,6 +64,7 @@
+     keyserver: "{{ item.fallback_keyserver | default(omit) }}"
+     url: "{{ item.fallback_url | default(omit) }}"
+     state: "present"
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   register: add_keys_fallback
+   until: add_keys_fallback | success
+   retries: 5
+@@ -75,6 +79,7 @@
+     repo: "{{ galera_client_repo }}"
+     filename: "{{ mariadb_repo_filename | default(omit) }}"
+     state: present
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   register: add_repo
+   until: add_repo | success
+   retries: 5
+@@ -85,6 +90,7 @@
+ - name: Update apt if needed
+   apt:
+     update_cache: yes
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   when: add_repo | changed
+   tags:
+     - galera-client-apt-packages
+@@ -93,6 +99,7 @@
+   apt:
+     pkg: "{{ item }}"
+     state: "{{ galera_client_package_state }}"
++  environment: "{{ deployment_environment_variables | default({}) }}"
+   register: install_packages
+   until: install_packages | success
+   retries: 5

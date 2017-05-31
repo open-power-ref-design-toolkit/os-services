@@ -1,0 +1,109 @@
+---
+# Copyright 2016, Rackspace US, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#TODO(evrardjp): Replace the next 2 tasks by a standard apt with cache
+#when https://github.com/ansible/ansible-modules-core/pull/1517 is merged
+#in 1.9.x or we move to 2.0 (if tested working)
+- name: Check apt last update file
+  stat:
+    path: /var/cache/apt
+  register: apt_cache_stat
+  tags:
+    - galera-client-apt-packages
+
+- name: Update apt if needed
+  apt:
+    update_cache: yes
+  environment: "{{ deployment_environment_variables | default({}) }}"
+  when: >
+    "ansible_date_time.epoch|float - apt_cache_stat.stat.mtime > {{cache_timeout}}"
+  tags:
+    - galera-client-apt-packages
+
+- name: Ensure host can talk to HTTPS apt repos
+  apt:
+    pkg: "apt-transport-https"
+    state: "{{ galera_client_package_state }}"
+    update_cache: yes
+  environment: "{{ deployment_environment_variables | default({}) }}"
+  tags:
+    - galera-client-apt-packages
+
+- name: Add galera apt-keys
+  apt_key:
+    id: "{{ item.hash_id }}"
+    keyserver: "{{ item.keyserver | default(omit) }}"
+    data: "{{ item.data | default(omit) }}"
+    url: "{{ item.url | default(omit) }}"
+    state: "present"
+  environment: "{{ deployment_environment_variables | default({}) }}"
+  with_items: "{{ galera_client_gpg_keys }}"
+  register: add_keys
+  until: add_keys|success
+  retries: 5
+  delay: 2
+  failed_when: false
+  tags:
+    - galera-client-apt-keys
+
+- name: Add galera apt-keys using fallback source
+  apt_key:
+    id: "{{ item.hash_id }}"
+    keyserver: "{{ item.fallback_keyserver | default(omit) }}"
+    url: "{{ item.fallback_url | default(omit) }}"
+    state: "present"
+  environment: "{{ deployment_environment_variables | default({}) }}"
+  register: add_keys_fallback
+  until: add_keys_fallback | success
+  retries: 5
+  delay: 2
+  with_items: "{{ galera_client_gpg_keys }}"
+  when: add_keys|failed and (item.fallback_keyserver is defined or item.fallback_url is defined)
+  tags:
+    - galera-client-apt-keys
+
+- name: Add galera repo(s)
+  apt_repository:
+    repo: "{{ galera_client_repo }}"
+    filename: "{{ mariadb_repo_filename | default(omit) }}"
+    state: present
+  environment: "{{ deployment_environment_variables | default({}) }}"
+  register: add_repo
+  until: add_repo | success
+  retries: 5
+  delay: 2
+  tags:
+    - galera-client-repos
+
+- name: Update apt if needed
+  apt:
+    update_cache: yes
+  environment: "{{ deployment_environment_variables | default({}) }}"
+  when: add_repo | changed
+  tags:
+    - galera-client-apt-packages
+
+- name: Install galera packages
+  apt:
+    pkg: "{{ item }}"
+    state: "{{ galera_client_package_state }}"
+  environment: "{{ deployment_environment_variables | default({}) }}"
+  register: install_packages
+  until: install_packages | success
+  retries: 5
+  delay: 2
+  with_items: "{{ galera_client_distro_packages }}"
+  tags:
+    - galera-client-apt-packages
