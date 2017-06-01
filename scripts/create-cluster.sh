@@ -45,6 +45,9 @@ echo DEPLOY_OPSMGR=$DEPLOY_OPSMGR
 # Validate the config
 validate_config
 
+# Load deployment environment variables from the inventory file
+load_env_vars
+
 # Check openstack-ansible configuration as user may have introduced an error when customizing
 run_project_script osa check-osa.sh $ARGS
 exit_on_error $? 2

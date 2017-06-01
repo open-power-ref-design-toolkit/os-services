@@ -181,6 +181,18 @@ function is_positive {
     fi
 }
 
+function load_env_vars {
+    if real_genesis_inventory_present && [ -z "$ENV_VARS_DEFINED" ]; then
+        # Set any deployment variables that are present in the inventory
+        while read -r line; do
+            eval "export $line"
+            echo "Defining variable: $line"
+        done < <($TOP_PCLD_DIR/osa/scripts/get_env_vars.py -i $GENESIS_INVENTORY)
+        export ENV_VARS_DEFINED=yes
+    fi
+}
+
+
 if [[ $EUID -ne 0 ]]; then
     echo "This script must run as root."
     exit 1

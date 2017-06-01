@@ -179,6 +179,9 @@ if [ $rc != 0 ]; then
     exit 1
 fi
 
+# Load deployment environment variables from the inventory file
+load_env_vars
+
 # Apply patches iff ansible is installed above.  Code is intended to be reentrant
 if [ "$INSTALL" == "True" ] && [ -d $PCLD_DIR/diffs ]; then
     # Copy configuration files before patches are applied, so that
