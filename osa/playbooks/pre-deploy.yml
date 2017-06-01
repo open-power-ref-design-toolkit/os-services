@@ -17,6 +17,7 @@
 
 - name: Update apt cache
   hosts: all
+  environment: "{{ deployment_environment | default({}) }}"
   vars:
     cache_timeout: 600
   tasks:
@@ -39,6 +40,7 @@
 - name: Initialize first controller node
   hosts: localhost
   connection: local
+  environment: "{{ deployment_environment | default({}) }}"
   roles:
     - local
 
@@ -59,6 +61,7 @@
 # Perform all setup steps in parallel prior to the inventory update.
 - name: Swift setup storage
   hosts: swift-metadata:swift-object
+  environment: "{{ deployment_environment | default({}) }}"
   roles:
     - role: "swift_hosts"
       swift_do_setup: true
@@ -72,6 +75,7 @@
 - name: Swift update storage inventory
   hosts: swift-metadata:swift-object
   serial: 1
+  environment: "{{ deployment_environment | default({}) }}"
   roles:
     - role: "swift_hosts"
       swift_do_setup: false
@@ -84,9 +88,9 @@
 # the inventory step it would impact all subsequent hosts.
 - name: Swift cleans up remnants from the setup storage and inventory plays
   hosts: swift-metadata:swift-object
+  environment: "{{ deployment_environment | default({}) }}"
   roles:
     - role: "swift_hosts"
       swift_do_setup: false
       swift_do_inventory: false
       swift_do_cleanup: true
-

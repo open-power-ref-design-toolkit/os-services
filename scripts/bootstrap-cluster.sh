@@ -107,6 +107,9 @@ fi
 run_project_script osa bootstrap-osa.sh $ARGS
 exit_on_error $? 2
 
+# Load deployment environment variables from the inventory file
+load_env_vars
+
 # Installs ceph and ceph-ansible
 if is_positive $DEPLOY_CEPH; then
     if [ ! -d $TOP_PCLD_DIR/ceph-services ]; then
