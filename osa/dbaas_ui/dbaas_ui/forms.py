@@ -21,6 +21,7 @@ from horizon.templatetags import sizeformat
 from horizon.utils import validators
 
 import logging
+from dbaas_ui import db_capability
 
 from trove_dashboard import api as trove_api
 
@@ -1224,13 +1225,23 @@ class CreateUserForm(forms.SelfHandlingForm):
             if kwargs['initial'] and 'instance_id' in kwargs['initial']:
                 instID = kwargs['initial']['instance_id']
 
-        sts = ("ACTIVE",)
-        choices = create_instance_choices(request, sts, instID)
-
         # Restrict list of instances to those on which a user can
         # be added (based on instance statuses)
         sts = ("ACTIVE",)
         choices = create_instance_choices(request, sts, instID)
+
+        new_list = []
+        for choice in choices:
+            if choice[0] is None:
+                new_list.append((choice[0], choice[1]))
+                continue
+            instanceID = choice[0]
+            instance = retrieve_instance(request, instanceID)
+            instance_type = instance.datastore['type']
+            if (db_capability.can_support_users(instance_type)):
+                new_list.append((choice[0], choice[1]))
+
+        choices = new_list
 
         self.fields['instance'].choices = choices
 
@@ -1432,6 +1443,19 @@ class CreateDatabaseForm(forms.SelfHandlingForm):
         # be added (statuses)
         sts = ("ACTIVE",)
         choices = create_instance_choices(request, sts, instID)
+
+        new_list = []
+        for choice in choices:
+            if choice[0] is None:
+                new_list.append((choice[0], choice[1]))
+                continue
+            instanceID = choice[0]
+            instance = retrieve_instance(request, instanceID)
+            instance_type = instance.datastore['type']
+            if (db_capability.can_support_databases(instance_type)):
+                new_list.append((choice[0], choice[1]))
+
+        choices = new_list
 
         self.fields['instance'].choices = choices
 
