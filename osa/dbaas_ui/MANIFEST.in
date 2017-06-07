@@ -1,2 +1,1 @@
-recursive-include dbaas_ui/templates *
-recursive-include dbaas_ui/workflows *
+recursive-include dbaas_ui *.html
