@@ -127,6 +127,7 @@
   when:
     - enterpriseEdition
     - item['srcPkg'] is defined
+    - "{{ item['version'] }} == {{ dbVersion }}"
 
 - name: "Set source package for community provided packages"
   set_fact:
@@ -135,6 +136,7 @@
   when:
     - communityEdition
     - item['srcPkg'] is defined
+    - "{{ item['version'] }} == {{ dbVersion }}"
 
 - name: "Set source package when not defined in osdb table"
   set_fact:

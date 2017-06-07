@@ -104,7 +104,6 @@ trove_integration_elements_with_new_files:
   - ubuntu-guest/
   - ubuntu-postgresql/
   - ubuntu-xenial-mariadb/
-  - ubuntu-trusty-mongodb/
   - ubuntu-xenial-mongodb/
 
 src_trove_guestagent_diffs:
@@ -112,6 +111,7 @@ src_trove_guestagent_diffs:
   - "{{ baseDir }}/diffs/trove/guestagent/postgres-fix-ctrl-template.patch"
   - "{{ baseDir }}/diffs/trove/guestagent/mariadb-systemd.patch"
   - "{{ baseDir }}/diffs/trove/guestagent/mariadb-reload.patch"
+  - "{{ baseDir }}/diffs/trove/guestagent/mongodb-database-user.patch"
 
 src_trove_guestagent_debug_diffs:
   - "{{ baseDir }}/diffs/trove/guestagent-debug/debug-common.patch"

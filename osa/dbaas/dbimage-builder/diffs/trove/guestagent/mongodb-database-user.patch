@@ -1,0 +1,357 @@
+diff --git a/trove/guestagent/datastore/experimental/mongodb/manager.py b/trove/guestagent/datastore/experimental/mongodb/manager.py
+index c4e6d5a..fc42a69 100644
+--- a/trove/guestagent/datastore/experimental/mongodb/manager.py
++++ b/trove/guestagent/datastore/experimental/mongodb/manager.py
+@@ -51,6 +51,10 @@ class Manager(manager.Manager):
+                    config_contents, root_password, overrides,
+                    cluster_config, snapshot):
+         """This is called from prepare in the base class."""
++
++        # Config parameters from controller are not applicable to newer version
++        config_contents = None
++
+         self.app.install_if_needed(packages)
+         self.status.wait_for_database_service_start(
+             self.app.state_change_wait_time)
+diff --git a/trove/guestagent/datastore/experimental/mongodb/service.py b/trove/guestagent/datastore/experimental/mongodb/service.py
+index 2b73a33..9114529 100644
+--- a/trove/guestagent/datastore/experimental/mongodb/service.py
++++ b/trove/guestagent/datastore/experimental/mongodb/service.py
+@@ -115,7 +115,7 @@ class MongoDBApp(object):
+ 
+     def apply_initial_guestagent_configuration(
+             self, cluster_config, mount_point=None):
+-        LOG.debug("Applying initial configuration.")
++        LOG.debug("Applying initial configuration, cluster_config=%s" % str(cluster_config))
+ 
+         # Mongodb init scripts assume the PID-file path is writable by the
+         # database service.
+@@ -366,12 +366,12 @@ class MongoDBApp(object):
+ 
+     def create_admin_user(self, password):
+         """Create the admin user while the localhost exception is active."""
+-        LOG.debug('Creating the admin user.')
+         creds = self.store_admin_password(password)
++        LOG.debug('Creating the admin database user %s' % creds.username)
+         user = models.MongoDBUser(name='admin.%s' % creds.username,
+                                   password=creds.password)
+         user.roles = system.MONGO_ADMIN_ROLES
+-        # the driver engine is already cached, but we need to change it it
++        # the driver engine is already cached, but we need to change it
+         with MongoDBClient(None, host='localhost',
+                            port=MONGODB_PORT) as client:
+             MongoDBAdmin().create_validated_user(user, client=client)
+@@ -478,6 +478,7 @@ class MongoDBAdmin(object):
+                 creds.password
+             )
+             type(self).admin_user = user
++            LOG.debug("admin_user=%s" % str(user))
+         return type(self).admin_user
+ 
+     def _is_modifiable_user(self, name):
+@@ -498,6 +499,8 @@ class MongoDBAdmin(object):
+ 
+     def _create_user_with_client(self, user, client):
+         """Run the add user command."""
++        LOG.debug('Creating user %s on database %s with roles %s.'
++                  % (user.username, user.database.name, str(user.roles)))
+         client[user.database.name].add_user(
+             user.username, password=user.password, roles=user.roles
+         )
+@@ -507,9 +510,6 @@ class MongoDBAdmin(object):
+         this action is valid.
+         :param user:   a MongoDBUser object
+         """
+-        LOG.debug('Creating user %s on database %s with roles %s.'
+-                  % (user.username, user.database.name, str(user.roles)))
+-
+         if not user.password:
+             raise exception.BadRequest(_("User's password is empty."))
+ 
+@@ -523,13 +523,15 @@ class MongoDBAdmin(object):
+         """Create the given user(s).
+         :param users:   list of serialized user objects
+         """
+-        with MongoDBClient(self._admin_user()) as client:
++        LOG.debug("users=%s" % str(users))
++        with MongoDBClient(self._admin_user(), connect=True) as client:
+             for item in users:
+                 user = models.MongoDBUser.deserialize_user(item)
++                LOG.debug("user=%s" % str(item))
+                 if not self._is_modifiable_user(user.name):
+                     LOG.warning('Skipping creation of user with reserved '
+                                 'name %(user)s' % {'user': user.name})
+-                elif self._get_user_record(user.name, client=client):
++                elif self._get_user_record(user.username, client=client):
+                     LOG.warning('Skipping creation of user with pre-existing '
+                                 'name %(user)s' % {'user': user.name})
+                 else:
+@@ -549,7 +551,11 @@ class MongoDBAdmin(object):
+         """Delete the given user.
+         :param user:   a serialized user object
+         """
++        LOG.debug('Deleting user=%s' % user)
++
++
+         user = models.MongoDBUser.deserialize_user(user)
++
+         if not self._is_modifiable_user(user.name):
+             raise exception.BadRequest(_(
+                 'Cannot delete user with reserved name %(user)s')
+@@ -559,20 +565,22 @@ class MongoDBAdmin(object):
+ 
+     def _get_user_record(self, name, client=None):
+         """Get the user's record."""
+-        user = models.MongoDBUser(name)
+-        if not self._is_modifiable_user(user.name):
++        LOG.debug('Getting user record %s.' % name)
++
++        if not self._is_modifiable_user(name):
+             LOG.warning('Skipping retrieval of user with reserved '
+-                        'name %(user)s' % {'user': user.name})
++                        'name %(user)s' % {'user': name})
+             return None
+         if client:
+-            user_info = client.admin.system.users.find_one(
+-                {'user': user.username, 'db': user.database.name})
++            user_info = client.admin.system.users.find_one({'user': name})
++            LOG.debug("client user_info=%s" % str(user_info))
+         else:
+             with MongoDBClient(self._admin_user()) as admin_client:
+-                user_info = admin_client.admin.system.users.find_one(
+-                    {'user': user.username, 'db': user.database.name})
++                user_info = admin_client.admin.system.users.find_one({'user': name})
++            LOG.debug("admin user_info=%s" % str(user_info))
+         if not user_info:
+             return None
++        user = models.MongoDBUser(name=user_info['_id'])
+         user.roles = user_info['roles']
+         return user
+ 
+@@ -581,6 +589,9 @@ class MongoDBAdmin(object):
+         LOG.debug('Getting user %s.' % name)
+         user = self._get_user_record(name)
+         if not user:
++            raise exception.BadRequest(_(
++                'Cannot get attributes for user %(user)s as it either does '
++                'not exist or is a reserved user.') % {'user': name})
+             return None
+         return user.serialize()
+ 
+@@ -590,9 +601,10 @@ class MongoDBAdmin(object):
+         with MongoDBClient(self._admin_user()) as admin_client:
+             for user_info in admin_client.admin.system.users.find():
+                 user = models.MongoDBUser(name=user_info['_id'])
+-                user.roles = user_info['roles']
+-                if self._is_modifiable_user(user.name):
+-                    users.append(user)
++                if not self._is_modifiable_user(user.name):
++                    continue
++                user.name = user_info['user']
++                users.append(user)
+         LOG.debug('users = ' + str(users))
+         return guestagent_utils.serialize_list(
+             users,
+@@ -601,6 +613,7 @@ class MongoDBAdmin(object):
+     def change_passwords(self, users):
+         with MongoDBClient(self._admin_user()) as admin_client:
+             for item in users:
++                LOG.debug('user=%s' % item)
+                 user = models.MongoDBUser.deserialize_user(item)
+                 if not self._is_modifiable_user(user.name):
+                     LOG.warning('Skipping password change for user with '
+@@ -613,6 +626,7 @@ class MongoDBAdmin(object):
+ 
+     def update_attributes(self, name, user_attrs):
+         """Update user attributes."""
++        LOG.debug('name=%s' % name)
+         user = self._get_user_record(name)
+         if not user:
+             raise exception.BadRequest(_(
+@@ -690,6 +704,7 @@ class MongoDBAdmin(object):
+     def list_access(self, username):
+         """Returns a list of all databases for which the user has the RW role.
+         """
++        LOG.debug('username=%s.' % username)
+         user = self._get_user_record(username)
+         if not user:
+             raise exception.BadRequest(_(
+@@ -702,14 +717,24 @@ class MongoDBAdmin(object):
+         For each new database creates a dummy document in a dummy collection,
+         then drops the collection.
+         """
++        LOG.debug('databases=%s.' % str(databases))
+         tmp = 'dummy'
+-        with MongoDBClient(self._admin_user()) as admin_client:
++        with MongoDBClient(self._admin_user(), connect=True) as admin_client:
+             for item in databases:
+                 db_name = models.MongoDBSchema.deserialize_schema(item).name
+-                LOG.debug('Creating MongoDB database %s' % db_name)
++                LOG.debug('Creating MongoDB database %s' % str(db_name))
+                 db = admin_client[db_name]
+-                db[tmp].insert({'dummy': True})
++                LOG.debug('db=%s' % str(db))
++                collection = db.create_collection(tmp)
++                LOG.debug('collection=%s' % str(collection))
++                result = collection.insert_one({'dummy': True})
++                LOG.debug("acknowledged=%s" % str(result.acknowledged))
++                LOG.debug("ObjectID=%s" % str(result.inserted_id))
++                db_names = admin_client.database_names()
++                LOG.debug('before drop db_names = ' + str(db_names))
+                 db.drop_collection(tmp)
++                db_names = admin_client.database_names()
++                LOG.debug('after drop db_names = ' + str(db_names))
+ 
+     def delete_database(self, database):
+         """Deletes the database."""
+@@ -720,11 +745,14 @@ class MongoDBAdmin(object):
+     def list_database_names(self):
+         """Get the list of database names."""
+         with MongoDBClient(self._admin_user()) as admin_client:
+-            return admin_client.database_names()
++            names = admin_client.database_names()
++            LOG.debug("database names=%s" % str(names))
++            return names
+ 
+     def list_databases(self, limit=None, marker=None, include_marker=False):
+         """Lists the databases."""
+         db_names = self.list_database_names()
++        LOG.debug('db_names = ' + str(db_names))
+         for hidden in cfg.get_ignored_dbs():
+             if hidden in db_names:
+                 db_names.remove(hidden)
+@@ -782,7 +810,7 @@ class MongoDBClient(object):
+     # engine information is cached by making it a class attribute
+     engine = {}
+ 
+-    def __init__(self, user, host=None, port=None):
++    def __init__(self, user, host=None, port=None, connect=None):
+         """Get the client. Specifying host and/or port updates cached values.
+         :param user: MongoDBUser instance used to authenticate
+         :param host: server address, defaults to localhost
+@@ -796,25 +824,35 @@ class MongoDBClient(object):
+             type(self).engine['host'] = (host if host else 'localhost')
+             type(self).engine['port'] = (port if port else MONGODB_PORT)
+             new_client = True
+-        elif host or port:
++        elif host or port or connect:
+             LOG.debug("Updating MongoDB client.")
+             if host:
+                 type(self).engine['host'] = host
+             if port:
+                 type(self).engine['port'] = port
++            if connect:
++                type(self).engine['connect'] = True
++            else:
++                type(self).engine['connect'] = False
+             new_client = True
+         if new_client:
+             host = type(self).engine['host']
+             port = type(self).engine['port']
+             LOG.debug("Creating MongoDB client to %(host)s:%(port)s."
+                       % {'host': host, 'port': port})
+-            type(self).engine['client'] = pymongo.MongoClient(host=host,
++            if connect == True:
++                type(self).engine['client'] = pymongo.MongoClient(host=host,
++                                                              port=port,
++                                                              connect=True,
++                                                              fsync=True)
++            else:
++                type(self).engine['client'] = pymongo.MongoClient(host=host,
+                                                               port=port,
+                                                               connect=False)
+         self.session = type(self).engine['client']
+         if user:
+             db_name = user.database.name
+-            LOG.debug("Authenticating MongoDB client on %s." % db_name)
++            LOG.debug("Authenticating MongoDB client on database %s as user %s." % (db_name, user.username))
+             self._db = self.session[db_name]
+             self._db.authenticate(user.username, password=user.password)
+             self._logged_in = True
+diff --git a/trove/guestagent/db/models.py b/trove/guestagent/db/models.py
+index 4af8bd3..174d264 100644
+--- a/trove/guestagent/db/models.py
++++ b/trove/guestagent/db/models.py
+@@ -19,6 +19,7 @@ import re
+ import netaddr
+ from six import u
+ 
++from oslo_log import log as logging
+ from trove.common import cfg
+ from trove.common import exception
+ from trove.common.i18n import _
+@@ -26,6 +27,8 @@ from trove.common import utils
+ 
+ CONF = cfg.CONF
+ 
++LOG = logging.getLogger(__name__)
++
+ 
+ class Base(object):
+ 
+@@ -751,25 +754,23 @@ class MongoDBUser(DatastoreUser):
+ 
+     def _update_name(self, name=None, username=None, database=None):
+         """Keep the name, username, and database values in sync."""
+-        if name:
++        if name and '.' in name:
+             (database, username) = self._parse_name(name)
+             if not (database and username):
+                 missing = 'username' if self.database else 'database'
+                 raise ValueError(_("MongoDB user's name missing %s.")
+                                  % missing)
++            self._database = self._build_database_schema(database).serialize()
++            self._username = username
++            self._name = name
+         else:
+-            if username:
+-                if not self.database:
+-                    raise ValueError(_('MongoDB user missing database.'))
+-                database = self.database.name
+-            else:  # database
+-                if not self.username:
+-                    raise ValueError(_('MongoDB user missing username.'))
+-                username = self.username
+-            name = '%s.%s' % (database, username)
+-        self._name = name
+-        self._username = username
+-        self._database = self._build_database_schema(database).serialize()
++            if database and not self._database:
++                self._database = self._build_database_schema(database).serialize()
++            if username and not self._username:
++                self._username = username
++            # Allow name to be reset to short form without database
++            if name:
++                self._name = name
+ 
+     @property
+     def roles(self):
+@@ -795,9 +796,27 @@ class MongoDBUser(DatastoreUser):
+ 
+     @classmethod
+     def deserialize_user(cls, value):
++        LOG.debug("value=%s" % str(value))
++        name = value['_name']
++
++        if '.' not in name:
++            databases = value['_databases']
++            num_dbs = len(databases)
++            if num_dbs == 0:
++                raise exception.BadRequest(_(
++                    'Mongodb requires that a database be specified when creating a user (%s).'
++                ) % name)
++            database = databases[0]['_name']
++
+         user = super(MongoDBUser, cls).deserialize_user(value)
+-        user.name = user._name
++
++        if '.' not in name:
++            user.name = database + '.' + name
++        else:
++            user.name = name
++
+         user._init_roles()
++        LOG.debug("user=%s" % str(user))
+         return user
+ 
+     def _build_database_schema(self, name):
