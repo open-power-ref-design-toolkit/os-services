@@ -27,9 +27,11 @@ from openstack_dashboard.dashboards.project.instances \
     import utils as instance_utils
 from openstack_dashboard.dashboards.project.instances.workflows \
     import create_instance as dash_create_instance
+from openstack_dashboard.api.glance import glanceclient as glance_client
 
 
 from trove_dashboard import api as trove_api
+
 
 LOG = logging.getLogger(__name__)
 
@@ -148,28 +150,43 @@ class SetInstanceDetailsAction(workflows.Action):
             LOG.exception("Exception while obtaining datastore version list")
             self._datastore_versions = []
 
+    def glance_image_ids(self, request):
+        try:
+            image_ids = []
+            image_iter = glance_client(request).images.list()
+            for image in image_iter:
+                image_ids.append(image.id)
+            return image_ids
+        except Exception:
+            LOG.exception("Exception while obtaining glance image list")
+
     def populate_datastore_choices(self, request, context):
         choices = ()
         datastores = self.datastores(request)
-        if datastores is not None:
-            for ds in datastores:
-                versions = self.datastore_versions(request, ds.name)
-                if versions:
-                    # only add to choices if datastore has at least one version
-                    version_choices = ()
-                    for v in versions:
-                        if hasattr(v, 'active') and not v.active:
-                            continue
-                        selection_text = self._build_datastore_display_text(
-                            ds.name, v.name)
-                        widget_text = self._build_widget_field_name(
-                            ds.name, v.name)
-                        version_choices = (version_choices +
-                                           ((widget_text, selection_text),))
-                        self._add_datastore_flavor_field(request,
-                                                         ds.name,
-                                                         v.name)
-                    choices = choices + version_choices
+        image_ids = self.glance_image_ids(request)
+        for ds in datastores or []:
+            versions = self.datastore_versions(request, ds.name)
+            if versions:
+                # only add to choices if datastore has at least one version
+                version_choices = ()
+                for v in versions:
+                    if hasattr(v, 'active') and not v.active:
+                        LOG.error("Invalid datastore (%s) and version (%s)"
+                                  ". Version is not active.", ds.name, v.name)
+                        continue
+                    if hasattr(v, 'image') and v.image not in image_ids:
+                        LOG.error("Invalid datastore (%s) and version (%s)"
+                                  ". Version does not have an image "
+                                  "associated with it", ds.name, v.name)
+                        continue
+                    selection_text = self._build_datastore_display_text(
+                        ds.name, v.name)
+                    widget_text = self._build_widget_field_name(ds.name,
+                                                                v.name)
+                    version_choices = (version_choices +
+                                       ((widget_text, selection_text),))
+                    self._add_datastore_flavor_field(request, ds.name, v.name)
+                choices = choices + version_choices
         return choices
 
     def _add_datastore_flavor_field(self,
