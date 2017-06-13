@@ -24,7 +24,10 @@ from dbaas_ui.instances import tables
 from dbaas_ui.shortcuts import tasks
 
 from trove_dashboard import api as trove_api
-from trove_dashboard.content.databases import db_capability
+from trove_dashboard.content.databases import db_capability as \
+    trove_db_capability
+
+from dbaas_ui.shortcuts import db_capability as dbaas_ui_db_capability
 
 
 class InstanceOverviewTab(tabs.Tab):
@@ -66,7 +69,7 @@ class InstanceOverviewTab(tabs.Tab):
             return ('dbaas_ui/instances/_detail_overview.html')
 
     def _get_template_type(self, datastore):
-        if db_capability.is_mysql_compatible(datastore):
+        if trove_db_capability.is_mysql_compatible(datastore):
             return 'mysql'
 
         return datastore
@@ -83,6 +86,7 @@ class UserTab(tabs.TableTab):
     def get_users_data(self):
         __method__ = "tabs.UserTab.get_users_data"
         instance = self.tab_group.kwargs['instance']
+        instance_type = instance.datastore['type']
         try:
             # Retrieve all users for the selected instance
             data = trove_api.trove.users_list(self.request, instance.id)
@@ -109,8 +113,11 @@ class UserTab(tabs.TableTab):
             logging.error("%s: Exception received trying to retrieve user "
                           "information for instance %s.  "
                           "Exception : %s", __method__, instance.name, e)
-            msg = _('Unable to retrieve user data for selected instance.')
-            exceptions.handle(self.request, msg)
+            # Don't show this message to the user if the type doesn't support
+            # list users
+            if (dbaas_ui_db_capability.can_support_users(instance_type)):
+                msg = _('Unable to retrieve user data for selected instance.')
+                exceptions.handle(self.request, msg)
             data = []
         return data
 
@@ -151,13 +158,17 @@ class DatabaseTab(tabs.TableTab):
 
     def get_databases_data(self):
         instance = self.tab_group.kwargs['instance']
+        instance_type = instance.datastore['type']
         try:
             data = trove_api.trove.database_list(self.request, instance.id)
             for db in data:
                 setattr(db, 'instance', instance)
         except Exception:
-            msg = _('Unable to get databases data.')
-            exceptions.handle(self.request, msg)
+            # Don't show this message to the user if the type doesn't support
+            # list databases
+            if (dbaas_ui_db_capability.can_support_databases(instance_type)):
+                msg = _('Unable to get databases data.')
+                exceptions.handle(self.request, msg)
             data = []
         return data
 
