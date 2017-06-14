@@ -1,0 +1,12 @@
+{% extends "horizon/common/_modal_form.html" %}
+{% load i18n %}
+
+{% block modal-body-right %}
+  <p>{% trans "Select the database instance to upgrade and the target version." %}</p>
+ <div style="background:white;margin:auto 30px;">
+  {% block tg1_t1_icon %}
+     <img class="splash-logo" src="{{ STATIC_URL }}/dashboard/img/UpgradeInstance.svg">
+  {% endblock %}
+ </div>
+
+{% endblock %}
