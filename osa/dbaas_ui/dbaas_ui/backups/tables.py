@@ -15,6 +15,7 @@ from django.template import defaultfilters as d_filters
 
 from django.utils.translation import pgettext_lazy
 from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ungettext_lazy
 
 from horizon import tables
 from horizon.utils import filters
@@ -45,6 +46,27 @@ BACKUPS_STATUS_DISPLAY_CHOICES = (
     ("SAVING", pgettext_lazy("Current status of a Database Backup",
                              u"Saving")),
 )
+
+
+class DeleteBackup(tables.DeleteAction):
+    @staticmethod
+    def action_present(count):
+        return ungettext_lazy(
+            u"Delete Backup",
+            u"Delete Backups",
+            count
+        )
+
+    @staticmethod
+    def action_past(count):
+        return ungettext_lazy(
+            u"Deleted Backup",
+            u"Deleted Backups",
+            count
+        )
+
+    def delete(self, request, obj_id):
+        trove_api.trove.backup_delete(request, obj_id)
 
 
 class UpdateRowBackups(tables.Row):
@@ -107,5 +129,6 @@ class BackupsTable(tables.DataTable):
         verbose_name = _("Backups")
         status_columns = ["status"]
         row_class = UpdateRowBackups
-        table_actions = (tasks.GenericFilterAction, tasks.CreateBackupLink)
+        table_actions = (tasks.GenericFilterAction, tasks.CreateBackupLink,
+                         DeleteBackup)
         row_actions = (tasks.RestoreFromBackupLink, tasks.DeleteBackupLink)

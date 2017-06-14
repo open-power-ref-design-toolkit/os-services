@@ -15,6 +15,7 @@ from django.template import defaultfilters as d_filters
 
 from django.utils.translation import pgettext_lazy
 from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ungettext_lazy
 
 from horizon import tables
 from horizon.templatetags import sizeformat
@@ -61,6 +62,33 @@ INSTANCE_STATUS_DISPLAY_CHOICES = (
      pgettext_lazy("Current status of a Database Instance",
                    u"Restart Required")),
 )
+
+
+class DeleteInstance(tables.DeleteAction):
+    help_text = _("Deleted instances are not recoverable.")
+
+    @staticmethod
+    def action_present(count):
+        return ungettext_lazy(
+            u"Delete Instance",
+            u"Delete Instances",
+            count
+        )
+
+    @staticmethod
+    def action_past(count):
+        return ungettext_lazy(
+            u"Scheduled deletion of Instance",
+            u"Scheduled deletion of Instances",
+            count
+        )
+
+    name = "delete"
+    classes = ("btn-danger", )
+    icon = "remove"
+
+    def delete(self, request, obj_id):
+        trove_api.trove.instance_delete(request, obj_id)
 
 
 class UpdateRowInstances(tables.Row):
@@ -220,7 +248,8 @@ class InstancesTable(tables.DataTable):
         verbose_name = _("Instances")
         status_columns = ["status"]
         row_class = UpdateRowInstances
-        table_actions = (tasks.LaunchInstanceLink, tasks.GenericFilterAction)
+        table_actions = (tasks.LaunchInstanceLink, tasks.GenericFilterAction,
+                         DeleteInstance)
         row_actions = (tasks.CreateBackupLink,
                        tasks.RenameInstanceLink,
                        tasks.ResizeInstanceLink,
