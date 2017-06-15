@@ -19,15 +19,18 @@
 export DBIMAGE_SOURCE=${DBIMAGE_SOURCE:-"-dib"}
 
 if [ "$1" == "--help" ]; then
-    echo "Usage: dbimage-make.sh -d db-name [ -v db-version ] [ -k key-name ]"
-    echo "                 [ -i dib-ip-addr ] [ -b dib-user ] [ -p pkg ] [ -c | -e ] [ -I ]"
+    echo "Usage: dbimage-upload.sh -d db-name -v db-version [ -c | -e ] -f image-name"
+    echo "                       [ -k key-name ] [ -s chroot-cmd ] [ -b dib-user ]"
     echo ""
-    echo "The dib-ip-addr argument is the ipaddr of the virtual machine where the image is built"
+    echo "This command creates a Trove datastore from a previously created qcow2 image.  The image may optionally"
+    echo "be customized with a user provided script which is run in a chroot'd environment to modify the image."
+    echo ""
+    echo "The -d, -v, -k, -c, -e arguments are the same as for the dbimage-make.sh command"
+    echo "The -f argument identifies the previously created image that is to be updated"
+    echo "The -s argument is a command that is invoked in a chroot'd environment over the mounted image"
     echo "The dib-user argument is the remote ssh user on the vm under which the image is built.  The default is ubuntu"
-    echo "The key-name argument identifies a Nova ssh key pair.  If specified, the public key is placed in the image"
-    echo "The -e argument indicates that the user wants the enterprise provided database if supported"
-    echo "The -c argument indicates that the user wants the more recent community provided database if supported"
-    echo "The -I argument indicates that the image only should be produced.  Don't upload and create the datastore"
+    echo ""
+    echo "The qcow2 image must be located in the dbimage-builder/images/ directory"
     echo ""
     echo "See the README.rst file for more information"
     exit 1
@@ -38,22 +41,10 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-# The file process-image-args.sh is shared between this script and the dibvm.  It
-# ensures that the same command argument processing logic is applied remotely in
-# the dibvm.  The playbooks invoke create-image-vm.sh in the dibvm which sources
-# process-image-args.sh.  create-image-vm.sh is the back end of this script.  The
-# playbooks assume that the current directory is dbimage-builder, so that it can
-# place images at the top level of the tool at dbimage-builder/images.
-
-if [ ! -e dibvm/home/bin/process-image-args.sh ]; then
-    echo "This script must be run in the directory dbimage-builder (/root/os-services/osa/dbaas/dbimage-builder)"
-    exit 1
-fi
-
 SCRIPTS_DIR=$(dirname $0)
 
 source $SCRIPTS_DIR/dbimagerc
-source dibvm/home/bin/process-image-args.sh
+source $SCRIPTS_DIR/process-image-upload-args.sh
 source $SCRIPTS_DIR/setup-playbooks.sh
 
 create-playbook-inventory
@@ -85,19 +76,9 @@ if [ $? != 0 ]; then
     exit 3
 fi
 
-# This is set to localhost by create-playbook-inventory above if dibvm is the deployer's host
-
-if [ "$DBIMAGE_IPADDR" != "localhost" ]; then
-    echo "Validate ssh connection to the dibvm"
-    validate-playbook-environment dib "apt-get -y update && apt-get -y install python"
-    if [ $? != 0 ]; then
-        exit 4
-    fi
-fi
-
 echo "Run playbooks to create image$promptmsg"
-ansible-playbook -i inventory -c ssh $CTRL_ANSIBLE_ARGS dbimage-make.yml
+ansible-playbook -i inventory -c ssh $CTRL_ANSIBLE_ARGS dbimage-upload.yml
 if [ $? != 0 ]; then
-    echo "Error: dbimage-make.yml failed"
+    echo "Error: dbimage-upload.yml failed"
     exit 5
 fi

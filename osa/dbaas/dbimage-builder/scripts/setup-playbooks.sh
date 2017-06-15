@@ -96,6 +96,7 @@ function validate-playbook-environment {
             echo "Did you set one of the following in the file $SCRIPTS_DIR/dbimagerc?"
             echo "export DBIMAGE_DIB_PASSWD=<x>"
             echo "export DBIMAGE_DIB_PRIVATE_SSH_KEY=~/.ssh/<y>"
+            echo "Else test the connection manually by invoking 'ssh ubuntu@<ip-addr-dibvm>'"
             return 1
         else
             echo "Did you specify the wrong IP address or hostname?"
