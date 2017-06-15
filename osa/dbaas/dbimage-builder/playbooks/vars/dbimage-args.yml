@@ -1,5 +1,5 @@
 ---
-# command arguments from dbimage-make.sh
+# command arguments from dbimage-make.sh and dbimage-upload.sh
 
 ipAddrDib: "{{ lookup('env', 'DBIMAGE_IPADDR') }}"
 dbName: "{{ lookup('env', 'DBIMAGE_DBNAME') }}"
@@ -30,7 +30,7 @@ dibDebug: "{{ lookup('env', 'DIB_MYDEBUG') | default('') }}"
 
 imageSource: "{{ lookup('env', 'DBIMAGE_SOURCE') | default ('') }}"
 
-# pip packages needed by dbimage-builder usually on controller
+# pip packages needed by dbimage-builder.  This is localhost which may be the first controller
 
 dbimage_apt_packages:
   - qemu-utils
