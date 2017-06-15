@@ -59,32 +59,34 @@
     register: keypair_show
     failed_when: false
 
-  - block:
-    - name: Get list of registered ssh keys
-      shell: >-
-        /usr/bin/lxc-attach -n '{{ utility_container.stdout }}' -e --
-        /bin/bash -c '
-        source /root/openrc;
-        nova keypair-list'
-      register: keypair_list
-      failed_when: false
-
-    - name: List registered key pairs
-      debug: var=keypair_list['stdout_lines']
-
-    - name: Halt on invalid argument -k <key-name>.  Valid key pairs are listed above
-      fail:
-        msg: "Invalid user specified key-pair name is {{ cloudKey }}"
-
-    when: keypair_show['rc']
-
-  - name: Set cloud public key
-    set_fact:
-      cloud_pub_key: "{{ item.split('Public key: ', 1)[-1] }}"
-    with_items: "{{ keypair_show['stdout_lines'] }}"
-    when:
-      - item is defined
-      - "'Public key: ' in item"
-
   when: cloudKey != ''
 
+- block:
+  - name: Get list of registered ssh keys
+    shell: >-
+      /usr/bin/lxc-attach -n '{{ utility_container.stdout }}' -e --
+      /bin/bash -c '
+      source /root/openrc;
+      nova keypair-list'
+    register: keypair_list
+    failed_when: false
+
+  - name: List registered key pairs
+    debug: var=keypair_list['stdout_lines']
+
+  - name: Halt on invalid argument -k <key-name>.  Valid key pairs are listed above
+    fail:
+      msg: "Invalid user specified key-pair name is {{ cloudKey }}"
+
+  when:
+    - cloudKey != ''
+    - keypair_show['rc']
+
+- name: Set cloud public key
+  set_fact:
+    cloud_pub_key: "{{ item.split('Public key: ', 1)[-1] }}"
+  with_items: "{{ keypair_show['stdout_lines'] | default([]) }}"
+  when:
+    - cloudKey != ''
+    - cloud_pub_key is not defined
+    - "'Public key: ' in item"

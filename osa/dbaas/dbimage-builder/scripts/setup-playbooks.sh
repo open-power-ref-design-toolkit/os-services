@@ -32,8 +32,8 @@ function create-playbook-inventory {
     hostFile=playbooks/inventory
 
     # short and long hostnames
-    shorthost=$(hostname -s)
-    longhost=$(hostname -f)
+    shorthost=$(hostname -s 2>/dev/null)
+    longhost=$(hostname -f 2>/dev/null)
     if [ "$longhost" == "localhost" ]; then
         longhost=$shorthost
     fi

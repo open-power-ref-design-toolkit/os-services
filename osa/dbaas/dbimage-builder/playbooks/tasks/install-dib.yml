@@ -22,7 +22,7 @@
     - "{{ dib_home }}/log"
     - "{{ dib_home }}/pkg"
 
-- name: Copy files from deployer to dibvm
+- name: Copy files from deployer to user {{ dibUser }}'s home directory in the dibvm
   copy:
     src: "{{ item.src }}"
     dest: "{{ dib_home }}"

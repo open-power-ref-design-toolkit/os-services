@@ -8,15 +8,17 @@ dbVersion: "{{ '.'.join(lookup('env', 'DBIMAGE_DBVERSION').split('.', 2)[:2]) | 
 pkg: "{{ lookup('env', 'DBIMAGE_PKG') }}"
 pkgType: "{{ lookup('env', 'DBIMAGE_PKGTYPE') }}"
 installScript: "{{ lookup('env', 'DBIMAGE_INSTALLSCRIPT') }}"
+chrootCmd: "{{ lookup('env', 'DBIMAGE_CHROOT_CMD') }}"
 cloudKey: "{{ lookup('env', 'DBIMAGE_CLOUD_KEY') }}"
-gitUrl: "{{ lookup('env', 'DBIMAGE_GITURL') }}"
-gitTag: "{{ lookup('env', 'DBIMAGE_GITTAG') }}"
 baseDir: "{{ lookup('env', 'DBIMAGE_DIR') }}"
 ipAddrController: "{{ lookup('env', 'DBIMAGE_CONTROLLER_IP') }}"
 dibUser: "{{ lookup('env', 'DBIMAGE_DIBUSER') }}"
 dbimageHome: "{{ lookup('env', 'DBIMAGE_HOME') }}"
 communityEdition: "{{ lookup('env', 'DBIMAGE_COMMUNITY_EDITION') | bool }}"
 enterpriseEdition: "{{ lookup('env', 'DBIMAGE_ENTERPRISE_EDITION') | bool }}"
+uploadImage: "{{ lookup('env', 'DBIMAGE_UPLOAD_IMAGE') | bool }}"
+imageName: "{{ lookup('env', 'DBIMAGE_IMAGE_NAME') }}"
+dbimageCmd: "{{ lookup('env', 'DBIMAGE_CMD') }}"
 
 # Environment variables set by the user directed at diskimage-builder
 

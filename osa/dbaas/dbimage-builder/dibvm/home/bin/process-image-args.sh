@@ -30,12 +30,6 @@ function validate-tar {
 }
 
 
-# Packages built from source
-couchUrl=
-couchTag=
-cassandraUrl=git://github.com/apache/cassandra
-cassandraTag=3.7
-
 ipAddrDib=""
 dbName=""
 dbVersion=""
@@ -43,12 +37,10 @@ pkg=""
 pkgType=""
 installScript=""
 cloudKey=""
-branch=""
-gitUrl=""
-gitTag=""
 communityEdition=false
 enterpriseEdition=false
 dibUser=ubuntu
+uploadImage=true
 
 cmd=$(basename $0)
 
@@ -59,7 +51,7 @@ cmd=$(basename $0)
 
 OPTERR=0
 OPTIND=1
-while getopts ":i:d:v:p:k:b:ce" opt; do
+while getopts ":i:d:v:p:k:b:ceI" opt; do
     case "$opt" in
         i) ipAddrDib=$OPTARG
            ;;
@@ -104,6 +96,8 @@ while getopts ":i:d:v:p:k:b:ce" opt; do
            ;;
         e) enterpriseEdition=true
            ;;
+        I) uploadImage=false
+           ;;
         :) echo "Error: -$OPTARG requires an argument." >&2
            exit 1
            ;;
@@ -119,10 +113,6 @@ dbSupported="mariadb, mongodb, mysql, postgresql, or redis"
 case "$dbName" in
     mariadb|mongodb|mysql|postgresql|redis)
         ;;
-#   couchbase)
-#       gitUrl=$couchUrl
-#       gitTag=$couchTag
-#       ;;
     *)
         if [ -z "$dbName" ]; then
             echo "Error: -d <db> must be specified.  One of $dbSupported" 1>&2
@@ -174,17 +164,17 @@ echo "pkg=$pkg"
 echo "pkgType=$pkgType"
 echo "installScript=$installScript"
 echo "cloudKey=$cloudKey"
-echo "gitUrl=$gitUrl"
-echo "gitTag=$gitTag"
 echo "dibUser=$dibUser"
 echo "communityEdition=$communityEdition"
 echo "enterpriseEdition=$enterpriseEdition"
+echo "uploadImage=$uploadImage"
 
 # These variables are derived from environment variables
 echo "dibRelease=$DIB_RELEASE"
 echo "distroName=$DISTRO_NAME"
 echo "dibDebug=$DIB_MYDEBUG"
 
+export DBIMAGE_CMD=make
 export DBIMAGE_IPADDR=$ipAddrDib
 export DBIMAGE_DBNAME=$dbName
 export DBIMAGE_DBVERSION=$dbVersion
@@ -192,9 +182,8 @@ export DBIMAGE_PKG=$pkg
 export DBIMAGE_PKGTYPE=$pkgType
 export DBIMAGE_INSTALLSCRIPT=$installScript
 export DBIMAGE_CLOUD_KEY=$cloudKey
-export DBIMAGE_GITURL=$gitUrl
-export DBIMAGE_GITTAG=$gitTag
 export DBIMAGE_DIBUSER=$dibUser
 export DBIMAGE_HOME=$HOME
 export DBIMAGE_COMMUNITY_EDITION=$communityEdition
 export DBIMAGE_ENTERPRISE_EDITION=$enterpriseEdition
+export DBIMAGE_UPLOAD_IMAGE=$uploadImage

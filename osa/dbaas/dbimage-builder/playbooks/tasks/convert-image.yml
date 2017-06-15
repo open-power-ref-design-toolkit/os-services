@@ -6,11 +6,16 @@
 #
 # It is invoked on the deployer node under the root account
 
-- name: Set image name
+- name: Get image name produced by dib
   set_fact:
-    outputImage: "{{ hostvars[groups['dib'][0]].outputImage.split('.')[0] }}"
+    imageName: "{{ hostvars[groups['dib'][0]].outputImage }}"
+  when: not imageName
+
+- name: Set base name of image
+  set_fact:
+    imageName: "{{ imageName.split('.')[0] }}"
 
 - name: Convert qcow2 image to raw format
   shell: qemu-img convert -f qcow2 -O raw "{{ item }}.qcow2" "{{ item }}.img"
   register: qemurc
-  with_items: "{{ baseDir }}/images/{{ outputImage }}"
+  with_items: "{{ baseDir }}/images/{{ imageName }}"
