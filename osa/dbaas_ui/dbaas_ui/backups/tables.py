@@ -69,6 +69,14 @@ class DeleteBackup(tables.DeleteAction):
         trove_api.trove.backup_delete(request, obj_id)
 
 
+class LaunchLink(tables.LinkAction):
+    name = "create"
+    verbose_name = _("Create Backup")
+    url = "horizon:dbaas_ui:shortcuts:create_backup"
+    classes = ("ajax-modal", "btn-create")
+    icon = "camera"
+
+
 class UpdateRowBackups(tables.Row):
     ajax = True
 
@@ -129,6 +137,6 @@ class BackupsTable(tables.DataTable):
         verbose_name = _("Backups")
         status_columns = ["status"]
         row_class = UpdateRowBackups
-        table_actions = (tasks.GenericFilterAction, tasks.CreateBackupLink,
+        table_actions = (tasks.GenericFilterAction, LaunchLink,
                          DeleteBackup)
         row_actions = (tasks.RestoreFromBackupLink, tasks.DeleteBackupLink)
