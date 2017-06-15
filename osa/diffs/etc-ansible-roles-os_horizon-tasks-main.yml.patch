@@ -1,0 +1,17 @@
+diff -Naur a/etc/ansible/roles/os_horizon/tasks/main.yml b/etc/ansible/roles/os_horizon/tasks/main.yml
+--- a/etc/ansible/roles/os_horizon/tasks/main.yml	2017-06-14 16:00:53.775689305 -0400
++++ b/etc/ansible/roles/os_horizon/tasks/main.yml	2017-06-14 15:57:37.899292237 -0400
+@@ -36,6 +36,13 @@
+   tags:
+     - horizon-config
+ 
++- include: horizon_dbaas_ui.yml
++  when:
++    - groups['trove_api'] | length > 0
++  tags:
++    - horizon-dbaas-ui
++    - horizon-config
++
+ - include: horizon_db_setup.yml
+   when: inventory_hostname == groups['horizon_all'][0]
+   tags:

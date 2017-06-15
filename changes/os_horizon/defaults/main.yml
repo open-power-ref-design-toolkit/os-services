@@ -279,3 +279,9 @@ horizon_config_overrides: {}
 
 horizon_keystone_admin_roles:
   - admin
+
+# These variables are used by horizon dbaas ui
+tmp_dir: "/tmp/dbaas"
+ui_enabled: "{{ horizon_lib_dir | dirname | replace('untagged', openstack_release) }}/site-packages/openstack_dashboard/local/enabled"
+ui_artwork: "{{ horizon_lib_dir | dirname | replace('untagged', openstack_release) }}/site-packages/static/dashboard/img"
+top_level_os_services_dir: "{{ lookup('env', 'TOP_PCLD_DIR') | default('/root/os-services', true) }}"
