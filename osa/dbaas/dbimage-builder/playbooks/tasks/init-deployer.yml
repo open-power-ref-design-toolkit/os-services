@@ -6,6 +6,8 @@
 #
 # This is invoked on the deployer node AKA localhost as root
 
+- debug: var=deployment_environment
+
 - name: Create directories
   file:
     path: "{{ item }}"
