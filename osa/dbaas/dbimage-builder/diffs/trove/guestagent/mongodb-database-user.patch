@@ -14,20 +14,20 @@ index c4e6d5a..fc42a69 100644
          self.status.wait_for_database_service_start(
              self.app.state_change_wait_time)
 diff --git a/trove/guestagent/datastore/experimental/mongodb/service.py b/trove/guestagent/datastore/experimental/mongodb/service.py
-index 2b73a33..9114529 100644
+index 2b73a33..463c86a 100644
 --- a/trove/guestagent/datastore/experimental/mongodb/service.py
 +++ b/trove/guestagent/datastore/experimental/mongodb/service.py
 @@ -115,7 +115,7 @@ class MongoDBApp(object):
- 
+
      def apply_initial_guestagent_configuration(
              self, cluster_config, mount_point=None):
 -        LOG.debug("Applying initial configuration.")
 +        LOG.debug("Applying initial configuration, cluster_config=%s" % str(cluster_config))
- 
+
          # Mongodb init scripts assume the PID-file path is writable by the
          # database service.
 @@ -366,12 +366,12 @@ class MongoDBApp(object):
- 
+
      def create_admin_user(self, password):
          """Create the admin user while the localhost exception is active."""
 -        LOG.debug('Creating the admin user.')
@@ -47,10 +47,10 @@ index 2b73a33..9114529 100644
              type(self).admin_user = user
 +            LOG.debug("admin_user=%s" % str(user))
          return type(self).admin_user
- 
+
      def _is_modifiable_user(self, name):
 @@ -498,6 +499,8 @@ class MongoDBAdmin(object):
- 
+
      def _create_user_with_client(self, user, client):
          """Run the add user command."""
 +        LOG.debug('Creating user %s on database %s with roles %s.'
@@ -67,7 +67,7 @@ index 2b73a33..9114529 100644
 -
          if not user.password:
              raise exception.BadRequest(_("User's password is empty."))
- 
+
 @@ -523,13 +523,15 @@ class MongoDBAdmin(object):
          """Create the given user(s).
          :param users:   list of serialized user objects
@@ -90,16 +90,17 @@ index 2b73a33..9114529 100644
          """Delete the given user.
          :param user:   a serialized user object
          """
+-        user = models.MongoDBUser.deserialize_user(user)
 +        LOG.debug('Deleting user=%s' % user)
 +
 +
-         user = models.MongoDBUser.deserialize_user(user)
++        user = self._get_user_record(user['_name'])
 +
          if not self._is_modifiable_user(user.name):
              raise exception.BadRequest(_(
                  'Cannot delete user with reserved name %(user)s')
 @@ -559,20 +565,22 @@ class MongoDBAdmin(object):
- 
+
      def _get_user_record(self, name, client=None):
          """Get the user's record."""
 -        user = models.MongoDBUser(name)
@@ -127,7 +128,7 @@ index 2b73a33..9114529 100644
 +        user = models.MongoDBUser(name=user_info['_id'])
          user.roles = user_info['roles']
          return user
- 
+
 @@ -581,6 +589,9 @@ class MongoDBAdmin(object):
          LOG.debug('Getting user %s.' % name)
          user = self._get_user_record(name)
@@ -137,7 +138,7 @@ index 2b73a33..9114529 100644
 +                'not exist or is a reserved user.') % {'user': name})
              return None
          return user.serialize()
- 
+
 @@ -590,9 +601,10 @@ class MongoDBAdmin(object):
          with MongoDBClient(self._admin_user()) as admin_client:
              for user_info in admin_client.admin.system.users.find():
@@ -161,7 +162,7 @@ index 2b73a33..9114529 100644
                  if not self._is_modifiable_user(user.name):
                      LOG.warning('Skipping password change for user with '
 @@ -613,6 +626,7 @@ class MongoDBAdmin(object):
- 
+
      def update_attributes(self, name, user_attrs):
          """Update user attributes."""
 +        LOG.debug('name=%s' % name)
@@ -201,7 +202,7 @@ index 2b73a33..9114529 100644
                  db.drop_collection(tmp)
 +                db_names = admin_client.database_names()
 +                LOG.debug('after drop db_names = ' + str(db_names))
- 
+
      def delete_database(self, database):
          """Deletes the database."""
 @@ -720,11 +745,14 @@ class MongoDBAdmin(object):
@@ -212,7 +213,7 @@ index 2b73a33..9114529 100644
 +            names = admin_client.database_names()
 +            LOG.debug("database names=%s" % str(names))
 +            return names
- 
+
      def list_databases(self, limit=None, marker=None, include_marker=False):
          """Lists the databases."""
          db_names = self.list_database_names()
@@ -223,7 +224,7 @@ index 2b73a33..9114529 100644
 @@ -782,7 +810,7 @@ class MongoDBClient(object):
      # engine information is cached by making it a class attribute
      engine = {}
- 
+
 -    def __init__(self, user, host=None, port=None):
 +    def __init__(self, user, host=None, port=None, connect=None):
          """Get the client. Specifying host and/or port updates cached values.
@@ -269,28 +270,28 @@ index 2b73a33..9114529 100644
              self._db.authenticate(user.username, password=user.password)
              self._logged_in = True
 diff --git a/trove/guestagent/db/models.py b/trove/guestagent/db/models.py
-index 4af8bd3..174d264 100644
+index 4af8bd3..3ba92f8 100644
 --- a/trove/guestagent/db/models.py
 +++ b/trove/guestagent/db/models.py
 @@ -19,6 +19,7 @@ import re
  import netaddr
  from six import u
- 
+
 +from oslo_log import log as logging
  from trove.common import cfg
  from trove.common import exception
  from trove.common.i18n import _
 @@ -26,6 +27,8 @@ from trove.common import utils
- 
+
  CONF = cfg.CONF
- 
+
 +LOG = logging.getLogger(__name__)
 +
- 
+
  class Base(object):
- 
+
 @@ -751,25 +754,23 @@ class MongoDBUser(DatastoreUser):
- 
+
      def _update_name(self, name=None, username=None, database=None):
          """Keep the name, username, and database values in sync."""
 -        if name:
@@ -323,11 +324,11 @@ index 4af8bd3..174d264 100644
 +            # Allow name to be reset to short form without database
 +            if name:
 +                self._name = name
- 
+
      @property
      def roles(self):
-@@ -795,9 +796,27 @@ class MongoDBUser(DatastoreUser):
- 
+@@ -795,9 +796,28 @@ class MongoDBUser(DatastoreUser):
+
      @classmethod
      def deserialize_user(cls, value):
 +        LOG.debug("value=%s" % str(value))
@@ -348,10 +349,11 @@ index 4af8bd3..174d264 100644
 +        if '.' not in name:
 +            user.name = database + '.' + name
 +        else:
++            user.databases = name.split(".", 1)[0]
 +            user.name = name
 +
          user._init_roles()
 +        LOG.debug("user=%s" % str(user))
          return user
- 
+
      def _build_database_schema(self, name):

@@ -1,5 +1,5 @@
 diff --git a/integration/scripts/files/elements/ubuntu-mongodb/install.d/20-mongodb b/integration/scripts/files/elements/ubuntu-mongodb/install.d/20-mongodb
-index 4ab5c34..bf4a5b0 100755
+index 4ab5c34..8be9d39 100755
 --- a/integration/scripts/files/elements/ubuntu-mongodb/install.d/20-mongodb
 +++ b/integration/scripts/files/elements/ubuntu-mongodb/install.d/20-mongodb
 @@ -1,8 +1,62 @@
@@ -22,7 +22,7 @@ index 4ab5c34..bf4a5b0 100755
 +ESC_MONGOS_CONF="${MONGOS_CONF//\//\\/}"
 +
 +if [ "$DIB_MYENTERPRISE_EDITION" == "true" ]; then
-+    apt-get install -y $DIB_MYDBPKG
++    apt-get --allow-unauthenticated install -y $DIB_MYDBPKG
 +    exit 0
 +fi
 +
@@ -83,7 +83,7 @@ index a8b3ddc..6774019 100755
 +    apt-get --allow-unauthenticated install -y python-pymongo-doc
 +fi
 diff --git a/integration/scripts/files/elements/ubuntu-mongodb/install.d/30-mongodb-conf b/integration/scripts/files/elements/ubuntu-mongodb/install.d/30-mongodb-conf
-index afb5828..42cd816 100755
+index afb5828..2acd93d 100755
 --- a/integration/scripts/files/elements/ubuntu-mongodb/install.d/30-mongodb-conf
 +++ b/integration/scripts/files/elements/ubuntu-mongodb/install.d/30-mongodb-conf
 @@ -1,26 +1,45 @@
