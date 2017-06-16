@@ -1453,7 +1453,7 @@ class CreateDatabaseForm(forms.SelfHandlingForm):
             instanceID = choice[0]
             instance = retrieve_instance(request, instanceID)
             instance_type = instance.datastore['type']
-            if (db_capability.can_support_databases(instance_type)):
+            if (db_capability.can_create_databases(instance_type)):
                 new_list.append((choice[0], choice[1]))
 
         choices = new_list
