@@ -5,6 +5,7 @@
 
 - name: Initialize deployer
   hosts: deployer
+  environment: "{{ deployment_environment | default({}) }}"
   vars_files:
     - vars/dbimage-args.yml
   tasks:
@@ -14,6 +15,7 @@
 
 - name: Initialize controller
   hosts: controller
+  environment: "{{ deployment_environment | default({}) }}"
   become: yes
   vars_files:
     - vars/dbimage-args.yml
@@ -22,6 +24,7 @@
 
 - name: Install and run diskimage-builder in DIB
   hosts: dib
+  environment: "{{ deployment_environment | default({}) }}"
   vars_files:
     - vars/dbimage-args.yml
   tasks:
@@ -31,6 +34,7 @@
 
 - name: Post process image
   hosts: deployer
+  environment: "{{ deployment_environment | default({}) }}"
   vars_files:
     - vars/dbimage-args.yml
   tasks:
@@ -39,6 +43,7 @@
 
 - name: Upload image to controller
   hosts: controller
+  environment: "{{ deployment_environment | default({}) }}"
   become: yes
   vars_files:
     - vars/dbimage-args.yml
