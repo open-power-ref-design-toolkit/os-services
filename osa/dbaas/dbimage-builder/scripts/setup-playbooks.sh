@@ -22,6 +22,12 @@ set -o pipefail
 ulimit -n 100000
 
 export DBIMAGE_CONTROLLER_IP=${DBIMAGE_CONTROLLER_IP:-localhost}
+export DBIMAGE_DIR=`pwd`
+
+export TOP_PCLD_DIR=../../../..
+
+GENESIS_INVENTORY="$DBIMAGE_DIR/etc/inventory.yml"
+GENESIS_SIMULATED="$DBIMAGE_DIR/etc/inventory-simulated"
 
 function create-playbook-inventory {
 
@@ -74,6 +80,36 @@ function create-playbook-inventory {
     echo "dibvm=$dibvm"
 }
 
+function real_genesis_inventory_present {
+
+    if [ -r $GENESIS_INVENTORY ] && [ ! -e $GENESIS_SIMULATED ]; then
+        return 0
+    fi
+    return 1
+}
+
+function load_env_vars {
+
+    if real_genesis_inventory_present && [ -z "$ENV_VARS_DEFINED" ]; then
+
+        if [ ! -e $TOP_PCLD_DIR/osa/scripts/get_env_vars.py ]; then
+            echo "Error: $TOP_PCLD_DIR/osa/scripts/get_env_vars.py not found"
+            echo "The os-services project appears to be corrupted.  Please git clone os-services again"
+            return 1
+        fi
+
+        # Set any deployment variables that are present in the inventory
+        while read -r line; do
+            eval "export $line"
+            echo "Defining variable: $line"
+        done < <($TOP_PCLD_DIR/osa/scripts/get_env_vars.py -i $GENESIS_INVENTORY)
+
+        export ENV_VARS_DEFINED=yes
+    fi
+
+    return 0
+}
+
 function validate-playbook-environment {
     target=$1
     cmd="$2"
@@ -88,10 +124,13 @@ function validate-playbook-environment {
     if [ "$target" == "dib" ]; then
         ansible $target -i inventory $ansible_args -m raw -a ls >/dev/null
     else
-        ansible $target -i inventory $ansible_args -m raw -a "lxc-ls -f" >/dev/null
+        file1="src=/var/oprc/inventory-simulated dest=$DBIMAGE_DIR/etc/ flat=yes"
+        file2="src=/var/oprc/inventory.yml dest=$DBIMAGE_DIR/etc/ flat=yes"
+        ansible $target -i inventory $ansible_args --become -m fetch -a "$file1" >/dev/null
+        ansible $target -i inventory $ansible_args --become -m fetch -a "$file2" >/dev/null
     fi
     if [ $? != 0 ]; then
-        echo "Error: dbimage-make.yml failed.  Could not connect to $target"
+        echo "Error: validate-playbook-environment failed.  Could not connect to $target"
         if [ "$target" == "dib" ]; then
             echo "Did you set one of the following in the file $SCRIPTS_DIR/dbimagerc?"
             echo "export DBIMAGE_DIB_PASSWD=<x>"
@@ -100,6 +139,12 @@ function validate-playbook-environment {
             return 1
         else
             echo "Did you specify the wrong IP address or hostname?"
+        fi
+    fi
+    if [ "$target" == "controller" ]; then
+        load_env_vars
+        if [ $? != 0 ]; then
+            return 1
         fi
     fi
 
@@ -135,8 +180,6 @@ function validate-playbook-environment {
     return 0
 }
 
-export DBIMAGE_DIR=`pwd`
-
 CTRL_ANSIBLE_ARGS=""
 DIBVM_ANSIBLE_ARGS=""
 
@@ -147,4 +190,3 @@ if [ "$DBIMAGE_ANSIBLE_DEBUG" == 'yes' ] || [ "$DBIMAGE_ANSIBLE_DEBUG" == 'y' ];
     CTRL_ANSIBLE_ARGS+="-vvv"
     DIBVM_ANSIBLE_ARGS+="-vvv"
 fi
-
