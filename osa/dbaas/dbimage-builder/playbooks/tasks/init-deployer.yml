@@ -24,6 +24,8 @@
   with_items:
     - "{{ baseDir }}/etc/ssh/"
     - "{{ baseDir }}/etc/trove/trove-guestagent.conf"
+    - "{{ baseDir }}/etc/inventory.yml"
+    - "{{ baseDir }}/etc/inventory-simulated"
 
 - name: Update apt cache
   apt:
