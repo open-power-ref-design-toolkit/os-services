@@ -54,7 +54,7 @@ SCRIPTS_DIR=$(dirname $0)
 
 source $SCRIPTS_DIR/dbimagerc
 source dibvm/home/bin/process-image-args.sh
-source $SCRIPTS_DIR/setup-playbooks.sh
+source $SCRIPTS_DIR/helpers/setup-playbooks.sh
 
 create-playbook-inventory
 

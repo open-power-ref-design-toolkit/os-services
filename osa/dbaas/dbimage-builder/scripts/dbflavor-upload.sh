@@ -16,21 +16,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-export DBIMAGE_SOURCE=${DBIMAGE_SOURCE:-"-dib"}
-
 if [ "$1" == "--help" ]; then
-    echo "Usage: dbimage-upload.sh -d db-name -v db-version [ -c | -e ] -f image-name"
-    echo "                       [ -k key-name ] [ -s chroot-cmd ] [ -b dib-user ]"
-    echo ""
-    echo "This command creates a Trove datastore from a previously created qcow2 image.  The image may optionally"
-    echo "be customized with a user provided script which is run in a chroot'd environment to modify the image."
-    echo ""
-    echo "The -d, -v, -k, -c, -e arguments are the same as for the dbimage-make.sh command"
-    echo "The -f argument identifies the previously created image that is to be updated"
-    echo "The -s argument is a command that is invoked in a chroot'd environment over the mounted image"
-    echo "The dib-user argument is the remote ssh user on the vm under which the image is built.  The default is ubuntu"
-    echo ""
-    echo "The qcow2 image must be located in the dbimage-builder/images/ directory"
+    echo "Usage: dbflavor-upload.sh -d db-name"
     echo ""
     echo "See the README.rst file for more information"
     exit 1
@@ -41,13 +28,16 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
+if [ ! -e scripts/dbflavor-upload.sh ]; then
+    echo "This script must be run from the directory dbimage-builder (/root/os-services/dbimage-builder)"
+    exit 1
+fi
+
 SCRIPTS_DIR=$(dirname $0)
 
 source $SCRIPTS_DIR/dbimagerc
-source $SCRIPTS_DIR/helpers/process-image-upload-args.sh
+source $SCRIPTS_DIR/helpers/process-flavor-args.sh
 source $SCRIPTS_DIR/helpers/setup-playbooks.sh
-
-create-playbook-inventory
 
 ctrl=$DBIMAGE_CONTROLLER_IP
 if [ "$ctrl" == "localhost" ]; then
@@ -76,9 +66,9 @@ if [ $? != 0 ]; then
     exit 3
 fi
 
-echo "Run playbooks to upload image$promptmsg"
-ansible-playbook -i inventory -c ssh $CTRL_ANSIBLE_ARGS dbimage-upload.yml
+echo "Run playbooks to upload flavors$promptmsg"
+ansible-playbook -i inventory -c ssh $CTRL_ANSIBLE_ARGS dbflavor-upload.yml
 if [ $? != 0 ]; then
-    echo "Error: dbimage-upload.yml failed"
+    echo "Error: dbflavor-upload.yml failed"
     exit 5
 fi
