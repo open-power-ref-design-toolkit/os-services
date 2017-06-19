@@ -13,6 +13,7 @@
 # limitations under the License.
 
 REDIS = "redis"
+MONGO = "mongodb"
 
 
 # Does the datastore allow add/remove/list databases
@@ -29,6 +30,20 @@ def can_support_users(datastore):
         return False
     else:
         return True
+
+
+# Does the datastore allow creation of databases
+def can_create_databases(datastore):
+    if is_redis_datastore(datastore):
+        return False
+    elif is_mongo_datastore(datastore):
+        return False
+    else:
+        return True
+
+
+def is_mongo_datastore(datastore):
+    return (datastore is not None) and (MONGO in datastore.lower())
 
 
 def is_redis_datastore(datastore):
