@@ -42,6 +42,13 @@ def can_create_databases(datastore):
         return True
 
 
+def create_user_requires_database(datastore):
+    if is_mongo_datastore(datastore):
+        return True
+    else:
+        return False
+
+
 def is_mongo_datastore(datastore):
     return (datastore is not None) and (MONGO in datastore.lower())
 

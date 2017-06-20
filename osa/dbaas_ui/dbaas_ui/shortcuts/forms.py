@@ -171,6 +171,43 @@ def create_inst_fl_choices(request, allowed_states=None, instanceID=None):
     return instance_choices
 
 
+def create_inst_type_choices(request, allowed_states=None, instanceID=None):
+    # build a list of instance choices that also includes the instance
+    # type for that instance -- filtered on a passed in list of allowed
+    # statuses.  The choices have a combined value of the instanc ID and
+    # instance type.
+    instance_choices = []
+
+    all_instances = retrieve_instances(request, allowed_states)
+
+    if not instanceID:
+        # Initial (and default) value instructs user to select an instance
+        instance_choices.append((None, _("Select an instance")))
+
+    for inst in all_instances:
+        # initialize the displayValue for the instance (just instance name)
+        displayValue = inst.name
+        choiceValue = inst.id + "::" + inst.datastore['type']
+        # If an instance id was passed in
+        if instanceID:
+            # Then only append elements if the instance IDs match
+            # (should only be one)
+            if inst.id.startswith(instanceID):
+                instance_choices.append((choiceValue, displayValue))
+        else:
+            # No instance ID was passed in -- just append all instances
+            instance_choices.append((choiceValue, displayValue))
+
+    # If nothing ended up getting added to the list of choices
+    if len(instance_choices) == 0:
+        # Should only occurs when an instance ID was passed in....
+        instance_choices.append((None, _("Selected instance not available")))
+        msg = _('Selected instance could not be retrieved.')
+        messages.error(request, msg)
+
+    return instance_choices
+
+
 def create_inst_vol_size_choices(request, allowed_states=None, instID=None):
     # build a list of instance choices that also includes the current volume
     # size for the instances -- filtered on a passed in list of allowed
@@ -1229,17 +1266,15 @@ class CreateUserForm(forms.SelfHandlingForm):
         # Restrict list of instances to those on which a user can
         # be added (based on instance statuses)
         sts = ("ACTIVE",)
-        choices = create_instance_choices(request, sts, instID)
+        choices = create_inst_type_choices(request, sts, instID)
 
         new_list = []
         for choice in choices:
             if choice[0] is None:
                 new_list.append((choice[0], choice[1]))
                 continue
-            instanceID = choice[0]
-            instance = retrieve_instance(request, instanceID)
-            instance_type = instance.datastore['type']
-            if (db_capability.can_support_users(instance_type)):
+            instID, inst_type = parse_element_and_value_text(choice[0])
+            if (db_capability.can_support_users(inst_type)):
                 new_list.append((choice[0], choice[1]))
 
         choices = new_list
@@ -1255,6 +1290,9 @@ class CreateUserForm(forms.SelfHandlingForm):
         for instance_choice in choices:
             # Retrieve the list of databases
             if instance_choice[0]:
+                instanceID, inst_type = parse_element_and_value_text(
+                    instance_choice[0])
+
                 # Define a db field for this instance
                 dataKey = 'data-instance-' + instance_choice[0]
 
@@ -1268,7 +1306,7 @@ class CreateUserForm(forms.SelfHandlingForm):
 
                 # Retrieve all databases for the instance
                 database_choices = create_database_choices(request,
-                                                           instance_choice[0],
+                                                           instanceID,
                                                            None)
 
                 if len(database_choices) >= 1:
@@ -1283,18 +1321,30 @@ class CreateUserForm(forms.SelfHandlingForm):
         if 'instance' not in cleaned_data:
             msg = _("Select the instance on which to create the user.")
             self._errors['instance'] = self.error_class([msg])
+        else:
+            selected_instance, inst_type = parse_element_and_value_text(
+                self.data['instance'])
+            selected_databases = self.cleaned_data[
+                self.data['instance']]
+            # If it is a mongo database for the instance and no database
+            # is selected, alert the user to select atleast one database.
+            if (db_capability.create_user_requires_database(inst_type) and
+                    len(selected_databases) == 0):
+                msg = _("Select at least one database to create the user in.")
+                self._errors[self.data['instance']] = self.error_class([msg])
 
         return cleaned_data
 
     def handle(self, request, data):
         __method__ = 'forms.createUserForm.handle'
 
-        selected_instance = data['instance']
+        selected_instance, inst_type = parse_element_and_value_text(
+            data['instance'])
         user_name = data['name']
 
         # Get the list of databases to which the new user should be
         # granted access (and put it into a form that's usable)
-        selected_databases = data[selected_instance]
+        selected_databases = data[data['instance']]
         dbs = []
         if len(selected_databases):
             for database in selected_databases:
