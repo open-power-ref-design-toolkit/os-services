@@ -610,6 +610,25 @@ def create_backup_choices(request, allowed_states=None, backupID=None):
     return backup_choices
 
 
+def create_backup_choices_for_instance(request, instanceID):
+    __method__ = 'forms.create_backup_choices_for_instance'
+    # build a list of backup choices filetered on the instanceID
+    # Since selecting a backup is optional, default to None
+    backup_choices = [(None, _("No Parent Backup"))]
+    backups = []
+    try:
+        backups = trove_api.trove.instance_backups(request, instanceID)
+    except Exception as e:
+        logging.error("%s: Exception retrieving backups: %s", __method__, e)
+        msg = _('Unable to retrieve list of backups for '
+                'instance: %s.', instanceID)
+        exceptions.handle(request, msg)
+
+    for backup in backups:
+        backup_choices.append((backup.id, backup.name))
+    return backup_choices
+
+
 class RestartInstanceForm(forms.SelfHandlingForm):
     instance = forms.ChoiceField(
         label=_("Instance"),
@@ -1031,11 +1050,11 @@ class CreateBackupForm(forms.SelfHandlingForm):
 
     instance = forms.ChoiceField(
         label=_("Instance"),
+        widget=forms.Select(attrs={
+            'class': 'switchable',
+            'data-slug': 'instance'
+        }),
         required=True)
-
-    parent = forms.ChoiceField(label=_("Parent Backup"),
-                               required=False,
-                               help_text=_("Optional parent backup"))
 
     def __init__(self, request, *args, **kwargs):
         super(CreateBackupForm, self).__init__(request, *args, **kwargs)
@@ -1048,21 +1067,33 @@ class CreateBackupForm(forms.SelfHandlingForm):
             if kwargs['initial'] and 'instance_id' in kwargs['initial']:
                 instID = kwargs['initial']['instance_id']
 
-        # Restrict list of instances to those that can be restarted (statuses)
+        # Restrict list of instances to those that can be backed up
         sts = ("ACTIVE",)
-        choices = create_instance_choices(request, sts, instID)
+        instances = create_instance_choices(request, sts, instID)
 
-        self.fields['instance'].choices = choices
+        self.fields['instance'].choices = instances
 
         if instID:
             self.fields['instance'].initial = instID
             self.fields['instance'].widget.attrs['readonly'] = True
 
-        # at this point, allow any backup to be a parent
-        sts = None
-        parent_choices = create_backup_choices(request)
+        for instance in instances:
+            if instance[0]:
+                # Find the backups associated with an instance
+                parent_choices = \
+                    create_backup_choices_for_instance(request, instance[0])
 
-        self.fields['parent'].choices = parent_choices
+                # Define a db field for this instance
+                dataKey = 'data-instance-' + instance[0]
+
+                self.fields[instance[0]] = forms.ChoiceField(
+                    required=False,
+                    help_text=_("Optional parent backup"),
+                    widget=forms.Select(attrs={
+                        'class': 'switched',
+                        'data-switch-on': 'instance',
+                        dataKey: _("Parent Backup")}),
+                    choices=parent_choices)
 
     def clean(self):
         instance = self.data['instance']
@@ -1079,13 +1110,14 @@ class CreateBackupForm(forms.SelfHandlingForm):
         # Need the instance name in both success/failure cases.
         # Retrieve it now (will be instance_id if we couldn't retrieve it).
         instance_name = retrieve_instance(request, selected_instance).name
+        parent_backup = data[selected_instance]
 
         # Perform the backup attempt
         try:
             trove_api.trove.backup_create(request, data['name'],
                                           selected_instance,
                                           data['description'],
-                                          data['parent'])
+                                          parent_backup)
         except Exception as e:
             failure_message = ("Attempt to create backup %(backup_name)s of"
                                " instance %(instance_name)s was not"
