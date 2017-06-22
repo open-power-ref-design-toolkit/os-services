@@ -17,6 +17,7 @@
 
 - name: Configure the pre-req software on ppc64le compute host
   hosts: compute_all
+  environment: "{{ deployment_environment_variables | default({}) }}"
   user: root
 
   tasks:
