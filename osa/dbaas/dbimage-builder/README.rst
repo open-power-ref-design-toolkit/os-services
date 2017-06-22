@@ -20,7 +20,7 @@ and ensures that the exact same bits are re-applied to the new
 cloud, excluding the few bits that are updated - ie.
 trove-guestagent meta data.
 
-An additional set of commands **dbflavors-show.sh**, **dbflavor-change.sh**,
+An additional set of commands **dbflavor-show.sh**, **dbflavor-change.sh**,
 and **dbflavor-upload.sh** are provided to create database flavors, which
 are used to control the size of the database instance.  A
 predefined set of these flavors are provided.  The user can
@@ -156,32 +156,28 @@ The following commands are used to show, change, and upload
 database flavors for glance images created
 by the script **dbimage-make.sh**::
 
-  dbflavors-show.sh -d db-name
+  dbflavor-show.sh -d db-name [ -p ]
 
-  dbflavors-change.sh -d db-name -f flavor-name
-                [ -v vcpus ] [ -m mem-in-gigabytes ]
-                [ -c number-of-database-connections-allowed ]
-                [ -s root-vdisk1-in-megabytes,db-vdisk2-in-megabytes ]
-                [ -b backup-storage-in-megabytes ]
+  dbflavor-change.sh -d db-name -f flavor-name
+         { [ -c vcpus ] [ -m mem-in-gigabytes ]
+           [ -r root-vdisk1-in-megabytes ] [ -s db-vdisk2-in-megabytes ]
+           [ -b swift-backup-storage-in-megabytes ] }
 
-  dbflavors-upload.sh -d db-name -i glance-image-id
+  dbflavor-upload.sh -d db-name
 
-The **dbflavors-show.sh** command is typically invoked first to
+The **dbflavor-show.sh** command is typically invoked first to
 identify the set of databases that are supported.  A predefined set
-of flavors are provided for each database.
+of flavors are provided for each database.  If the -p argument
+is specified, then the default values are specified.  Otherwise
+the current values are displayed.
 
-The settings associated with each flavor may be changed with the
-script **dbflavors-change.sh**.  This script operates on a single
-flavor at a time.  The default value of an attribute may be
-restored by specifing -1.  If no attribute is specified
-( -v, -m, -c. -s, -b), then the default values for given flavor
-are restored.
+The **dbflavor-change.sh** command changes the settings associated
+with a flavor.  At least one setting must be specified.  The default
+value for a setting may be restored by specifying -1.
 
 Flavors are uploaded to Trove via the script
-**dbflavors-upload.sh**.  The argument related to the
-glance id is for the image created with the
-script **dbimage-make.sh**.  Once a flavor has been uploaded to
-Trove, it should be modified using the OpenStack GUI.
+**dbflavor-upload.sh**.  Once a flavor has been uploaded to
+Trove, it should be modified using the OpenStack GUI/CMDs.
 
 dbimage-upload.sh
 -----------------
