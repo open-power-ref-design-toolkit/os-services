@@ -281,26 +281,27 @@ def create_db_instance_choices(request,
         return instance_choices, all_instances
 
 
-def retrieve_flavors(request):
-    # Retrieve all flavors
-    __method__ = 'forms.retreive_flavors'
-    all_flavors = []
+def datastore_flavors(request, datastore_name, datastore_version):
+    # Retrive flavors for a datastore version
+    __method__ = 'forms.datastore_flavors'
+    flavors = []
     try:
-        all_flavors = trove_api.trove.flavor_list(request)
+        flavors = trove_api.trove.datastore_flavors(
+            request, datastore_name, datastore_version)
     except Exception as e:
-        logging.error("%s: Exception retrieving flavors: %s", __method__, e)
-        msg = _('Unable to retrieve list of flavors.')
-        exceptions.handle(request, msg)
-    return all_flavors
+        logging.exception("%s: Exception while obtaining flavors list: %s",
+                          __method__, e)
+        exceptions.handle(request, _('Unable to obtain flavors.'))
+    return flavors
 
 
-def create_flavor_choices(request):
+def create_flavor_choices(request, datastore_name, datastore_version):
     # build a list of flavors choices
     flavor_choices = []
     # Initial (and default) value instructs user to select a flavor
     flavor_choices.append((None, _("Select a size")))
 
-    all_flavors = retrieve_flavors(request)
+    all_flavors = datastore_flavors(request, datastore_name, datastore_version)
 
     for flavor in all_flavors:
         sizeVal = sizeformat.mbformat(flavor.ram) + " RAM"
@@ -759,10 +760,11 @@ class DeleteInstanceForm(forms.SelfHandlingForm):
 class ResizeInstanceForm(forms.SelfHandlingForm):
     instance = forms.ChoiceField(
         label=_("Instance and size"),
+        widget=forms.Select(attrs={
+            'class': 'switchable',
+            'data-slug': 'instance'
+        }),
         required=True)
-    new_flavor = forms.ChoiceField(label=_("New size"),
-                                   help_text=_("Choose a new size for the"
-                                               " selected instance."))
 
     def __init__(self, request, *args, **kwargs):
         super(ResizeInstanceForm, self).__init__(request, *args, **kwargs)
@@ -779,32 +781,53 @@ class ResizeInstanceForm(forms.SelfHandlingForm):
         sts = ("ACTIVE", "SHUTOFF", )
         instance_choices = create_inst_fl_choices(request, sts, instID)
         self.fields['instance'].choices = instance_choices
-        self.fields['new_flavor'].choices = create_flavor_choices(request)
 
         if instID:
             self.fields['instance'].initial = instID
             self.fields['instance'].widget.attrs['readonly'] = True
 
+        for instance_choice in instance_choices:
+            if instance_choice[0]:
+                instance_id, flavor_id = \
+                    parse_element_and_value_text(instance_choice[0])
+                instance_obj = retrieve_instance(request, instance_id)
+                datastore = instance_obj.datastore['type']
+                datastore_version = instance_obj.datastore['version']
+
+                # Find the flavors for the datastore version
+                flavor_choices = create_flavor_choices(request, datastore,
+                                                       datastore_version)
+
+                # Define a db field for this instance
+                dataKey = 'data-instance-' + instance_choice[0]
+
+                self.fields[instance_id] = forms.ChoiceField(
+                    label=_("New Size"),
+                    required=False,
+                    help_text=_("Choose a new size for the selected "
+                                "instance."),
+                    widget=forms.Select(attrs={
+                        'class': 'switched',
+                        'data-switch-on': 'instance',
+                        dataKey: _("New Size")}),
+                    choices=flavor_choices)
+
     def clean(self):
-        instance_and_flavor = self.data['instance']
-        new_flavor = self.data['new_flavor']
-        oldfl = None
+        instance_and_old_flavor = self.data['instance']
 
-        if not new_flavor:
-            msg = _("Select a new size")
-            self._errors['new_flavor'] = self.error_class([msg])
-
-        if not instance_and_flavor:
-            msg = _("Select an instance and size")
+        if not instance_and_old_flavor:
+            msg = _("Select an instance")
             self._errors['instance'] = self.error_class([msg])
         else:
             sel, oldfl = parse_element_and_value_text(self.data['instance'])
-
-        if oldfl and new_flavor:
+            new_flavor = self.data[sel]
+            if not new_flavor:
+                msg = _("Select a new size")
+                self._errors[sel] = self.error_class([msg])
             if oldfl == new_flavor:
-                msg = _("Select a new size that is not the same as"
+                msg = _("Select a new size that is not the same as "
                         " the old size.")
-                self._errors['new_flavor'] = self.error_class([msg])
+                self._errors[sel] = self.error_class([msg])
 
         # TODO(jdwald):  Consider -- should we allow the user to resize an
         #                instance 'down' -- for example, if an instance is
@@ -816,7 +839,7 @@ class ResizeInstanceForm(forms.SelfHandlingForm):
 
         selected_inst, oldfl = parse_element_and_value_text(data['instance'])
 
-        new_flavor = data['new_flavor']
+        new_flavor = data[selected_inst]
 
         # Need the instance name in both success/failure cases.
         # Retrieve it now (will be instance_id if we couldn't retrieve it).
