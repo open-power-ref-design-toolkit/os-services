@@ -399,3 +399,13 @@ be registered.  Each gets a unique Glance ID.  The source component is user
 configurable via an environment variable as shown below::
 
   export DBIMAGE_SOURCE=-dib
+
+Adding custom elements
+----------------------
+
+The **dbimage-make.sh** script accepts custom disk image builder elements.
+Custom elements can be added to images by setting the DBIMAGE_MYELEMENTS
+variable in the scripts/dbimagerc file. The elements must be placed in the
+elements directory. The environment variable is a space delimited list of elements.
+For example, an element located in ./elements/ubuntu-xenial-hwe-kernel/
+is known by the sub-directory in which it is contained - ie. ubuntu-xenial-hwe-kernel.
