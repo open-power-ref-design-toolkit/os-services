@@ -47,9 +47,25 @@ def process_inventory(inv_name):
     :param inv_name: The path name of the input genesis inventory.
     """
     gen_dict = _load_yml(inv_name)
+    # Build array of no_proxy address to add to the env var
+    no_proxy_vals = []
+    no_proxy_found = False
+    for i in ('internal-floating-ipaddr', 'external-floating-ipaddr'):
+        val = gen_dict.get(i)
+        if val:
+            no_proxy_vals.append(val)
+
     env_vars_dict = gen_dict.get('deployment-environment')
     for k in env_vars_dict or {}:
-        print k + '="' + env_vars_dict[k] + '"'
+        if k == "no_proxy":
+            no_proxy_vals.append(env_vars_dict[k])
+            print 'no_proxy="' + ','.join(no_proxy_vals) + '"'
+            no_proxy_found = True
+        else:
+            print k + '="' + env_vars_dict[k] + '"'
+
+    if env_vars_dict and not no_proxy_found:
+        print 'no_proxy="' + ','.join(no_proxy_vals) + '"'
 
 
 def parse_command():

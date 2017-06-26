@@ -101,7 +101,7 @@ The tool internally maintains a lookup table of supported versions
 per source of each database.  At least one source is supported per
 database and in many cases more than one.
 
-When a requests results in no supported package, the list of supported
+When a request results in no supported package, the list of supported
 packages is displayed enabling the user to quickly manipulate the
 selection criteria to build the desired database image.
 
@@ -293,11 +293,11 @@ Considering the above, the tool can be run three different ways:
 
 The deployer must have at least 1 VCPU and 20 GBs of storage.
 
-The dibvm must have at least 4 VCPUs, 12 GBS RAM, and 100 GBs of storage.
+The dibvm must have at least 4 VCPUs, 12 GBs RAM, and 100 GBs of storage.
 
 To run outside the control plane, one does::
 
-  git clone git://github.com/open-power-ref-design-toolkit/os-services
+  git clone https://github.com/open-power-ref-design-toolkit/os-services
   cd os-services/osa/dbaas/dbimage-builder
 
   edit scripts/dbimagerc
