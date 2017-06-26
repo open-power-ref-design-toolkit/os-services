@@ -19,6 +19,7 @@ enterpriseEdition: "{{ lookup('env', 'DBIMAGE_ENTERPRISE_EDITION') | bool }}"
 uploadImage: "{{ lookup('env', 'DBIMAGE_UPLOAD_IMAGE') | bool }}"
 imageName: "{{ lookup('env', 'DBIMAGE_IMAGE_NAME') }}"
 dbimageCmd: "{{ lookup('env', 'DBIMAGE_CMD') }}"
+dbimageMyElements: "{{ lookup('env', 'DBIMAGE_MYELEMENTS') }}"
 
 # Environment variables set by the user directed at diskimage-builder
 

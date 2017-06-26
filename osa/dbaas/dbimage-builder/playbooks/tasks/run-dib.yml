@@ -28,6 +28,7 @@
 - debug: var=srcPkgName
 - debug: var=ipAddrController
 - debug: var=cloudKey
+- debug: var=dbimageMyElements
 
 - name: Invoke diskimage-builder in the dibvm
   shell: |
@@ -37,6 +38,7 @@
     export DIB_MYDBSRCPKG="{{ srcPkgName }}"
     export DIB_MYDBPKG="{{ pkgDistroName }}"
     export DIB_MYDEBUG="{{ dibDebug }}"
+    export DBIMAGE_MYELEMENTS="{{ dbimageMyElements }}"
     ARGS="-i {{ ipAddrDib }} -d {{ dbName }}"
     if [ -n "{{ dbVersion }}" ]; then
         ARGS="$ARGS -v {{ dbVersion }}"
