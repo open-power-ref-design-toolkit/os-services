@@ -39,11 +39,38 @@ class TestGetEnvVars(unittest.TestCase):
 
     def test_normal(self, mock_load):
         mock_load.return_value = {
+            "internal-floating-ipaddr": "172.29.236.50",
+            "external-floating-ipaddr": "10.0.0.50",
             "deployment-environment":
                 {
                     "http_proxy": "http://10.0.0.0/",
                     "https_proxy": "http://10.0.0.0/",
                     "no_proxy": "localhost"
+                }
+        }
+        gev.process_inventory('inventory_file_name')
+        mock_load.assert_called_once_with('inventory_file_name')
+
+    def test_no_floating(self, mock_load):
+        mock_load.return_value = {
+            "deployment-environment":
+                {
+                    "http_proxy": "http://10.0.0.0/",
+                    "https_proxy": "http://10.0.0.0/",
+                    "no_proxy": "localhost"
+                }
+        }
+        gev.process_inventory('inventory_file_name')
+        mock_load.assert_called_once_with('inventory_file_name')
+
+    def test_no_proxy(self, mock_load):
+        mock_load.return_value = {
+            "internal-floating-ipaddr": "172.29.236.50",
+            "external-floating-ipaddr": "10.0.0.50",
+            "deployment-environment":
+                {
+                    "http_proxy": "http://10.0.0.0/",
+                    "https_proxy": "http://10.0.0.0/",
                 }
         }
         gev.process_inventory('inventory_file_name')
