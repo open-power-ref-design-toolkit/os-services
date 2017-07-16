@@ -560,7 +560,8 @@ class TestValidateConfig(unittest.TestCase):
     @mock.patch.object(test_mod, '_validate_ceph_node_templates')
     @mock.patch.object(test_mod, '_validate_ceph_networks')
     @mock.patch.object(test_mod, '_validate_ceph_devices')
-    def test_validate_ceph(self, devices, networks, templates, get_r2t):
+    @mock.patch.object(test_mod, '_validate_ceph_mon_nodes')
+    def test_validate_ceph(self, mons, devices, networks, templates, get_r2t):
         # Validate without ceph-standalone or private compute
         config = {'reference-architecture': ['swift']}
         test_mod.validate_ceph(config)
@@ -575,6 +576,116 @@ class TestValidateConfig(unittest.TestCase):
         templates.assert_called_once_with(get_r2t.return_value)
         networks.assert_called_once_with(config, get_r2t.return_value)
         devices.assert_called_once_with(config, get_r2t.return_value)
+
+    def test_validate_ceph_mon_nodes(self):
+        ports = {'ports': {'pxe': {'rack1': [1, 2, 3]}}}
+        config = {'reference-architecture': ['private-compute-cloud'],
+                  'node-templates': {'controllers': ports}}
+        roles_to_templates = test_mod._get_roles_to_templates(config)
+        test_mod._validate_ceph_mon_nodes(config, roles_to_templates)
+
+        ports = {'ports': {'pxe': {'rack1': [1, 2]}}}
+        config = {'reference-architecture': ['private-compute-cloud'],
+                  'node-templates': {'controllers': ports}}
+
+        msg = ("The configuration must have an odd number of Ceph monitor "
+               "nodes.  Nodes under the 'controllers' node template or "
+               "node templates with the 'ceph-monitor' role are "
+               "Ceph monitors.")
+        roles_to_templates = test_mod._get_roles_to_templates(config)
+        self.assertRaisesRegexp(test_mod.UnsupportedConfig, msg,
+                                test_mod._validate_ceph_mon_nodes,
+                                config, roles_to_templates)
+
+        ports = {'pxe': {'rack1': [1, 2]}}
+        config = {'reference-architecture': ['private-compute-cloud'],
+                  'node-templates': {'xyz': {'roles': ['ceph-monitor'],
+                                             'ports': ports}}}
+        roles_to_templates = test_mod._get_roles_to_templates(config)
+
+        self.assertRaisesRegexp(test_mod.UnsupportedConfig, msg,
+                                test_mod._validate_ceph_mon_nodes,
+                                config, roles_to_templates)
+
+        ports = {'pxe': {'rack1': [1, 2, 3]}}
+        config = {'reference-architecture': ['private-compute-cloud'],
+                  'node-templates': {'xyz': {'roles': ['ceph-monitor'],
+                                             'ports': ports}}}
+        roles_to_templates = test_mod._get_roles_to_templates(config)
+        test_mod._validate_ceph_mon_nodes(config, roles_to_templates)
+
+        ports_xyz = {'pxe': {'rack1': [1, 2]}}
+        ports_abc = {'pxe': {'rack1': [4, 5]}}
+        config = {'reference-architecture': ['private-compute-cloud'],
+                  'node-templates': {'xyz': {'roles': ['ceph-monitor'],
+                                             'ports': ports_xyz},
+                                     'abc': {'roles': ['ceph-monitor'],
+                                             'ports': ports_abc}}}
+        roles_to_templates = test_mod._get_roles_to_templates(config)
+        self.assertRaisesRegexp(test_mod.UnsupportedConfig, msg,
+                                test_mod._validate_ceph_mon_nodes,
+                                config, roles_to_templates)
+
+        ports_xyz = {'pxe': {'rack1': [1, 2]}}
+        ports_abc = {'pxe': {'rack1': [3, 4, 5]}}
+        config = {'reference-architecture': ['private-compute-cloud'],
+                  'node-templates': {'xyz': {'roles': ['ceph-monitor'],
+                                             'ports': ports_xyz},
+                                     'abc': {'roles': ['ceph-monitor'],
+                                             'ports': ports_abc}}}
+        roles_to_templates = test_mod._get_roles_to_templates(config)
+        test_mod._validate_ceph_mon_nodes(config, roles_to_templates)
+
+        ports_xyz = {'pxe': {'rack1': [1, 2]}}
+        ports_abc = {'pxe': {'rack1': [3, 4, 5]}}
+        config = {'reference-architecture': ['private-compute-cloud'],
+                  'node-templates': {'xyz': {'role': ['ceph-osd'],
+                                             'ports': ports_xyz},
+                                     'abc': {'roles': ['ceph-monitor'],
+                                             'ports': ports_abc}}}
+        roles_to_templates = test_mod._get_roles_to_templates(config)
+        test_mod._validate_ceph_mon_nodes(config, roles_to_templates)
+
+        config = {'reference-architecture': ['private-compute-cloud'],
+                  'node-templates': {'controllers': {}},
+                  'nodes': {'controllers': ['b', 'c']}}
+        roles_to_templates = test_mod._get_roles_to_templates(config)
+        self.assertRaisesRegexp(test_mod.UnsupportedConfig, msg,
+                                test_mod._validate_ceph_mon_nodes,
+                                config, roles_to_templates)
+
+        config = {'reference-architecture': ['private-compute-cloud'],
+                  'node-templates': {'xyz': {'roles': ['ceph-monitor']},
+                                     'aaa': {'roles': ['controller']}},
+                  'nodes': {'xyz': ['a', 'b', 'c'],
+                            'aaa': ['d']}}
+        roles_to_templates = test_mod._get_roles_to_templates(config)
+        test_mod._validate_ceph_mon_nodes(config, roles_to_templates)
+
+        config = {'reference-architecture': ['private-compute-cloud'],
+                  'node-templates': {'xyz': {'roles': ['ceph-monitor']},
+                                     'aaa': {'roles': ['controller']},
+                                     'controllers': {}},
+                  'nodes': {'xyz': ['a', 'b', 'c'],
+                            'aaa': ['d'],
+                            'controllers': ['e']}}
+        roles_to_templates = test_mod._get_roles_to_templates(config)
+        self.assertRaisesRegexp(test_mod.UnsupportedConfig, msg,
+                                test_mod._validate_ceph_mon_nodes,
+                                config, roles_to_templates)
+        config = {'reference-architecture': ['private-compute-cloud'],
+                  'node-templates': {'xyz': {'roles': ['ceph-monitor']},
+                                     'aaa': {'roles': ['controller']},
+                                     'controllers': {},
+                                     'bbb': {'roles': ['ceph-monitor']}},
+                  'nodes': {'xyz': ['a', 'b', 'c'],
+                            'aaa': ['d'],
+                            'controllers': ['e'],
+                            'bbb': ['f', 'g']}}
+        roles_to_templates = test_mod._get_roles_to_templates(config)
+        self.assertRaisesRegexp(test_mod.UnsupportedConfig, msg,
+                                test_mod._validate_ceph_mon_nodes,
+                                config, roles_to_templates)
 
     def test_validate_ceph_networks(self):
         # Test valid network configurations
@@ -839,3 +950,6 @@ class TestValidateConfig(unittest.TestCase):
                                 'No node templates were found',
                                 test_mod.validate_propagation_roles,
                                 {'node-templates': nts})
+
+if __name__ == '__main__':
+    unittest.main()
