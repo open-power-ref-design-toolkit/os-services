@@ -159,9 +159,9 @@ by the script **dbimage-make.sh**::
   dbflavor-show.sh -d db-name [ -p ]
 
   dbflavor-change.sh -d db-name -f flavor-name
-         { [ -c vcpus ] [ -m mem-in-gigabytes ]
-           [ -r root-vdisk1-in-megabytes ] [ -s db-vdisk2-in-megabytes ]
-           [ -b swift-backup-storage-in-megabytes ] }
+         { [ -c vcpus ] [ -m mem-in-megabytes ]
+           [ -r root-vdisk1-in-gigabytes ] [ -s db-vdisk2-in-gigabytes ]
+           [ -b swift-backup-storage-in-gigabytes ] }
 
   dbflavor-upload.sh -d db-name
 
