@@ -37,13 +37,13 @@ def parse_args():
     parser.add_argument('-c', '--vcpus',
                         help='The number of virtual cpus')
     parser.add_argument('-m', '--mem',
-                        help='The amount of memory in gigabytes')
+                        help='The amount of memory in megabytes')
     parser.add_argument('-r', '--vdisk1',
-                        help='The quantity in megabytes of vdisk1')
+                        help='The quantity in gigabytes of vdisk1')
     parser.add_argument('-s', '--vdisk2',
-                        help='The quantity in megabytes of vdisk2')
+                        help='The quantity in gigabytes of vdisk2')
     parser.add_argument('-b', '--swift',
-                        help='The quantity in megabytes of swift storage')
+                        help='The quantity in gigabytes of swift storage')
     parser.add_argument('-p', '--defaults-only', action="store_true",
                         help='Use default values only')
     return parser.parse_args()
@@ -133,8 +133,8 @@ def change_flavors(predefines, customized, args):
         sys.exit(1)
 
     if args.mem and args.mem != '-1' and (int(args.mem) < 1024 or
-       int(args.mem) > 524288):
-        print("Error: range 1G <= mem <= 512G")
+       int(args.mem) > 262144):
+        print("Error: range 1024M <= mem <= 262144M")
         sys.exit(1)
 
     if args.vdisk1 and args.vdisk1 != '-1' and (int(args.vdisk1) < 1 or

@@ -18,9 +18,9 @@
 
 if [ "$1" == "--help" ]; then
     echo "Usage: dbflavor-change.sh -d db-name -f flavor"
-    echo "           [ -c vcpus ] [ -m mem-in-gigabytes ]"
-    echo "           [ -r root-vdisk1-in-megabytes ] [ -s db-vdisk2-in-megabytes ]"
-    echo "           [ -b swift-storage-in-megabytes ]"
+    echo "           [ -c vcpus ] [ -m mem-in-megabytes ]"
+    echo "           [ -r root-vdisk1-in-gigabytes ] [ -s db-vdisk2-in-gigabytes ]"
+    echo "           [ -b swift-storage-in-gigabytes ]"
     echo ""
     echo "See the README.rst file for more information"
     exit 1
