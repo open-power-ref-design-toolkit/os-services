@@ -93,7 +93,7 @@ export DIB_MYENTERPRISE_EDITION=$DBIMAGE_ENTERPRISE_EDITION
 export DIB_MYDBVERSION=$DBIMAGE_DBVERSION
 
 CMD="disk-image-create"
-CMDARGS="--no-tmpfs -a $ARCH -o $HOME/img/$IMG $DISTRO_NAME vm cloud-init-datasources $GUESTELE $DBELE"
+CMDARGS="--no-tmpfs -a $ARCH -o $HOME/img/$IMG $DISTRO_NAME vm cloud-init-datasources $GUESTELE $DBELE $DBIMAGE_MYELEMENTS"
 
 # These environment variables are input parameters to trovedibrc
 export SERVICE_TYPE=$DBIMAGE_DBNAME
@@ -134,6 +134,7 @@ export DIB_RELEASE=$DIB_RELEASE
 export SERVICE_TYPE=$SERVICE_TYPE
 export CONTROLLER_IP=$CONTROLLER_IP
 export DATASTORE_PKG_LOCATION=$DATASTORE_PKG_LOCATION
+export DBIMAGE_MYELEMENTS="$DBIMAGE_MYELEMENTS"
 source $SCRIPTS_DIR/trovedibrc
 $CMD $CMDARGS
 EOF

@@ -52,6 +52,14 @@
 
 #export DBIMAGE_SOURCE=-dib
 
+# Custom elements can be added to images by setting the variable below to a
+# space separated list of elements. The elements must be placed in the
+# ../elements directory. The environment variable is a space delimited list of elements.
+# For example, an element located in ./elements/ubuntu-xenial-hwe-kernel/
+# is known by the sub-directory in which it is contained - ie. ubuntu-xenial-hwe-kernel.
+
+#export DBIMAGE_MYELEMENTS="<element-dir-1> <element-dir-2> ..."
+
 #########  Below this line applies to diskimage-builder only  ###########
 
 # Enable trove-guestagent debug log messages in the datastore instance.
