@@ -167,6 +167,12 @@ def validate_swift(inventory):
     _validate_rings_match_roles(inventory)
     converged_metadata_object = _has_converged_metadata_object(inventory)
     separate_metadata_object = _has_separate_metadata_object(inventory)
+    roles_to_templates = _get_roles_to_templates(inventory)
+    if (not roles_to_templates.get('controller', []) and
+            not roles_to_templates.get('controllers', [])):
+            msg = ('The configuration requires at least one controller node.')
+            raise UnsupportedConfig(msg)
+
     if SWIFT_MIN in reference_architecture:
         # Note this remains a template-only check rather than a role check.
         # This is because it is valid to add the swift-proxy role to the
@@ -176,9 +182,6 @@ def validate_swift(inventory):
                    'swift-minimum-hardware reference architecture.')
             raise UnsupportedConfig(msg)
 
-        # We must either have the controllers node template or template
-        # with the swift-proxy role
-        roles_to_templates = _get_roles_to_templates(inventory)
         if 'controllers' not in inventory.get('node-templates') and \
                 'swift-proxy' not in roles_to_templates:
             msg = ('When the swift-minimum-hardware reference architecture is '

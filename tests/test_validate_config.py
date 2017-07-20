@@ -266,7 +266,8 @@ class TestValidateConfig(unittest.TestCase):
                           inv)
 
         converged.return_value = False
-        inv['node-templates'] = {'controllers': {}}
+        inv = {'reference-architecture': ['swift', 'swift-minimum-hardware'],
+               'node-templates': {'controllers': {}}}
         self.assertRaises(test_mod.UnsupportedConfig,
                           test_mod.validate_swift,
                           inv)
@@ -275,8 +276,9 @@ class TestValidateConfig(unittest.TestCase):
         test_mod.validate_swift(inv)
 
         # Test non-minimum configs
-        inv['node-templates'] = {'swift-proxy': {}}
-        inv['reference-architecture'] = ['swift']
+        inv = {'reference-architecture': ['swift'],
+               'node-templates': {'swift-proxy': {},
+                                  'controllers': {}}}
         converged.return_value = True
         separate.return_value = False
         test_mod.validate_swift(inv)
@@ -299,10 +301,21 @@ class TestValidateConfig(unittest.TestCase):
 
         # Test swift proxy role in converged node case
         inv = {'reference-architecture': ['swift', 'swift-minimum-hardware'],
-               'node-templates': {'a': {'roles': ['swift-proxy']}}}
+               'node-templates': {'a': {'roles': ['swift-proxy',
+                                                  'controller']}}}
         converged.return_value = True
         separate.return_value = False
         test_mod.validate_swift(inv)
+
+        # This is testing the use of swift-proxy role on a converged node in
+        # a config that does not have any controllers.
+        inv = {'reference-architecture': ['swift', 'swift-minimum-hardware'],
+               'node-templates': {'a': {'roles': ['swift-proxy']}}}
+        converged.return_value = True
+        separate.return_value = False
+        self.assertRaises(test_mod.UnsupportedConfig,
+                          test_mod.validate_swift,
+                          inv)
 
         # Test swift proxy role in converged node case
         inv = {'reference-architecture': ['swift', 'swift-minimum-hardware'],
