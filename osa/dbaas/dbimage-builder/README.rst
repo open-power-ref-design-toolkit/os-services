@@ -18,7 +18,7 @@ same operations that were performed by **dbimage-make-sh**,
 after having created the image.  This is a big time savings
 and ensures that the exact same bits are re-applied to the new
 cloud, excluding the few bits that are updated - ie.
-trove-guestagent meta data.
+ssh keys and trove-guestagent meta data.
 
 An additional set of commands **dbflavor-show.sh**, **dbflavor-change.sh**,
 and **dbflavor-upload.sh** are provided to create database flavors, which
@@ -32,42 +32,6 @@ These commands are intended to be run when the openstack cluster
 is initially deployed, when new database types and versions are
 made available, and to introduce or change database flavors.
 
-Scenarios
----------
-
-The following use cases apply for creating database images:
-
-- The distro provides the database.  In this case,
-  the user may specify the version of the database (-v)
-  to be installed.  This is useful when the distro provides
-  more than one version.  If a version is not specified, the
-  default version as chosen by the distro is installed.
-
-- The user provides the debian package to be installed.  This
-  case applies when the user obtains the package from a vendor
-  or community.  It is assumed that the package is self-contained
-  in that it is built specifying all prerequisite packages which
-  are provided by the distro.  Basically, that the package can
-  be installed via a single command invocation.
-
-- The user provides a tar file to be installed.  The tar file must
-  contain an install script named setup.sh which is located in the
-  root directory of the tar file.
-
-  Tar files are handy in two cases:
-
-  - Vendor provides a debian package, but it has prerequisites
-    that are not provided by the distro.  In this case, the
-    tar file provides the database and prerequisites.
-
-  - User has a tar file of build artifacts for the named
-    database that need to be installed.  Lots of open source
-    communities provide tar files as opposed to installable
-    distro packages.  The tar file type must be one of tar,
-    tgz, or bz2.
-
-This tool internally leverages the OpenStack diskimage-builder project.
-
 dbimage-make.sh
 ---------------
 
@@ -78,7 +42,8 @@ dbimage-make.sh
 
 This script creates a bootable O/S image containing the named
 database (-d) and database version (-v) and creates an OpenStack Trove
-datastore from the image.
+datastore from the image.  The image is built using the
+OpenStack diskimage-builder (DIB) project.
 
 The -v argument identifies the version of the database.  Only the
 first two components of the version are used.  For example, the user
@@ -89,10 +54,8 @@ minor number where the third component is a fix level.
 
 The -c argument may be specified to select the *community* edition
 of a database if one is provided and supported by this tool.
-
 The -e argument may be specified to select the *enterprise* edition
 of a database if one is provided and supported by this tool.
-
 When the command arguments -c and -e are not specified, the selection
 defaults to a distro provided database if one is provided and
 supported by the tool.
@@ -100,13 +63,17 @@ supported by the tool.
 The tool internally maintains a lookup table of supported versions
 per source of each database.  At least one source is supported per
 database and in many cases more than one.
-
 When a request results in no supported package, the list of supported
 packages is displayed enabling the user to quickly manipulate the
 selection criteria to build the desired database image.
 
-Enterprise Editions of databases are usually conveyed with
-terms and conditions on use.  It is assumed by this tool that the
+Enterprise editions of databases are usually conveyed with
+terms and conditions that the end user is expected to have read,
+understood, and accepted.  It is the responsibility of the end
+user to find and read these terms and conditions which is
+easily done via Google.  For example, search for
+'Enterprise edition of MongoDB'.
+It is assumed by this tool that the
 user has read those terms and conditions and complies with them
 if the user builds a guest database image using the -e argument.
 
@@ -115,9 +82,9 @@ If this argument is specified, then the public ssh key is obtained from
 OpenStack and is placed in virtual disk image in the
 file /home/<dib-user>/.ssh/authorized_keys. This is intended for DBA access.
 
-The -i argument identifies a running virtual machine (VM) that should
-be used to create the virtual disk image.  This VM must be installed
-with Ubuntu 16.04.
+The -i argument identifies a running virtual machine (VM)
+that should be used to create the virtual disk image.  This VM must be
+installed with Ubuntu 16.04.  The DIB tool is installed on this VM.
 
 The VM associated with the -i argument is created by the user prior
 to invoking the dbimage-make.sh script.  This VM may be re-used to
@@ -130,7 +97,7 @@ mariadb, mongodb, mysql, postgresql, or redis.
 The -p argument is a database package that is provided by the user.
 This package is installed, instead of a package that is determined by
 the tool.  If the -p argument is specified, then the -v argument must
-also be specified.
+also be specified.  This parameter is not presently implemented.
 
 The -I argument indicates that the qcow2 image should be generated
 only.  Don't upload the image to OpenStack Glance or create a Trove
