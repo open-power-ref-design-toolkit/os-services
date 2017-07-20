@@ -95,7 +95,7 @@ Creating Datastore Images
 This project also contains dbimage-builder, a tool for creating reusable
 datastore images. You can find the tool and documentation here:
 
-`dbimage-builder <../blob/master/osa/dbaas/dbimage-builder/README.rst>`_
+`dbimage-builder <../master/osa/dbaas/dbimage-builder/README.rst>`_
 
 Related projects
 ----------------
