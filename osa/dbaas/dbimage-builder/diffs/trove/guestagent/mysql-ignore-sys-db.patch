@@ -1,0 +1,13 @@
+diff --git a/trove/guestagent/datastore/mysql_common/service.py b/trove/guestagent/datastore/mysql_common/service.py
+index 96c9330..1b80b73 100644
+--- a/trove/guestagent/datastore/mysql_common/service.py
++++ b/trove/guestagent/datastore/mysql_common/service.py
+@@ -423,7 +423,7 @@ class BaseMySqlAdmin(object):
+     def list_databases(self, limit=None, marker=None, include_marker=False):
+         """List databases the user created on this mysql instance."""
+         LOG.debug("---Listing Databases---")
+-        ignored_database_names = "'%s'" % "', '".join(cfg.get_ignored_dbs())
++        ignored_database_names = "'sys', '%s'" % "', '".join(cfg.get_ignored_dbs())
+         LOG.debug("The following database names are on ignore list and will "
+                   "be omitted from the listing: %s" % ignored_database_names)
+         databases = []
