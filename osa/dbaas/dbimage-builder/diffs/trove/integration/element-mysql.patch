@@ -33,10 +33,10 @@ index 887bda2..da2a9d4 100755
  cat >/etc/mysql/conf.d/no_perf_schema.cnf <<_EOF_
  [mysqld]
 diff --git a/integration/scripts/files/elements/ubuntu-xenial-mysql/install.d/30-mysql b/integration/scripts/files/elements/ubuntu-xenial-mysql/install.d/30-mysql
-index 75ccdc6..3be9129 100755
+index 75ccdc6..a18206d 100755
 --- a/integration/scripts/files/elements/ubuntu-xenial-mysql/install.d/30-mysql
 +++ b/integration/scripts/files/elements/ubuntu-xenial-mysql/install.d/30-mysql
-@@ -8,10 +8,9 @@ set -o xtrace
+@@ -8,10 +8,31 @@ set -o xtrace
  
  export DEBIAN_FRONTEND=noninteractive
  
@@ -44,14 +44,41 @@ index 75ccdc6..3be9129 100755
  apt-get -y  update
  
 -apt-get --allow-unauthenticated -y install mysql-client-5.6 mysql-server-5.6 percona-xtrabackup${PXB_VERSION_OVERRIDE}
-+apt-get --allow-unauthenticated -y install mysql-client mysql-server percona-xtrabackup
++# Xenial provides mysql 5.7 which requires percona-xtrabackup-24 which needs
++# to be compiled from source code as the percona website does not support power
++
++apt-get --allow-unauthenticated -y install build-essential flex bison automake autoconf \
++   libtool cmake libaio-dev mysql-client libncurses-dev zlib1g-dev \
++   libgcrypt11-dev libev-dev libcurl4-gnutls-dev vim-common
++
++pushd /tmp
++
++git clone https://github.com/percona/percona-xtrabackup.git
++cd percona-xtrabackup
++git checkout 2.4
++
++mkdir /tmp/boost
++cmake -DDOWNLOAD_BOOST=1 -DWITH_BOOST=/tmp/boost -DBUILD_CONFIG=xtrabackup_release -DWITH_MAN_PAGES=OFF && make -j4
++make install
++ln -s /usr/local/xtrabackup/bin/* /usr/bin/
++
++popd
++
++rm -rf /tmp/boost /tmp/percona-xtrabackup
++
++apt-get --allow-unauthenticated -y install mysql-client mysql-server
  
  cat >/etc/mysql/conf.d/no_perf_schema.cnf <<_EOF_
  [mysqld]
-@@ -27,6 +26,5 @@ cat >/etc/mysql/my.cnf <<_EOF_
+@@ -26,7 +47,9 @@ cat >/etc/mysql/my.cnf <<_EOF_
+ !includedir /etc/mysql/conf.d/
  _EOF_
  
- rm /etc/init/mysql.conf
+-rm /etc/init/mysql.conf
 -systemctl daemon-reload
++if [ -e /etc/init/mysql.conf ]; then
++    rm -f /etc/init/mysql.conf
++fi
++
  systemctl enable mysql
  

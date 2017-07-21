@@ -89,10 +89,10 @@ index 8ac19f7..77d8e1a 100755
  
 diff --git a/integration/scripts/files/elements/ubuntu-trusty-guest/install.d/70-trove-guestagent b/integration/scripts/files/elements/ubuntu-trusty-guest/install.d/70-trove-guestagent
 new file mode 100755
-index 0000000..980e2e2
+index 0000000..4e909de
 --- /dev/null
 +++ b/integration/scripts/files/elements/ubuntu-trusty-guest/install.d/70-trove-guestagent
-@@ -0,0 +1,44 @@
+@@ -0,0 +1,43 @@
 +#!/bin/bash
 +
 +# CONTEXT: GUEST during CONSTRUCTION as ROOT
@@ -119,7 +119,6 @@ index 0000000..980e2e2
 +pip install -r requirements.txt
 +python setup.py install
 +popd
-+apt-get -y install percona-xtrabackup
 +
 +# Create the log directories.  Both in case user does not update conf file
 +mkdir -p /var/log/trove $GUEST_LOGDIR
@@ -190,10 +189,10 @@ index 1a35015..e27ad9c 100755
 +fi
 diff --git a/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/70-trove-guestagent b/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/70-trove-guestagent
 new file mode 100755
-index 0000000..6f61733
+index 0000000..a4663f8
 --- /dev/null
 +++ b/integration/scripts/files/elements/ubuntu-xenial-guest/install.d/70-trove-guestagent
-@@ -0,0 +1,46 @@
+@@ -0,0 +1,45 @@
 +#!/bin/bash
 +
 +# CONTEXT: GUEST during CONSTRUCTION as ROOT
@@ -220,7 +219,6 @@ index 0000000..6f61733
 +pip install -r requirements.txt
 +python setup.py install
 +popd
-+apt-get -y install percona-xtrabackup
 +
 +# Create the log directories.  Both in case user does not update conf file
 +mkdir -p /var/log/trove $GUEST_LOGDIR
