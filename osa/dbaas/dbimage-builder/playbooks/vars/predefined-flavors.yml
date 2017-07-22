@@ -4,200 +4,200 @@ flavors:
   - description: Redis tiny flavor
     name: redis
     config: tiny
-    vcpus: 1
-    mem: 1024         # MBs
+    vcpus: 2
+    mem: 2048         # MBs
     vdisk1: 6         # GBs
     vdisk2: 1         # GBs
-    swift: 0          # GBs
+    swift: 3          # GBs
   - description: Redis small flavor
     name: redis
     config: small
-    vcpus: 1
-    mem: 2048
+    vcpus: 4
+    mem: 4096
     vdisk1: 6
     vdisk2: 1
-    swift: 2
+    swift: 3
   - description: Redis medium flavor
     name: redis
     config: medium
-    vcpus: 4
+    vcpus: 8
     mem: 8192
-    vdisk1: 10
-    vdisk2: 4
-    swift: 8
+    vdisk1: 6
+    vdisk2: 2
+    swift: 3
   - description: Redis large flavor
     name: redis
     config: large
-    vcpus: 8
+    vcpus: 16
     mem: 16384
-    vdisk1: 20
-    vdisk2: 40
-    swift: 80
+    vdisk1: 6
+    vdisk2: 5
+    swift: 15
   - description: Redis xlarge flavor
     name: redis
     config: xlarge
-    vcpus: 16
+    vcpus: 32
     mem: 32768
-    vdisk1: 30
-    vdisk2: 80
-    swift: 160
+    vdisk1: 10
+    vdisk2: 10
+    swift: 150
   - description: Mariadb tiny flavor
     name: mariadb
     config: tiny
-    vcpus: 1
-    mem: 1024         # MBs
+    vcpus: 2
+    mem: 2048
     vdisk1: 6         # GBs
     vdisk2: 1         # GBs
-    swift: 0          # GBs
+    swift: 3          # GBs
   - description: Mariadb small flavor
     name: mariadb
     config: small
-    vcpus: 1
-    mem: 2048
+    vcpus: 4
+    mem: 4096
     vdisk1: 6
     vdisk2: 1
-    swift: 2
+    swift: 3
   - description: Mariadb medium flavor
     name: mariadb
     config: medium
-    vcpus: 2
-    mem: 4096
-    vdisk1: 10
-    vdisk2: 20
-    swift: 40
+    vcpus: 8
+    mem: 8192
+    vdisk1: 6
+    vdisk2: 10
+    swift: 30
   - description: Mariadb large flavor
     name: mariadb
     config: large
-    vcpus: 4
+    vcpus: 16
     mem: 16384
-    vdisk1: 20
+    vdisk1: 8
     vdisk2: 40
-    swift: 80
+    swift: 120
   - description: Mariadb xlarge flavor
     name: mariadb
     config: xlarge
-    vcpus: 8
+    vcpus: 32
     mem: 32768
-    vdisk1: 40
+    vdisk1: 16
     vdisk2: 80
-    swift: 160
+    swift: 240
   - description: MySQL tiny flavor
     name: mysql
     config: tiny
-    vcpus: 1
-    mem: 1024         # MBs
+    vcpus: 2
+    mem: 2048         # MBs
     vdisk1: 6         # GBs
     vdisk2: 1         # GBs
-    swift: 0          # GBs
+    swift: 3          # GBs
   - description: MySQL small flavor
     name: mysql
     config: small
-    vcpus: 1
-    mem: 2048
+    vcpus: 4
+    mem: 4096
     vdisk1: 6
     vdisk2: 1
-    swift: 2
+    swift: 3
   - description: MySQL medium flavor
     name: mysql
     config: medium
-    vcpus: 2
-    mem: 4096
-    vdisk1: 10
-    vdisk2: 20
-    swift: 40
+    vcpus: 8
+    mem: 8192
+    vdisk1: 6
+    vdisk2: 10
+    swift: 30
   - description: MySQL large flavor
     name: mysql
     config: large
-    vcpus: 4
+    vcpus: 16
     mem: 16384
-    vdisk1: 20
+    vdisk1: 8
     vdisk2: 40
-    swift: 80
+    swift: 120
   - description: MySQL xlarge flavor
     name: mysql
     config: xlarge
-    vcpus: 8
+    vcpus: 32
     mem: 32768
-    vdisk1: 40
+    vdisk1: 16
     vdisk2: 80
-    swift: 160
+    swift: 240
   - description: MongoDB tiny flavor
     name: mongodb
     config: tiny
-    vcpus: 1
-    mem: 1024         # MBs
+    vcpus: 2
+    mem: 2048         # MBs
     vdisk1: 6         # GBs
     vdisk2: 1         # GBs
-    swift: 0          # GBs
+    swift: 3          # GBs
   - description: MongoDB small flavor
     name: mongodb
     config: small
-    vcpus: 2
+    vcpus: 4
     mem: 2048
-    vdisk1: 10
-    vdisk2: 4
-    swift: 8
+    vdisk1: 6
+    vdisk2: 1
+    swift: 3
   - description: MongoDB medium flavor
     name: mongodb
     config: medium
-    vcpus: 4
-    mem: 8192
-    vdisk1: 20
-    vdisk2: 30
-    swift: 60
+    vcpus: 8
+    mem: 4096
+    vdisk1: 6
+    vdisk2: 10
+    swift: 30
   - description: MongoDB large flavor
     name: mongodb
     config: large
-    vcpus: 8
-    mem: 16384
-    vdisk1: 30
+    vcpus: 16
+    mem: 8192
+    vdisk1: 8
     vdisk2: 40
     swift: 120
   - description: MongoDB xlarge flavor
     name: mongodb
     config: xlarge
-    vcpus: 16
-    mem: 32768
-    vdisk1: 40
+    vcpus: 32
+    mem: 16384
+    vdisk1: 16
     vdisk2: 80
     swift: 240
   - description: Postgresql tiny flavor
     name: postgresql
     config: tiny
-    vcpus: 1
-    mem: 1024         # MBs
+    vcpus: 2
+    mem: 2048         # MBs
     vdisk1: 6         # GBs
     vdisk2: 1         # GBs
-    swift: 0          # GBs
+    swift: 3          # GBs
   - description: Postgresql small flavor
     name: postgresql
     config: small
-    vcpus: 1
-    mem: 2048
+    vcpus: 4
+    mem: 4096
     vdisk1: 6
     vdisk2: 1
-    swift: 2
+    swift: 3
   - description: Postgresql medium flavor
     name: postgresql
     config: medium
-    vcpus: 2
-    mem: 4096
-    vdisk1: 10
-    vdisk2: 20
-    swift: 40
+    vcpus: 8
+    mem: 8192
+    vdisk1: 6
+    vdisk2: 10
+    swift: 30
   - description: Postgresql large flavor
     name: postgresql
     config: large
-    vcpus: 4
+    vcpus: 16
     mem: 16384
-    vdisk1: 20
+    vdisk1: 8
     vdisk2: 40
-    swift: 80
+    swift: 120
   - description: Postgresql xlarge flavor
     name: postgresql
     config: xlarge
-    vcpus: 8
+    vcpus: 32
     mem: 32768
-    vdisk1: 40
+    vdisk1: 16
     vdisk2: 80
-    swift: 160
+    swift: 240
