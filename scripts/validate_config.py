@@ -311,6 +311,49 @@ def validate_ceph(inventory):
     _validate_ceph_node_templates(roles_to_templates)
     _validate_ceph_networks(inventory, roles_to_templates)
     _validate_ceph_devices(inventory, roles_to_templates)
+    _validate_ceph_mon_nodes(inventory, roles_to_templates)
+
+
+def _get_node_template_names_for_role(inventory, role):
+    # Return the list of node templates names that satisfy the given role
+    MON_ROLE = 'ceph-monitor'
+    TEMPLATE_ROLES_KEY = 'roles'
+    templates = []
+    for name, templ in inventory['node-templates'].iteritems():
+        templ_copy = templ
+        if name == role:
+            # for backward compatibility node template names are
+            # also roles
+            templates.append(name)
+        elif role == MON_ROLE and name == 'controllers':
+            # for backward compatibility controller node templates
+            # are ceph-monitors
+            templates.append(name)
+        elif (templ_copy.get(TEMPLATE_ROLES_KEY, {})):
+                if role in templ_copy[TEMPLATE_ROLES_KEY]:
+                    templates.append(name)
+    return templates
+
+
+def _validate_ceph_mon_nodes(inventory, roles_to_templates):
+    mon_count = 0
+    if not inventory.get('nodes', {}):
+        for templ in roles_to_templates.get('ceph-monitor'):
+            port_map = templ.get('ports', {})
+            pxe_map = port_map.get('pxe', {})
+            for value in pxe_map.values():
+                mon_count = mon_count + len(value)
+    else:
+        for template_name in _get_node_template_names_for_role(inventory,
+                                                               'ceph-monitor'):
+            for node in inventory.get('nodes', {}).get(template_name, []):
+                mon_count = mon_count + len(node)
+    if (mon_count % 2 == 0):
+        msg = ("The configuration must have an odd number of Ceph monitor "
+               "nodes.  Nodes under the 'controllers' node template or "
+               "node templates with the 'ceph-monitor' role are "
+               "Ceph monitors.")
+        raise UnsupportedConfig(msg)
 
 
 def _validate_ceph_node_templates(roles_to_templates):
@@ -398,7 +441,6 @@ def _get_roles_to_templates(config):
             the_map[role] = templates
         if template not in templates:
             templates.append(template)
-
     roles_to_templates = {}
     if 'node-templates' not in config:
         msg = ('node-templates is missing in the configuration')
