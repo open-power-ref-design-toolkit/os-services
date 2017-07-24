@@ -50,6 +50,28 @@ index 0000000..128b7b8
 +
 +chown $GUEST_USERNAME:root /home/$GUEST_USERNAME/trove-guest-enable-debug.sh
 +chmod 750 /home/$GUEST_USERNAME/trove-guest-enable-debug.sh
+diff --git a/integration/scripts/files/elements/ubuntu-guest/post-install.d/90-apt-get-update b/integration/scripts/files/elements/ubuntu-guest/post-install.d/90-apt-get-update
+index 6cc087a..cef4e3e 100755
+--- a/integration/scripts/files/elements/ubuntu-guest/post-install.d/90-apt-get-update
++++ b/integration/scripts/files/elements/ubuntu-guest/post-install.d/90-apt-get-update
+@@ -2,8 +2,17 @@
+ 
+ # CONTEXT: GUEST after packages installed
+ # PURPOSE: do apt-get update to save each instance having to do all the work
++#          and add platform specific packages
+ 
+ set -e
+ set -o xtrace
+ 
+ apt-get update
++
++ARCH=$(uname -m)
++
++if [ "$ARCH" == "ppc64le" ]; then
++    VERSION=$(uname -r)
++    export DEBIAN_FRONTEND=noninteractive
++    apt-get --allow-unauthenticated -y install ppc64-diag linux-image-extra-$VERSION
++fi
 diff --git a/integration/scripts/files/elements/ubuntu-trusty-guest/extra-data.d/70-trove-guestagent b/integration/scripts/files/elements/ubuntu-trusty-guest/extra-data.d/70-trove-guestagent
 new file mode 100755
 index 0000000..85233a9
