@@ -40,10 +40,6 @@ def parse_args():
                         help='The amount of memory in megabytes')
     parser.add_argument('-r', '--vdisk1',
                         help='The quantity in gigabytes of vdisk1')
-    parser.add_argument('-s', '--vdisk2',
-                        help='The quantity in gigabytes of vdisk2')
-    parser.add_argument('-b', '--swift',
-                        help='The quantity in gigabytes of swift storage')
     parser.add_argument('-p', '--defaults-only', action="store_true",
                         help='Use default values only')
     return parser.parse_args()
@@ -97,22 +93,20 @@ def merge_flavors(predefines, customized):
         if not found:
             result.append(predefine)
 
-    return sorted(result, key=lambda k: (k['name'], k['vdisk2']))
+    return sorted(result, key=lambda k: (k['name'], k['vcpus']))
 
 
 def print_flavors(flavors, dbname):
 
-    print("NAME        FLAVOR    DBSIZE(GBs)  VCPUS  MEM(MBs)  "
-          "BACKUP STORAGE(GBs)")
-    print("----        ------    -----------  -----  --------  "
-          "-------------------")
+    print("NAME        FLAVOR     VCPUS  MEM(MBs)  VDISK1(GBs)")
+    print("----        ------     -----  --------  -----------")
     try:
         for flavor in flavors:
             if dbname and not flavor['name'].startswith(dbname):
                 continue
-            print("%-10s  %-9s    %-6d      %-3d    %-6d        %-8d" %
-                  (flavor['name'], flavor['config'], flavor['vdisk2'],
-                   flavor['vcpus'], flavor['mem'], flavor['swift']))
+            print("%-10s  %-9s    %-3d    %-6d      %-3d" %
+                  (flavor['name'], flavor['config'],
+                   flavor['vcpus'], flavor['mem'], flavor['vdisk1']))
     except:
         print "Error: malformed flavor: %s" % str(flavor)
 
@@ -140,16 +134,6 @@ def change_flavors(predefines, customized, args):
     if args.vdisk1 and args.vdisk1 != '-1' and (int(args.vdisk1) < 1 or
        int(args.vdisk1) > 128):
         print("Error: range 1G <= vdisk1 <= 128G, vdisk1 is root volume")
-        sys.exit(1)
-
-    if args.vdisk2 and args.vdisk2 != '-1' and (int(args.vdisk2) < 1 or
-       int(args.vdisk2) > 512):
-        print("Error: range 1G <= vdisk2 <= 512G, vdisk2 is db volume")
-        sys.exit(1)
-
-    if args.swift and args.swift != '-1' and (int(args.swift) < 1 or
-       int(args.swift) > 512):
-        print("Error: range 1G <= swift <= 512G, swift is backup storage")
         sys.exit(1)
 
     # Find the database and flavor in predefines
@@ -190,10 +174,6 @@ def change_flavors(predefines, customized, args):
         item['mem'] = predefine['mem']
     if args.vdisk1 == '-1':
         item['vdisk1'] = predefine['vdisk1']
-    if args.vdisk2 == '-1':
-        item['vdisk2'] = predefine['vdisk2']
-    if args.swift == '-1':
-        item['swift'] = predefine['swift']
 
     # Apply new values
     if args.vcpus is not None and args.vcpus != '-1':
@@ -202,25 +182,17 @@ def change_flavors(predefines, customized, args):
         item['mem'] = int(args.mem)
     if args.vdisk1 is not None and args.vdisk1 != '-1':
         item['vdisk1'] = int(args.vdisk1)
-    if args.vdisk2 is not None and args.vdisk2 != '-1':
-        item['vdisk2'] = int(args.vdisk2)
-    if args.swift is not None and args.swift != '-1':
-        item['swift'] = int(args.swift)
 
     # Return if there is no state change --- same value was reassigned
     if orig['vcpus'] == item['vcpus'] and \
        orig['mem'] == item['mem'] and \
-       orig['vdisk1'] == item['vdisk1'] and \
-       orig['vdisk2'] == item['vdisk2'] and \
-       orig['swift'] == item['swift']:
+       orig['vdisk1'] == item['vdisk1']:
         return 0
 
     # Check if values are being changed back to defaults
     if predefine['vcpus'] == item['vcpus'] and \
        predefine['mem'] == item['mem'] and \
-       predefine['vdisk1'] == item['vdisk1'] and \
-       predefine['vdisk2'] == item['vdisk2'] and \
-       predefine['swift'] == item['swift']:
+       predefine['vdisk1'] == item['vdisk1']:
         if not allocateItem:
             customized.remove(item)
     else:

@@ -40,10 +40,6 @@ while getopts "d:f:c:m:r:s:b:p" opt; do
            ;;
         r) vdisk1=$OPTARG
            ;;
-        s) vdisk2=$OPTARG
-           ;;
-        b) swift=$OPTARG
-           ;;
         p) predefinedOnly=true
            ;;
     esac
@@ -69,9 +65,8 @@ if [ "$cmd" == "dbflavor-change.sh" ]; then
         echo "-f <flavor> must be specified"
         exit 1
     fi
-    if [ -z "$cpus" -a -z "$mem" -a -z "$vdisk1" -a -z "$vdisk2" -a -z "$swift" ]; then
-        echo "At least one of -c <vcpus>, -m <mem>, -r <vdisk1>, -s <vdisk2>, " \
-             "or -b <swift storage> must be specified"
+    if [ -z "$cpus" -a -z "$mem" -a -z "$vdisk1" ]; then
+        echo "At least one of -c <vcpus>, -m <mem>, -r <vdisk1> must be specified"
         exit 1
     fi
 fi
