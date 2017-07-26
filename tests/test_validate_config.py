@@ -667,6 +667,19 @@ class TestValidateConfig(unittest.TestCase):
                                 test_mod._validate_ceph_mon_nodes,
                                 config, roles_to_templates)
 
+        # Test with dicts as nodes so the length of the 'node' doesn't
+        # equal 1.
+        config = {'reference-architecture': ['private-compute-cloud'],
+                  'node-templates': {'controllers': {}},
+                  'nodes': {'controllers': [{'b': 'b',
+                                             'b1': 'b1'},
+                                            {'c': 'c',
+                                             'c1': 'c1'},
+                                            {'d': 'd',
+                                             'd1': 'd1'}]}}
+        roles_to_templates = test_mod._get_roles_to_templates(config)
+        test_mod._validate_ceph_mon_nodes(config, roles_to_templates)
+
         config = {'reference-architecture': ['private-compute-cloud'],
                   'node-templates': {'xyz': {'roles': ['ceph-monitor']},
                                      'aaa': {'roles': ['controller']}},
