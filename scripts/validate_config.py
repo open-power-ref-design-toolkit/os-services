@@ -346,8 +346,8 @@ def _validate_ceph_mon_nodes(inventory, roles_to_templates):
     else:
         for template_name in _get_node_template_names_for_role(inventory,
                                                                'ceph-monitor'):
-            for node in inventory.get('nodes', {}).get(template_name, []):
-                mon_count = mon_count + len(node)
+            nodes = inventory.get('nodes', {}).get(template_name, [])
+            mon_count = mon_count + len(nodes)
     if (mon_count % 2 == 0):
         msg = ("The configuration must have an odd number of Ceph monitor "
                "nodes.  Nodes under the 'controllers' node template or "
