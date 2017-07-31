@@ -1,6 +1,6 @@
 diff -Naur a/opt/openstack-ansible/playbooks/setup-hosts.yml b/opt/openstack-ansible/playbooks/setup-hosts.yml
---- a/opt/openstack-ansible/playbooks/setup-hosts.yml	2016-06-30 08:05:45.643477132 -0500
-+++ b/opt/openstack-ansible/playbooks/setup-hosts.yml	2016-06-30 07:38:01.635797890 -0500
+--- a/opt/openstack-ansible/playbooks/setup-hosts.yml	2017-09-13 06:45:21.360451323 -0400
++++ b/opt/openstack-ansible/playbooks/setup-hosts.yml	2017-09-18 06:56:55.292188493 -0400
 @@ -17,3 +17,4 @@
  - include: security-hardening.yml
  - include: lxc-hosts-setup.yml

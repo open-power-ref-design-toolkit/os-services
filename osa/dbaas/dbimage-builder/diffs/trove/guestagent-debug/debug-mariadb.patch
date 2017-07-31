@@ -1,5 +1,5 @@
 diff --git a/trove/guestagent/datastore/experimental/mariadb/service.py b/trove/guestagent/datastore/experimental/mariadb/service.py
-index b1bb4f0..e18ea79 100644
+index a851e02..6e70998 100644
 --- a/trove/guestagent/datastore/experimental/mariadb/service.py
 +++ b/trove/guestagent/datastore/experimental/mariadb/service.py
 @@ -36,6 +36,7 @@ class MariaDBApp(galera_service.GaleraApp):
@@ -8,7 +8,7 @@ index b1bb4f0..e18ea79 100644
          service_candidates = super(MariaDBApp, self).service_candidates
 +        LOG.debug("MariaDBApp services_candidates=%s" % service_candidates)
          return {
-             operating_system.DEBIAN: service_candidates,
+             operating_system.DEBIAN: ["mariadb"] + service_candidates,
              operating_system.REDHAT: ["mariadb"],
 @@ -54,6 +55,7 @@ class MariaDBApp(galera_service.GaleraApp):
              result['cmd_bootstrap_galera_cluster'] = (
@@ -27,7 +27,7 @@ index b1bb4f0..e18ea79 100644
      def __init__(self):
          super(MariaDBAdmin, self).__init__(
 diff --git a/trove/guestagent/datastore/mysql_common/manager.py b/trove/guestagent/datastore/mysql_common/manager.py
-index b670dd0..454d0fd 100644
+index 54b3c4a..31d48ac 100644
 --- a/trove/guestagent/datastore/mysql_common/manager.py
 +++ b/trove/guestagent/datastore/mysql_common/manager.py
 @@ -85,6 +85,8 @@ class MySqlManager(manager.Manager):
@@ -51,7 +51,7 @@ index b670dd0..454d0fd 100644
          app.install_if_needed(packages)
          if device_path:
 diff --git a/trove/guestagent/datastore/mysql_common/service.py b/trove/guestagent/datastore/mysql_common/service.py
-index 96c9330..c64d009 100644
+index fe8358a..ef068ca 100644
 --- a/trove/guestagent/datastore/mysql_common/service.py
 +++ b/trove/guestagent/datastore/mysql_common/service.py
 @@ -181,9 +181,11 @@ class BaseLocalSqlClient(object):
@@ -83,7 +83,15 @@ index 96c9330..c64d009 100644
  
      @property
      def local_sql_client(self):
-@@ -661,12 +666,14 @@ class BaseMySqlApp(object):
+@@ -415,6 +420,7 @@ class BaseMySqlAdmin(object):
+         """Enable the root user global access and/or
+            reset the root password.
+         """
++        LOG.debug("BaseMySqlAdmin: enable_root")
+         return self.mysql_root_access.enable_root(root_password)
+ 
+     def disable_root(self):
+@@ -661,12 +667,14 @@ class BaseMySqlApp(object):
          g = sql_query.Grant(permissions='ALL', user=ADMIN_USER_NAME,
                              host=localhost, grant_option=True, clear=password)
          t = text(str(g))
@@ -97,8 +105,8 @@ index 96c9330..c64d009 100644
 +        LOG.debug("Generating mysql root password")
          localhost = "localhost"
          uu = sql_query.SetPassword(
-             "root", host=localhost,
-@@ -691,12 +698,14 @@ class BaseMySqlApp(object):
+             models.MySQLUser.root_username, host=localhost,
+@@ -691,12 +699,14 @@ class BaseMySqlApp(object):
          self.start_mysql()
  
      def secure(self, config_contents):
@@ -114,7 +122,7 @@ index 96c9330..c64d009 100644
          with self.local_sql_client(engine, use_flush=False) as client:
              self._create_admin_user(client, admin_password)
  
-@@ -714,6 +723,8 @@ class BaseMySqlApp(object):
+@@ -714,6 +724,8 @@ class BaseMySqlApp(object):
          LOG.debug("MySQL secure complete.")
  
      def _reset_configuration(self, configuration, admin_password=None):
@@ -123,7 +131,7 @@ index 96c9330..c64d009 100644
          if not admin_password:
              # Take the current admin password from the base configuration file
              # if not given.
-@@ -1031,6 +1042,8 @@ class BaseMySqlRootAccess(object):
+@@ -1031,6 +1043,8 @@ class BaseMySqlRootAccess(object):
      def __init__(self, local_sql_client, mysql_app):
          self._local_sql_client = local_sql_client
          self._mysql_app = mysql_app
@@ -132,11 +140,3 @@ index 96c9330..c64d009 100644
  
      @property
      def mysql_app(self):
-@@ -1052,6 +1065,7 @@ class BaseMySqlRootAccess(object):
-         """Enable the root user global access and/or
-            reset the root password.
-         """
-+        LOG.debug("BaseMySqlRootAccess: enable_root")
-         user = models.MySQLRootUser(root_password)
-         with self.local_sql_client(self.mysql_app.get_engine()) as client:
-             print(client)

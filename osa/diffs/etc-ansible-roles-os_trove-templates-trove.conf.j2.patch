@@ -1,20 +1,7 @@
 diff -Naur a/etc/ansible/roles/os_trove/templates/trove.conf.j2 b/etc/ansible/roles/os_trove/templates/trove.conf.j2
---- a/etc/ansible/roles/os_trove/templates/trove.conf.j2	2017-03-24 01:54:07.259511912 -0400
-+++ b/etc/ansible/roles/os_trove/templates/trove.conf.j2	2017-03-24 01:48:47.079506187 -0400
-@@ -1,11 +1,9 @@
- # {{ ansible_managed }}
--{% set _api_threads = ansible_processor_vcpus|default(2) // 2 %}
--{% set api_threads = _api_threads if _api_threads > 0 else 1 %}
- [DEFAULT]
- debug = {{ debug }}
- bind_host = {{ trove_service_host }}
- bind_port = {{ trove_service_port }}
--trove_api_workers={{ trove_api_workers | default(api_threads) }}
-+trove_api_workers={{ trove_api_workers }}
- rpc_backend={{ trove_rpc_backend }}
- transport_url = rabbit://{% for host in trove_rabbitmq_servers.split(',') %}{{ trove_rabbitmq_userid }}:{{ trove_rabbitmq_password }}@{{ host }}:{{ trove_rabbitmq_port }}{% if not loop.last %},{% else %}/{{ trove_rabbitmq_vhost }}{% endif %}{% endfor %}
- 
-@@ -27,6 +25,9 @@
+--- a/etc/ansible/roles/os_trove/templates/trove.conf.j2	2017-06-29 05:40:27.953615133 -0400
++++ b/etc/ansible/roles/os_trove/templates/trove.conf.j2	2017-06-29 03:09:06.929452752 -0400
+@@ -29,6 +29,9 @@
  max_backups_per_tenant = 5
  volume_time_out=30
  
@@ -24,7 +11,7 @@ diff -Naur a/etc/ansible/roles/os_trove/templates/trove.conf.j2 b/etc/ansible/ro
  # Config options for rate limits
  http_get_rate = 200
  http_post_rate = 200
-@@ -55,8 +56,8 @@
+@@ -57,8 +60,8 @@
  nova_proxy_admin_tenant_name = {{ trove_service_project_name }}
  
  # Neutron
@@ -35,7 +22,7 @@ diff -Naur a/etc/ansible/roles/os_trove/templates/trove.conf.j2 b/etc/ansible/ro
  
  # Taskmanager queue name
  taskmanager_queue = taskmanager
-@@ -126,7 +127,7 @@
+@@ -128,7 +131,7 @@
  [redis]
  tcp_ports = 6379
  #redis uses local storage

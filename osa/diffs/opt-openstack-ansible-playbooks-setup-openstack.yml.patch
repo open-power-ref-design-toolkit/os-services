@@ -1,8 +1,0 @@
-diff -Naur a/opt/openstack-ansible/playbooks/setup-openstack.yml b/opt/openstack-ansible/playbooks/setup-openstack.yml
---- a/opt/openstack-ansible/playbooks/setup-openstack.yml	2016-12-01 19:55:48.897477309 -0600
-+++ b/opt/openstack-ansible/playbooks/setup-openstack.yml	2016-12-01 18:57:46.770771088 -0600
-@@ -34,3 +34,4 @@
- - include: os-ironic-install.yml
- - include: os-magnum-install.yml
- - include: os-sahara-install.yml
-+- include: os-trove-install.yml

@@ -1,23 +1,35 @@
 diff -Naur a/etc/ansible/roles/ceph_client/tasks/ceph_auth.yml b/etc/ansible/roles/ceph_client/tasks/ceph_auth.yml
---- a/etc/ansible/roles/ceph_client/tasks/ceph_auth.yml	2016-12-08 08:29:42.524776327 -0500
-+++ b/etc/ansible/roles/ceph_client/tasks/ceph_auth.yml	2016-12-08 01:45:36.844342781 -0500
-@@ -98,6 +98,19 @@
+--- a/etc/ansible/roles/ceph_client/tasks/ceph_auth.yml	2017-05-04 07:47:31.847234127 -0400
++++ b/etc/ansible/roles/ceph_client/tasks/ceph_auth.yml	2017-05-05 01:22:28.072365951 -0400
+@@ -105,6 +105,22 @@
+   tags:
      - always
-     - ceph-auth-nova-libvirt-secret
  
 +- name: Check if nova secret exist for ceph
 +  shell: virsh secret-list | grep 'ceph'  | awk '{print $1}'
-+  when: libvirt_nova_defined is defined and libvirt_nova_defined.rc != 0
++  when:
++    - libvirt_nova_defined is defined
++    - libvirt_nova_defined.rc is defined
++    - libvirt_nova_defined.rc != 0
 +  register: libvirt_nova_stale_uuid
 +  tags:
 +    - ceph-auth-nova-libvirt-secret
 +
 +- name: Undefine the stale nova secret
 +  shell: virsh secret-undefine {{ libvirt_nova_stale_uuid.stdout }}
-+  when: libvirt_nova_stale_uuid is defined and libvirt_nova_stale_uuid.stdout != ""
++  when: libvirt_nova_stale_uuid.stdout is defined and libvirt_nova_stale_uuid.stdout != ""
 +  tags:
 +    - ceph-auth-nova-libvirt-secret
 +
  - name: Provide xml file to create the secret
    template:
      src: secret.xml.j2
+@@ -160,7 +176,7 @@
+     path: "/tmp/nova-secret.xml"
+     state: "absent"
+   when:
+-    - inventory_hostname in groups.nova_compute and libvirt_nova_set
++    - inventory_hostname in groups.nova_compute and libvirt_nova_set.rc
+   tags:
+     - always
+ 

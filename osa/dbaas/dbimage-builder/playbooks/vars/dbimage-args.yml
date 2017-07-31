@@ -81,7 +81,7 @@ dib_pip_packages:
 # versions for git cloned projects in dibvm
 
 dib_version: 1.28.0
-trove_version: stable/newton
+trove_version: stable/ocata
 trove_integration_version: 7.0.0
 
 # dibvm install options

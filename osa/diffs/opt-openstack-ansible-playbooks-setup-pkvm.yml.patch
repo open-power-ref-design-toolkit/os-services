@@ -1,7 +1,7 @@
 diff -Naur a/opt/openstack-ansible/playbooks/setup-pkvm.yml b/opt/openstack-ansible/playbooks/setup-pkvm.yml
---- a/opt/openstack-ansible/playbooks/setup-pkvm.yml	1969-12-31 18:00:00.000000000 -0600
-+++ b/opt/openstack-ansible/playbooks/setup-pkvm.yml	2017-06-22 12:57:15.874033951 -0500
-@@ -0,0 +1,54 @@
+--- a/opt/openstack-ansible/playbooks/setup-pkvm.yml	1969-12-31 19:00:00.000000000 -0500
++++ b/opt/openstack-ansible/playbooks/setup-pkvm.yml	2017-06-29 02:49:03.677431236 -0400
+@@ -0,0 +1,70 @@
 +---
 +# Copyright 2016 IBM Corp.
 +#
@@ -25,6 +25,22 @@ diff -Naur a/opt/openstack-ansible/playbooks/setup-pkvm.yml b/opt/openstack-ansi
 +  user: root
 +
 +  tasks:
++    # To make nested virtualization work on ppc64le compute nodes,
++    # use ocata UCA temporarily when installing QEMU/Libvirt packages.
++    # Ocata UCA is removed after that step.
++    - name: Install Ocata UCA
++      apt_repository:
++        repo: "deb http://ubuntu-cloud.archive.canonical.com/ubuntu xenial-updates/ocata main"
++        state: present
++        update_cache: true
++      register: install_repo
++      until: install_repo|success
++      retries: 5
++      delay: 5
++      when: ansible_architecture == 'ppc64le'
++      tags:
++        - pkvm-install-libvirt
++
 +    - name: Install QEMU/Libvirt packages
 +      apt:
 +        pkg: "{{ item }}"
@@ -45,14 +61,14 @@ diff -Naur a/opt/openstack-ansible/playbooks/setup-pkvm.yml b/opt/openstack-ansi
 +      when: ansible_architecture == 'ppc64le'
 +      tags:
 +       - pkvm-disable-smt
-+
-+    - name: Upstart script to disable SMT
-+      copy:
-+        src: "files/smt.conf"
-+        dest: "/etc/init/smt.conf"
-+      when:
-+        - ansible_architecture == 'ppc64le'
-+        - smt_disable_result.rc is defined
-+        - smt_disable_result.rc == 0
-+      tags:
-+       - pkvm-disable-smt
++#
++#    - name: Upstart script to disable SMT
++#      copy:
++#        src: "files/smt.conf"
++#        dest: "/etc/init/smt.conf"
++#      when:
++#        - ansible_architecture == 'ppc64le'
++#        - smt_disable_result.rc is defined
++#        - smt_disable_result.rc == 0
++#      tags:
++#       - pkvm-disable-smt

@@ -1,7 +1,7 @@
 diff -Naur a/etc/ansible/roles/openstack_hosts/tasks/main.yml b/etc/ansible/roles/openstack_hosts/tasks/main.yml
---- a/etc/ansible/roles/openstack_hosts/tasks/main.yml	2016-12-01 19:56:09.196863791 -0600
-+++ b/etc/ansible/roles/openstack_hosts/tasks/main.yml	2016-12-01 19:12:48.611526380 -0600
-@@ -64,3 +64,7 @@
+--- a/etc/ansible/roles/openstack_hosts/tasks/main.yml	2017-05-05 11:21:19.529008456 -0400
++++ b/etc/ansible/roles/openstack_hosts/tasks/main.yml	2017-05-05 11:22:33.873009785 -0400
+@@ -71,3 +71,7 @@
  - include: openstack_release.yml
    tags:
      - openstack_hosts-install

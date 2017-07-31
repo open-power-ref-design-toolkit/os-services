@@ -1,5 +1,5 @@
 ---
-# Copyright 2016, Rackspace US, Inc.
+# Copyright 2015, Serge van Ginderachter <serge@vanginderachter.be>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,41 +13,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- name: Remove known problem packages
-  package:
-    name: "{{ item }}"
-    state: absent
-  register: remove_packages
-  until: remove_packages|success
-  retries: 5
-  delay: 2
-  with_items: "{{ pip_install_remove_distro_packages }}"
-
-- include: "pre_install_{{ ansible_pkg_mgr }}.yml"
-
-- name: Install packages
-  package:
-    name: "{{ item }}"
-    state: "{{ pip_install_package_state }}"
-  register: install_packages
-  until: install_packages|success
-  retries: 5
-  delay: 2
-  with_items: "{{ pip_install_distro_packages }}"
-  when:
-    - ansible_pkg_mgr == 'yum'
-
-# Try installing apt packages. If this fails, retry after
+# Try installing ceph packages. If this fails, retry after
 # updating apt
-- name: Install apt packages
-  apt:
-    pkg: "{{ item }}"
-    state: "{{ pip_install_package_state }}"
+- name: Install ceph packages
+  package:
+    name: '{{ item.1 }}'
+    state: "{{ ceph_client_package_state }}"
+    update_cache: "{{ (ansible_pkg_mgr == 'apt') | ternary('yes', omit) }}"
+    cache_valid_time: "{{ (ansible_pkg_mgr == 'apt') | ternary(cache_timeout, omit) }}"
   register: install_pkgs_result
   ignore_errors: yes
-  with_items: "{{ pip_install_distro_packages }}"
+  with_subelements:
+    - "{{ ceph_components }}"
+    - package
   when:
-    - ansible_pkg_mgr == 'apt'
+    - inventory_hostname in groups[item.0.component]
+  notify:
+    - Restart os services
 
 # This tries to reload the UCA since it maybe corrupt and the source of the errors
 - name: Reload UCA
@@ -76,20 +58,26 @@
   args:
     executable: /bin/bash
   when:
-    - ansible_pkg_mgr == 'apt'
+    - install_pkgs_result is defined
     - install_pkgs_result|failed
 
-# If installing apt packages failed earlier, retry after
+# If installing ceph packages failed earlier, retry after
 # updating apt cache
-- name: Retry installing apt packages, if failed earlier
-  apt:
-    pkg: "{{ item }}"
-    state: "{{ pip_install_package_state }}"
+- name: Retry installing ceph packages, if failed earlier
+  package:
+    name: '{{ item.1 }}'
+    state: "{{ ceph_client_package_state }}"
+    update_cache: "{{ (ansible_pkg_mgr == 'apt') | ternary('yes', omit) }}"
+    cache_valid_time: "{{ (ansible_pkg_mgr == 'apt') | ternary(cache_timeout, omit) }}"
   register: install_packages
   until: install_packages|success
   retries: 5
   delay: 2
-  with_items: "{{ pip_install_distro_packages }}"
+  with_subelements:
+    - "{{ ceph_components }}"
+    - package
   when:
-    - ansible_pkg_mgr == 'apt'
+    - inventory_hostname in groups[item.0.component]
     - install_pkgs_result|failed
+  notify:
+    - Restart os services

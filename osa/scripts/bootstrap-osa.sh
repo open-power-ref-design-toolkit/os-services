@@ -29,7 +29,7 @@ echo "allNodes=$allNodes"
 echo "GIT_MIRROR=$GIT_MIRROR"
 
 # OpenStack-Ansible tag to be checkedout
-OSA_TAG=${OSA_TAG:-"14.1.1"}
+OSA_TAG=${OSA_TAG:-"15.1.6"}
 OSA_DIR="/opt/openstack-ansible"
 OSA_PLAYS="${OSA_DIR}/playbooks"
 
@@ -98,7 +98,7 @@ if [ ! -d /opt/openstack-ansible ]; then
         exit 1
     fi
     pushd ${OSA_DIR} >/dev/null 2>&1
-    git checkout stable/newton
+    git checkout stable/ocata
     if [ $? != 0 ]; then
         exit 1
     fi

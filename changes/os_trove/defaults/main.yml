@@ -78,7 +78,7 @@ trove_venv_download: "{{ not trove_developer_mode | bool }}"
 trove_venv_download_url: http://127.0.0.1/venvs/untagged/ubuntu/trove.tgz
 
 trove_git_repo: "https://git.openstack.org/openstack/trove"
-trove_git_install_branch: master
+trove_git_install_branch: stable/ocata
 
 trove_developer_mode: false
 trove_developer_constraints:
@@ -102,14 +102,13 @@ trove_ssl_cert: /etc/ssl/certs/trove.pem
 trove_ssl_key: /etc/ssl/private/trove.key
 trove_ssl_ca_cert: /etc/ssl/certs/trove-ca.pem
 trove_ssl_protocol: "{{ ssl_protocol | default('ALL -SSLv2 -SSLv3') }}"
-trove_ssl_cipher_suite: "{{ ssl_cipher_suite | default('ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5:!DSS') }}"
+trove_ssl_cipher_suite: "{{ ssl_cipher_suite | default('ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:RSA+AESGCM:RSA+AES:!aNULL:!MD5:!DSS') }}"
 
 # if using a self-signed certificate, set this to true to regenerate it
 trove_ssl_self_signed_regen: false
 trove_ssl_self_signed_subject: "/C=US/ST=Texas/L=San Antonio/O=IT/CN={{ internal_lb_vip_address }}/subjectAltName=IP.1={{ external_lb_vip_address }}"
 
 # Database vars
-
 trove_galera_database_name: trove
 trove_galera_user: trove
 trove_galera_address: "{{ internal_lb_vip_address }}"
@@ -125,6 +124,19 @@ trove_rabbitmq_vhost: /trove
 trove_rabbitmq_use_ssl: False
 trove_rabbitmq_port: 5672
 trove_rabbitmq_servers: "{{ rabbitmq_servers }}"
+
+# RPC encryption keys
+# See the Trove documentation as to the significance of the rpc encryption keys
+# Trove supplies default values but we enforce they not be left to their default values
+trove_enable_secure_rpc_messaging: "True"
+trove_required_secrets:
+  - trove_galera_password
+  - trove_rabbitmq_password
+  - trove_service_password
+  - trove_admin_user_password
+  - trove_regular_user_password
+  - trove_taskmanager_rpc_encr_key
+  - trove_inst_rpc_key_encr_key
 
 # Keystone AuthToken/Middleware
 trove_keystone_auth_plugin: password
@@ -171,3 +183,7 @@ trove_conductor_config_overrides: {}
 trove_taskmanager_config_overrides: {}
 trove_guestagent_config_overrides: {}
 trove_policy_overrides: {}
+
+trove_api_init_config_overrides: {}
+trove_conductor_init_config_overrides: {}
+trove_taskmanager_init_config_overrides: {}

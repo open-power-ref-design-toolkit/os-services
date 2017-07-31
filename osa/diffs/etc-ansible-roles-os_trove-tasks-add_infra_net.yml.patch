@@ -1,7 +1,7 @@
 diff -Naur a/etc/ansible/roles/os_trove/tasks/add_infra_net.yml b/etc/ansible/roles/os_trove/tasks/add_infra_net.yml
---- a/etc/ansible/roles/os_trove/tasks/add_infra_net.yml	1969-12-31 18:00:00.000000000 -0600
-+++ b/etc/ansible/roles/os_trove/tasks/add_infra_net.yml	2017-02-10 11:00:24.000000000 -0600
-@@ -0,0 +1,82 @@
+--- a/etc/ansible/roles/os_trove/tasks/add_infra_net.yml	1969-12-31 19:00:00.000000000 -0500
++++ b/etc/ansible/roles/os_trove/tasks/add_infra_net.yml	2017-10-04 08:07:43.384983693 -0400
+@@ -0,0 +1,83 @@
 +---
 +# Copyright 2016 IBM Corp.
 +#
@@ -61,6 +61,7 @@ diff -Naur a/etc/ansible/roles/os_trove/tasks/add_infra_net.yml b/etc/ansible/ro
 +    cidr: "{{trove_infra_subnet_cidr}}"
 +    enable_dhcp: True
 +    project: "{{ keystone_admin_tenant_id }}"
++    no_gateway_ip: yes
 +    wait: yes
 +  register: subnet_create
 +  run_once: true

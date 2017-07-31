@@ -1,18 +1,18 @@
-diff --git a/trove/guestagent/datastore/experimental/postgresql/service/config.py b/trove/guestagent/datastore/experimental/postgresql/service/config.py
-index 644d368..e0ee852 100644
---- a/trove/guestagent/datastore/experimental/postgresql/service/config.py
-+++ b/trove/guestagent/datastore/experimental/postgresql/service/config.py
-@@ -58,6 +58,7 @@ class PgSqlConfig(PgSqlProcess):
+diff --git a/trove/guestagent/datastore/experimental/postgresql/service.py b/trove/guestagent/datastore/experimental/postgresql/service.py
+index 7ac3e47..91892ed 100644
+--- a/trove/guestagent/datastore/experimental/postgresql/service.py
++++ b/trove/guestagent/datastore/experimental/postgresql/service.py
+@@ -60,6 +60,7 @@ class PgSqlApp(object):
          revision_dir = guestagent_utils.build_file_path(
              os.path.dirname(self.pgsql_config),
              ConfigurationManager.DEFAULT_STRATEGY_OVERRIDES_SUB_DIR)
-+        LOG.debug("PgSqlConfig: revision_dir=%s" % revision_dir)
-         self._configuration_manager = ConfigurationManager(
-             self.pgsql_config, self.PGSQL_OWNER, self.PGSQL_OWNER,
++        LOG.debug("PgSqlApp: revision_dir=%s" % revision_dir)
+         self.configuration_manager = ConfigurationManager(
+             self.pgsql_config, self.pgsql_owner, self.pgsql_owner,
              PropertiesCodec(
-@@ -92,11 +93,14 @@ class PgSqlConfig(PgSqlProcess):
+@@ -120,9 +121,11 @@ class PgSqlApp(object):
      def _find_config_file(self, name_pattern):
-         version_base = guestagent_utils.build_file_path(self.CONFIG_BASE,
+         version_base = guestagent_utils.build_file_path(self.pgsql_config_dir,
                                                          self.pg_version[1])
 -        return sorted(operating_system.list_files_in_directory(
 +        flist = sorted(operating_system.list_files_in_directory(
@@ -21,19 +21,25 @@ index 644d368..e0ee852 100644
 +        LOG.debug("_find_config_file: name_pattern=%s, flist=%s" % (name_pattern, str(flist)))
 +        return flist
  
+     @property
+     def pgsql_config_dir(self):
+@@ -140,6 +143,7 @@ class PgSqlApp(object):
+         return PgSqlAdmin(self.get_current_admin_user())
+ 
      def update_overrides(self, context, overrides, remove=False):
 +        LOG.debug("update_overrides: overrides=%s remove=%s" % (str(overrides), str(remove)))
          if remove:
              self.configuration_manager.remove_user_override()
          elif overrides:
-@@ -110,12 +114,14 @@ class PgSqlConfig(PgSqlProcess):
-         #
-         # NOTE: Do not use the 'SET' command as it only affects the current
-         # session.
-+        LOG.debug("apply_overrides: %s" % str(overrides))
-         pgutil.psql("SELECT pg_reload_conf()")
+@@ -158,6 +162,7 @@ class PgSqlApp(object):
+         return models.PostgreSQLUser(self.default_superuser_name)
  
-     def reset_configuration(self, context, configuration):
+     def apply_overrides(self, context, overrides):
++        LOG.debug("apply_overrides: %s" % str(overrides))
+         self.reload_configuration()
+ 
+     def reload_configuration(self):
+@@ -176,6 +181,7 @@ class PgSqlApp(object):
          """Reset the PgSql configuration to the one given.
          """
          config_contents = configuration['config_contents']
@@ -41,57 +47,33 @@ index 644d368..e0ee852 100644
          self.configuration_manager.save_configuration(config_contents)
  
      def start_db_with_conf_changes(self, context, config_contents):
-@@ -123,6 +129,7 @@ class PgSqlConfig(PgSqlProcess):
-         if PgSqlAppStatus.get().is_running:
+@@ -183,6 +189,7 @@ class PgSqlApp(object):
+         if self.status.is_running:
              raise RuntimeError(_("The service is still running."))
  
 +        LOG.debug("start_db_with_conf_changes: config_contents=%s" % str(config_contents))
          self.configuration_manager.save_configuration(config_contents)
          # The configuration template has to be updated with
          # guestagent-controlled settings.
-@@ -141,6 +148,7 @@ class PgSqlConfig(PgSqlProcess):
-             'unix_socket_directories': self._quote(self.UNIX_SOCKET_DIR),
+@@ -201,6 +208,7 @@ class PgSqlApp(object):
+             'unix_socket_directories': self._quote(self.pgsql_run_dir),
              'listen_addresses': self._quote(','.join(self.LISTEN_ADDRESSES)),
-             'port': CONF.postgresql.postgresql_port}
-+        LOG.debug("file_locations=%s" % str(file_locations))
+             'port': cfg.get_configuration_property('postgresql_port')}
++        LOG.debug("apply_initial_guestagent_configuration: file_locations=%s" % str(file_locations))
          self.configuration_manager.apply_system_override(file_locations)
          self._apply_access_rules()
  
-diff --git a/trove/guestagent/datastore/experimental/postgresql/service/process.py b/trove/guestagent/datastore/experimental/postgresql/service/process.py
-index 3258293..8d969a1 100644
---- a/trove/guestagent/datastore/experimental/postgresql/service/process.py
-+++ b/trove/guestagent/datastore/experimental/postgresql/service/process.py
-@@ -16,6 +16,8 @@
- import os
- import re
+@@ -386,11 +393,13 @@ class PgSqlApp(object):
+             self.service_candidates, CONF.state_change_wait_time)
  
-+from oslo_log import log as logging
-+
- from trove.common import cfg
- from trove.guestagent.common import operating_system
- from trove.guestagent.datastore.experimental.postgresql import pgutil
-@@ -23,9 +25,9 @@ from trove.guestagent.datastore.experimental.postgresql.service.status import (
-     PgSqlAppStatus)
- from trove.guestagent import guest_log
- 
--
- CONF = cfg.CONF
- 
-+LOG = logging.getLogger(__name__)
- 
- class PgSqlProcess(object):
-     """Mixin that manages the PgSql process."""
-@@ -63,11 +65,13 @@ class PgSqlProcess(object):
-         self.set_guest_log_status(guest_log.LogStatus.Restart_Completed)
- 
-     def start_db(self, context, enable_on_boot=True, update_db=False):
+     def start_db(self, enable_on_boot=True, update_db=False):
 +        LOG.debug("start_db: state_change_wait_time=%s" % str(CONF.state_change_wait_time))
-         PgSqlAppStatus.get().start_db_service(
-             self.SERVICE_CANDIDATES, CONF.state_change_wait_time,
+         self.status.start_db_service(
+             self.service_candidates, CONF.state_change_wait_time,
              enable_on_boot=enable_on_boot, update_db=update_db)
  
-     def stop_db(self, context, do_not_start_on_reboot=False, update_db=False):
+     def stop_db(self, do_not_start_on_reboot=False, update_db=False):
 +        LOG.debug("stop_db: state_change_wait_time=%s" % str(CONF.state_change_wait_time))
-         PgSqlAppStatus.get().stop_db_service(
-             self.SERVICE_CANDIDATES, CONF.state_change_wait_time,
+         self.status.stop_db_service(
+             self.service_candidates, CONF.state_change_wait_time,
              disable_on_boot=do_not_start_on_reboot, update_db=update_db)

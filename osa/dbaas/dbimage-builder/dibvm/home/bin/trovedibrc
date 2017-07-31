@@ -36,7 +36,7 @@ export SSH_DIR="/home/$USER/dibuser"
 export GUEST_LOGDIR=/var/log/trove
 export ESCAPED_GUEST_LOGDIR="${GUEST_LOGDIR//\//\\/}"
 export DIB_CLOUD_INIT_DATASOURCES="ConfigDrive"
-export BRANCH_OVERRIDE=newton
+export BRANCH_OVERRIDE=ocata
 export RELEASE=$DIB_RELEASE
 
 export PATH+=:$HOME/tools/diskimage-builder/bin

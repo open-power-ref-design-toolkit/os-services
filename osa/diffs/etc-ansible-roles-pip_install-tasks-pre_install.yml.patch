@@ -1,22 +1,12 @@
 diff -Naur a/etc/ansible/roles/pip_install/tasks/pre_install.yml b/etc/ansible/roles/pip_install/tasks/pre_install.yml
---- a/etc/ansible/roles/pip_install/tasks/pre_install.yml	2017-03-08 00:24:33.574760958 -0500
-+++ b/etc/ansible/roles/pip_install/tasks/pre_install.yml	2017-03-07 23:54:10.374728357 -0500
-@@ -135,12 +135,69 @@
-   tags:
-     - add-external-repo
- 
--- name: Install packages
--  package:
--    name: "{{ item }}"
-+#- name: Install packages
-+#  package:
-+#    name: "{{ item }}"
-+#    state: "{{ pip_install_package_state }}"
-+#  register: install_packages
-+#  until: install_packages|success
-+#  retries: 5
-+#  delay: 2
-+#  with_items: "{{ pip_install_distro_packages }}"
+--- a/etc/ansible/roles/pip_install/tasks/pre_install.yml	2017-05-04 07:41:14.287227375 -0400
++++ b/etc/ansible/roles/pip_install/tasks/pre_install.yml	2017-05-04 07:38:08.651224056 -0400
+@@ -34,3 +34,62 @@
+   retries: 5
+   delay: 2
+   with_items: "{{ pip_install_distro_packages }}"
++  when:
++    - ansible_pkg_mgr == 'yum'
 +
 +# Try installing apt packages. If this fails, retry after
 +# updating apt
@@ -65,12 +55,12 @@ diff -Naur a/etc/ansible/roles/pip_install/tasks/pre_install.yml b/etc/ansible/r
 +- name: Retry installing apt packages, if failed earlier
 +  apt:
 +    pkg: "{{ item }}"
-     state: "{{ pip_install_package_state }}"
-   register: install_packages
-   until: install_packages|success
-   retries: 5
-   delay: 2
-   with_items: "{{ pip_install_distro_packages }}"
++    state: "{{ pip_install_package_state }}"
++  register: install_packages
++  until: install_packages|success
++  retries: 5
++  delay: 2
++  with_items: "{{ pip_install_distro_packages }}"
 +  when:
 +    - ansible_pkg_mgr == 'apt'
 +    - install_pkgs_result|failed

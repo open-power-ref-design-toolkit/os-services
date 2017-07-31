@@ -1,19 +1,7 @@
 diff -Naur a/etc/ansible/roles/os_trove/defaults/main.yml b/etc/ansible/roles/os_trove/defaults/main.yml
---- a/etc/ansible/roles/os_trove/defaults/main.yml	2017-04-21 14:46:58.499599761 -0400
-+++ b/etc/ansible/roles/os_trove/defaults/main.yml	2017-04-21 14:46:08.887598873 -0400
-@@ -46,23 +46,27 @@
- trove_service_region: RegionOne
- trove_service_host: "0.0.0.0"
- trove_service_port: 8779
--trove_service_publicuri_proto: http
-+trove_service_proto: http
-+trove_service_publicuri_proto: "{{ openstack_service_publicuri_proto | default(trove_service_proto) }}"
-+trove_service_internaluri_proto: "{{ openstack_service_internaluri_proto | default(trove_service_proto) }}"
-+trove_service_adminuri_proto: "{{ openstack_service_adminuri_proto | default(trove_service_proto) }}"
- trove_service_publicurl: "{{ trove_service_publicuri_proto }}://{{ external_lb_vip_address }}:{{ trove_service_port }}/v1.0/%(tenant_id)s"
--trove_service_internaluri_proto: http
- trove_service_internalurl: "{{ trove_service_internaluri_proto }}://{{ internal_lb_vip_address }}:{{ trove_service_port }}/v1.0/%(tenant_id)s"
--trove_service_adminuri_proto: http
+--- a/etc/ansible/roles/os_trove/defaults/main.yml	2017-06-29 05:40:27.953615133 -0400
++++ b/etc/ansible/roles/os_trove/defaults/main.yml	2017-06-29 03:09:06.929452752 -0400
+@@ -55,9 +55,9 @@
  trove_service_adminurl: "{{ trove_service_adminuri_proto }}://{{ internal_lb_vip_address }}:{{ trove_service_port }}/v1.0/%(tenant_id)s"
  trove_auth_url: "{{ keystone_service_internalurl }}"
  trove_nova_compute_url: "{{ trove_service_internaluri_proto }}://{{ internal_lb_vip_address }}:{{ nova_service_port }}/v2.1"
@@ -25,32 +13,8 @@ diff -Naur a/etc/ansible/roles/os_trove/defaults/main.yml b/etc/ansible/roles/os
 +trove_neutron_url: "{{ trove_service_internaluri_proto }}://{{ internal_lb_vip_address }}:{{ neutron_service_port }}/"
  trove_profiler_enabled: false
  
--# If ``trove_api_workers`` is unset the system will use half the number of
--# available VCPUS to compute the number of api workers to use.
--# trove_api_workers: 16
--# trove_api_workers: 16
-+## Cap the maximum number of threads / workers when a user value is unspecified.
-+trove_api_workers_max: 16
-+trove_api_workers: "{{ [[ansible_processor_vcpus|default(2) // 2, 1] | max, trove_api_workers_max] | min }}"
-+
-+## Cap the maximum number of threads / workers when a user value is unspecified.
-+trove_conductor_workers_max: 16
-+trove_conductor_workers: "{{ [[ansible_processor_vcpus|default(2) // 2, 1] | max, trove_conductor_workers_max] | min }}"
- 
- # Name of the virtual env to deploy into
- trove_venv_tag: untagged
-@@ -88,7 +92,9 @@
- trove_apache_servertokens: "Prod"
- trove_apache_serversignature: "Off"
- trove_wsgi_threads: 1
--trove_wsgi_processes: "{{ ansible_processor_vcpus | default (1) * 2 }}"
-+## Cap the maximum number of processes when a user value is unspecified.
-+trove_wsgi_processes_max: 32
-+trove_wsgi_processes: "{{ [[ansible_processor_vcpus|default(1), 1] | max * 2, trove_wsgi_processes_max] | min }}"
- 
- # set trove_ssl to true to enable SSL configuration on the trove containers
- trove_ssl: false
-@@ -139,6 +145,8 @@
+ ## Cap the maximum number of threads / workers when a user value is unspecified.
+@@ -157,6 +157,8 @@
    - python-keystoneclient
    - virtualenv
    - virtualenv-tools
@@ -59,7 +23,7 @@ diff -Naur a/etc/ansible/roles/os_trove/defaults/main.yml b/etc/ansible/roles/os
  
  trove_pip_packages:
    - MySQL-python
-@@ -148,6 +156,7 @@
+@@ -166,6 +168,7 @@
    - trove
    - python-troveclient
    - python-memcached

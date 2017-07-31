@@ -57,6 +57,7 @@
     cidr: "{{trove_infra_subnet_cidr}}"
     enable_dhcp: True
     project: "{{ keystone_admin_tenant_id }}"
+    no_gateway_ip: yes
     wait: yes
   register: subnet_create
   run_once: true

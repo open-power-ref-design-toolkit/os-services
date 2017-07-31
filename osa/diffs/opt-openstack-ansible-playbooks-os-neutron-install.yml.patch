@@ -1,10 +1,10 @@
 diff -Naur a/opt/openstack-ansible/playbooks/os-neutron-install.yml b/opt/openstack-ansible/playbooks/os-neutron-install.yml
---- a/opt/openstack-ansible/playbooks/os-neutron-install.yml	2017-05-31 05:12:47.788781828 -0400
-+++ b/opt/openstack-ansible/playbooks/os-neutron-install.yml	2017-05-31 03:30:46.632672374 -0400
-@@ -19,6 +19,33 @@
-   max_fail_percentage: 20
-   user: root
-   pre_tasks:
+--- a/opt/openstack-ansible/playbooks/os-neutron-install.yml	2017-07-17 07:25:50.441537331 -0400
++++ b/opt/openstack-ansible/playbooks/os-neutron-install.yml	2017-07-19 02:30:38.416310520 -0400
+@@ -73,6 +73,33 @@
+         db_name: "{{ neutron_galera_database }}"
+       run_once: yes
+ 
 +    - name: Update the sysctl conf to disable ipv6
 +      sysctl:
 +        name: "{{ item.key }}"
@@ -32,29 +32,6 @@ diff -Naur a/opt/openstack-ansible/playbooks/os-neutron-install.yml b/opt/openst
 +        - not is_metal | bool
 +      tags:
 +        - disable_ipv6
-     - include: common-tasks/dynamic-address-fact.yml
-       vars:
-         network_address: "tunnel_address"
-@@ -31,11 +58,15 @@
-             mount_path: "/lib/modules"
-         extra_container_config:
-           - "lxc.cgroup.devices.allow=a *:* rmw"
-+          - "lxc.hook.start = /usr/local/bin/reload-sysctl-conf.sh"
-         extra_container_config_no_restart:
-           - "lxc.start.order=79"
-       when: inventory_hostname in groups['neutron_agent']
-     - include: common-tasks/os-lxc-container-setup.yml
-       static: no
-+      vars:
-+        extra_container_config:
-+          - "lxc.hook.start = /usr/local/bin/reload-sysctl-conf.sh"
-       when: inventory_hostname not in groups['neutron_agent']
-     - include: common-tasks/rabbitmq-vhost-user.yml
-       static: no
-@@ -125,5 +156,6 @@
-   vars:
-     is_metal: "{{ properties.is_metal|default(false) }}"
-     bind_prefix: "{{ provider_network_bind_prefix|default('') }}"
-+  environment: "{{ deployment_environment_variables | default({}) }}"
-   tags:
-     - neutron
+ 
+ 
+ - name: Install neutron server
