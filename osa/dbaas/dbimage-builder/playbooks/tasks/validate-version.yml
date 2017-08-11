@@ -3,7 +3,7 @@
 #
 # ansible-playbook -i host_file dbimage-make.yml -u ubuntu -c ssh
 #
-# This is invoked on the deployer under the root user
+# This is invoked on the deployer under the ubuntu user
 
 - name: Include OSDB table
   include_vars: "{{ baseDir }}/playbooks/vars/dbimage-osdbs.yml"
@@ -32,18 +32,18 @@
       pkgDistroName: "{{ item['pkg'] }}"
     with_items: "{{ osdb[dbName]['enterprise'] }}"
     when:
-      - enterpriseEdition
+      - enterpriseEdition == true
       - pkgDistroName is not defined
-      - "{{ item['version'] }} == {{ dbVersion }}"
+      - item['version'] == dbVersion
 
   - name: Validate user specified version ({{ dbVersion }}) for community edition {{ dbName }}
     set_fact:
       pkgDistroName: "{{ item['pkg'] }}"
     with_items: "{{ osdb[dbName]['community'] }}"
     when:
-      - communityEdition
+      - communityEdition == true
       - pkgDistroName is not defined
-      - "{{ item['version'] }} == {{ dbVersion }}"
+      - item['version'] == dbVersion
 
   - name: Validate user specified version ({{ dbVersion }}) for distro based {{ dbName }}
     set_fact:
@@ -53,7 +53,7 @@
       - not communityEdition
       - not enterpriseEdition
       - pkgDistroName is not defined
-      - "{{ item['version'] }} == {{ dbVersion }}"
+      - item['version'] == dbVersion
 
   - name: "These are the supported databases and versions"
     debug: var=osdb
@@ -64,7 +64,7 @@
       msg: "{{ dbName }} (vers={{ dbVersion }}) is not supported for {{ targetRelease }}!"
     when: pkgDistroName is not defined
 
-  when: dbVersion
+  when: dbVersion != ''
 
 - block:
   - name: Define package variables for enterprise version of {{ dbName }}
@@ -73,7 +73,7 @@
       dbVersion: "{{ item['version'] }}"
     with_items: "{{ osdb[dbName]['enterprise'] }}"
     when:
-      - enterpriseEdition
+      - enterpriseEdition == true
       - pkgDistroName is not defined
 
   - name: Define package variables for community version of {{ dbName }}
@@ -82,7 +82,7 @@
       dbVersion: "{{ item['version'] }}"
     with_items: "{{ osdb[dbName]['community'] }}"
     when:
-      - communityEdition
+      - communityEdition == true
       - pkgDistroName is not defined
 
   - name: Define package variables for distro provided version of {{ dbName }}
@@ -106,14 +106,14 @@
     msg: "The enterprise edition of {{ dbName }} is not supported for {{ targetRelease }}!"
   when:
     - pkgDistroName is not defined
-    - enterpriseEdition
+    - enterpriseEdition == true
 
 - name: Halt on unsupported package
   fail:
     msg: "The community edition of {{ dbName }} is not supported for {{ targetRelease }}!"
   when:
     - pkgDistroName is not defined
-    - communityEdition
+    - communityEdition == true
 
 - name: Halt on unsupported package
   fail:
@@ -125,18 +125,18 @@
     srcPkgName: "{{ item['srcPkg'] | default('') }}"
   with_items: "{{ osdb[dbName]['enterprise'] }}"
   when:
-    - enterpriseEdition
+    - enterpriseEdition == true
     - item['srcPkg'] is defined
-    - "{{ item['version'] }} == {{ dbVersion }}"
+    - item['version'] == dbVersion
 
 - name: "Set source package for community provided packages"
   set_fact:
     srcPkgName: "{{ item['srcPkg'] | default('') }}"
   with_items: "{{ osdb[dbName]['community'] }}"
   when:
-    - communityEdition
+    - communityEdition == true
     - item['srcPkg'] is defined
-    - "{{ item['version'] }} == {{ dbVersion }}"
+    - item['version'] == dbVersion
 
 - name: "Set source package when not defined in osdb table"
   set_fact:

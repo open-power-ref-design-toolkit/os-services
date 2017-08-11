@@ -3,8 +3,7 @@
 
 ipAddrDib: "{{ lookup('env', 'DBIMAGE_IPADDR') }}"
 dbName: "{{ lookup('env', 'DBIMAGE_DBNAME') }}"
-# Given a Version.Release.Maintenance, trim it to V.R.  Users don't ask for Maintenance levels.
-dbVersion: "{{ '.'.join(lookup('env', 'DBIMAGE_DBVERSION').split('.', 2)[:2]) | default('') }}"
+dbVersion: "{{ lookup('env', 'DBIMAGE_DBVERSION') }}"
 pkg: "{{ lookup('env', 'DBIMAGE_PKG') }}"
 pkgType: "{{ lookup('env', 'DBIMAGE_PKGTYPE') }}"
 installScript: "{{ lookup('env', 'DBIMAGE_INSTALLSCRIPT') }}"
@@ -17,7 +16,7 @@ dbimageHome: "{{ lookup('env', 'DBIMAGE_HOME') }}"
 communityEdition: "{{ lookup('env', 'DBIMAGE_COMMUNITY_EDITION') | bool }}"
 enterpriseEdition: "{{ lookup('env', 'DBIMAGE_ENTERPRISE_EDITION') | bool }}"
 uploadImage: "{{ lookup('env', 'DBIMAGE_UPLOAD_IMAGE') | bool }}"
-imageName: "{{ lookup('env', 'DBIMAGE_IMAGE_NAME') }}"
+imageName: "{{ lookup('env', 'DBIMAGE_IMAGE_NAME') | default('') }}"
 dbimageCmd: "{{ lookup('env', 'DBIMAGE_CMD') }}"
 dbimageMyElements: "{{ lookup('env', 'DBIMAGE_MYELEMENTS') }}"
 
@@ -97,7 +96,7 @@ src_trove: "{{ baseDir }}/etc/trove"
 
 src_ssh: "{{ baseDir }}/etc/ssh"
 
-src_dib_diffs:
+src_dib_diffs: []
 
 src_trove_integration_diffs:
   - "{{ baseDir }}/diffs/trove/integration/15-reddwarf-dep.patch"

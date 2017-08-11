@@ -19,7 +19,7 @@
 export DBIMAGE_SOURCE=${DBIMAGE_SOURCE:-"-dib"}
 
 if [ "$1" == "--help" ]; then
-    echo "Usage: dbimage-upload.sh -d db-name -v db-version [ -c | -e ] -f image-name"
+    echo "Usage: dbimage-upload.sh -d db-name -v db-version [ -c | -e ] -f qcow-image"
     echo "                       [ -k key-name ] [ -s chroot-cmd ] [ -b dib-user ]"
     echo ""
     echo "This command creates a Trove datastore from a previously created qcow2 image.  The image may optionally"
@@ -36,8 +36,9 @@ if [ "$1" == "--help" ]; then
     exit 1
 fi
 
-if [[ $EUID -ne 0 ]]; then
-    echo "This script must be run as root."
+# pip cache is not handled correctly when in another user's home directory
+if [[ $EUID -eq 0 ]] && [[ "$(pwd)" != "/root"* ]]; then
+    echo "This script may be run by any user.  But if run as root, it should be from /root"
     exit 1
 fi
 
@@ -51,6 +52,16 @@ create-playbook-inventory
 
 ctrl=$DBIMAGE_CONTROLLER_IP
 if [ "$ctrl" == "localhost" ]; then
+
+    # There is a bug in diskimage-builder that corrupts the boot image so that it can't be rebooted.
+    # The node goes into a grub rescue state and cannot be easily recovered
+    if [ -z "$DBIMAGE_CONTROLLER_IP" ]; then
+        echo "You must specify DBIMAGE_CONTROLLER_IP in dbimage-builder/scripts/dbimagerc"
+    else
+        echo "DBIMAGE_CONTROLLER_IP must be set to an external node in dbimage-builder/scripts/dbimagerc"
+    fi
+    exit 1
+
     type lxc-ls >/dev/null 2>&1
     if [ $? != 0 ] || [ -z "$(lxc-ls --filter=trove)" ]; then
         echo "The current host does not appear to be running Trove.  Did you forget the following?"

@@ -19,8 +19,6 @@
 shopt -s nullglob
 set -o pipefail
 
-ulimit -n 100000
-
 export DBIMAGE_CONTROLLER_IP=${DBIMAGE_CONTROLLER_IP:-localhost}
 export DBIMAGE_DIR=`pwd`
 
@@ -31,7 +29,9 @@ GENESIS_SIMULATED="$DBIMAGE_DIR/etc/inventory-simulated"
 
 function create-playbook-inventory {
 
-    type ansible-playbook >/dev/null 2>&1 || apt-get install -qq -y ansible sshpass
+    type pip >/dev/null 2>&1 || sudo apt-get install -qq -y python python-pip
+    type ansible-playbook >/dev/null 2>&1 || pip install ansible==2.3.2
+    sudo apt-get install -qq -y sshpass
 
     ctrl=$DBIMAGE_CONTROLLER_IP
 

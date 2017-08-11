@@ -26,13 +26,8 @@ if [ "$1" == "--help" ]; then
     exit 1
 fi
 
-if [[ $EUID -ne 0 ]]; then
-    echo "This script must be run as root."
-    exit 1
-fi
-
 if [ ! -e scripts/dbflavor-change.sh ]; then
-    echo "This script must be run from the directory dbimage-builder (/root/os-services/dbimage-builder)"
+    echo "This script must be run from the directory dbimage-builder (os-services/dbimage-builder)"
     exit 1
 fi
 

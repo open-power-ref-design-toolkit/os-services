@@ -19,8 +19,9 @@
 export DBIMAGE_SOURCE=${DBIMAGE_SOURCE:-"-dib"}
 
 if [ "$1" == "--help" ]; then
-    echo "Usage: dbimage-make.sh -d db-name [ -v db-version ] [ -k key-name ]"
-    echo "                 [ -i dib-ip-addr ] [ -b dib-user ] [ -p pkg ] [ -c | -e ] [ -I ]"
+    echo "Usage: dbimage-make.sh -d db-name -i dibvm-ip-addr"
+    echo "                     [ -v db-version ] [ -k key-name ]"
+    echo "                     [ -b dib-user ] [ -c | -e ] [ -I ]"
     echo ""
     echo "The dib-ip-addr argument is the ipaddr of the virtual machine where the image is built"
     echo "The dib-user argument is the remote ssh user on the vm under which the image is built.  The default is ubuntu"
@@ -33,8 +34,9 @@ if [ "$1" == "--help" ]; then
     exit 1
 fi
 
-if [[ $EUID -ne 0 ]]; then
-    echo "This script must be run as root."
+# pip cache is not handled correctly when in another user's home directory
+if [[ $EUID -eq 0 ]] && [[ "$(pwd)" != "/root"* ]]; then
+    echo "This script may be run by any user.  But if run as root, it should be from /root"
     exit 1
 fi
 
@@ -46,7 +48,7 @@ fi
 # place images at the top level of the tool at dbimage-builder/images.
 
 if [ ! -e dibvm/home/bin/process-image-args.sh ]; then
-    echo "This script must be run in the directory dbimage-builder (/root/os-services/osa/dbaas/dbimage-builder)"
+    echo "This script must be run in the directory dbimage-builder (os-services/osa/dbaas/dbimage-builder)"
     exit 1
 fi
 
@@ -60,6 +62,16 @@ create-playbook-inventory
 
 ctrl=$DBIMAGE_CONTROLLER_IP
 if [ "$ctrl" == "localhost" ]; then
+
+    # There is a bug in diskimage-builder that corrupts the boot image so that it can't be rebooted.
+    # The node goes into a grub rescue state and cannot be easily recovered
+    if [ -z "$DBIMAGE_CONTROLLER_IP" ]; then
+        echo "You must specify DBIMAGE_CONTROLLER_IP in dbimage-builder/scripts/dbimagerc"
+    else
+        echo "DBIMAGE_CONTROLLER_IP must be set to an external node in dbimage-builder/scripts/dbimagerc"
+    fi
+    exit 1
+
     type lxc-ls >/dev/null 2>&1
     if [ $? != 0 ] || [ -z "$(lxc-ls --filter=trove)" ]; then
         echo "The current host does not appear to be running Trove.  Did you forget the following?"

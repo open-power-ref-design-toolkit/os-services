@@ -23,13 +23,15 @@ if [ "$1" == "--help" ]; then
     exit 1
 fi
 
-if [[ $EUID -ne 0 ]]; then
-    echo "This script must be run as root."
+# pip cache is not handled correctly when in another user's home directory
+if [[ $EUID -eq 0 ]] && [[ "$(pwd)" != "/root"* ]]; then
+    echo "This script may be run by any user.  But if run as root, it should be from /root"
+
     exit 1
 fi
 
 if [ ! -e scripts/dbflavor-upload.sh ]; then
-    echo "This script must be run from the directory dbimage-builder (/root/os-services/dbimage-builder)"
+    echo "This script must be run from the directory dbimage-builder (os-services/dbimage-builder)"
     exit 1
 fi
 

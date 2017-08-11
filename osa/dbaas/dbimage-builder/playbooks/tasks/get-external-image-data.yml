@@ -4,9 +4,9 @@
 #
 # ansible-playbook -i host_file dbimage-make.yml -u ubuntu -c ssh
 #
-# This is invoked on the deployer node AKA localhost as root
+# This is invoked on the deployer node AKA localhost as ubuntu
 
-- name: Create ssh key for root user
+- name: Create deployer's ssh key
   command: "ssh-keygen -t rsa -f ~/.ssh/id_rsa -N ''"
   args:
     creates: "~/.ssh/id_rsa"
@@ -20,7 +20,7 @@
   set_fact:
     deployer_pub_key: "{{ public_key.content | b64decode }}"
 
-- name: Add root user's public key to ubuntu user's authorized_keys on localhost
+- name: Add deployer's public key to the authorized_keys file
   authorized_key:
     user: "{{ dibUser }}"
     state: present

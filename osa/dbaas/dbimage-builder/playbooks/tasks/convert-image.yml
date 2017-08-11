@@ -4,7 +4,7 @@
 #
 # ansible-playbook -i host_file dbimage-make.yml -u ubuntu -c ssh
 #
-# It is invoked on the deployer node under the root account
+# It is invoked on the deployer node under the ubuntu account
 
 - name: Get image name produced by dib
   set_fact:

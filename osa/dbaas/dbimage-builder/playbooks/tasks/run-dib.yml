@@ -82,10 +82,8 @@
 - name: Fetch log from dibvm
   fetch:
     src: "log/{{ outputLog }}"
-    dest: "{{ baseDir }}/log"
+    dest: "{{ baseDir }}/log/"
     flat: yes
-    owner: root
-    group: root
     mode: 0644
   when: outputImage is defined
 
@@ -97,10 +95,8 @@
 - name: Fetch virtual disk image from dibvm
   fetch:
     src: "img/{{ outputImage }}"
-    dest: "{{ baseDir }}/images"
+    dest: "{{ baseDir }}/images/"
     flat: yes
-    owner: root
-    group: root
     mode: 0644
   when: outputImage is defined
 
