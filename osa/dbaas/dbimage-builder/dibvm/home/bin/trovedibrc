@@ -17,12 +17,17 @@
 #    under the License.
 
 export SERVICE_TYPE=${SERVICE_TYPE:-"redis"}
+
+# From a DIB API standpoint, the CONTROLLER_IP is the node that provides the
+# trovestack.  In our case, that's the dibvm which we install and patch so that
+# it will work with the version of the database that we implement via elements
 export CONTROLLER_IP=${CONTROLLER_IP:-"localhost"}
+
 export DATASTORE_PKG_LOCATION=${DATASTORE_PKG_LOCATION:-"$HOME/pkg"}
 export QEMU_IMG_OPTIONS=${QEMU_IMG_OPTIONS:-""}
 
 export HOST_USERNAME=$USER
-export HOST_SCP_USERNAME=ubuntu    # @CONTROLLER_ID, must be set, but never used
+export HOST_SCP_USERNAME=ubuntu    # @CONTROLLER_ID, must be set, but is never used
 export GUEST_USERNAME=$USER
 export TROVESTACK_SCRIPTS=$HOME/tools/trove/integration/scripts
 export PATH_TROVE=$HOME/trove

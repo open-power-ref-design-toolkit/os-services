@@ -26,7 +26,7 @@
   become: yes
   retries: 5
   delay: 20
-  when: "{{ dib_apt_packages }}"
+  when: dib_apt_packages
 
 - name: Install pip packages
   pip:
@@ -36,4 +36,4 @@
   until: install_packages|success
   retries: 5
   delay: 20
-  when: "{{ dib_pip_packages }}"
+  when: dib_pip_packages

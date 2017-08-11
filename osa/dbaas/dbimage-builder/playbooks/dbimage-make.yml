@@ -6,6 +6,7 @@
 - name: Initialize deployer
   hosts: deployer
   environment: "{{ deployment_environment | default({}) }}"
+  become: yes
   vars_files:
     - vars/dbimage-args.yml
   tasks:
@@ -39,7 +40,7 @@
     - vars/dbimage-args.yml
   tasks:
     - include: tasks/convert-image.yml
-      when: uploadImage
+      when: uploadImage == true
 
 - name: Upload image to controller
   hosts: controller
@@ -49,4 +50,4 @@
     - vars/dbimage-args.yml
   tasks:
     - include: tasks/upload-image.yml
-      when: uploadImage
+      when: uploadImage == true

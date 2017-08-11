@@ -108,6 +108,12 @@ while getopts ":i:d:v:p:k:b:ceI" opt; do
 done
 shift $((OPTIND-1))                    # Now reference remaining arguments with $@, $1, $2, ...
 
+
+if [ -z "$ipAddrDib" ]; then
+    echo "Error: -i <dibvm-ipaddr> must be specified" 1>&2
+    exit 1
+fi
+
 dbSupported="mariadb, mongodb, mysql, postgresql, or redis"
 
 case "$dbName" in
@@ -154,6 +160,15 @@ if [ -n "$DIB_RELEASE" ]; then
             echo "Error: invalid DIB_RELEASE - $DIB_RELEASE.  Must be one of trusty or xenial"
             exit 1
     esac
+fi
+
+# Truncate version to x.y.  User can't specify patch level x.y.z
+if [ -n "$dbVersion" ]; then
+    arrVersion=(${dbVersion//./ })
+    arrLength=${#arrVersion[@]}
+    if (( $arrLength > 2 )); then
+       dbVersion="${arrVersion[0]}.${arrVersion[1]}"
+    fi
 fi
 
 # These variables are derived from command line argument

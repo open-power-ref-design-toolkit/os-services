@@ -6,6 +6,7 @@
 - name: Initialize deployer
   hosts: deployer
   environment: "{{ deployment_environment | default({}) }}"
+  become: yes
   vars_files:
     - vars/dbimage-args.yml
   tasks:

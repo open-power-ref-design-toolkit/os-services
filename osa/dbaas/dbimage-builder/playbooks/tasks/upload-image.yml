@@ -63,12 +63,12 @@
 - name: Update image name for community edition
   set_fact:
     imageSource: "-c{{ imageSource }}"
-  when: communityEdition
+  when: communityEdition == true
 
 - name: Update image name for enterprise edition
   set_fact:
     imageSource: "-e{{ imageSource }}"
-  when: enterpriseEdition
+  when: enterpriseEdition == true
 
 - name: Upload image "{{ dbName }}-{{ dbVersion }}{{ imageSource }}-{{ ansible_date_time.date }}"
   shell: >-
@@ -121,7 +121,7 @@
 - name: Halt on trove-manage datastore_update error
   fail:
     msg: "{{ troverc.stderr }}"
-  when: troverc['stdout'] != "Datastore \'{{ dbName }}\' updated."
+  when: troverc['stdout'] != "Datastore \'" + dbName + "\' updated."
 
 - name: Add the glance-id "{{ glance_id }}" to the datastore
   shell: >-
@@ -143,7 +143,7 @@
 - name: Halt on trove-manage datastore_version_update error
   fail:
     msg: "{{ troverc.stderr }}"
-  when: troverc['stdout'] != "Datastore version \'{{ dbVersion }}\' updated."
+  when: troverc['stdout'] != "Datastore version \'" + dbVersion + "\' updated."
 
 - name: Add version "{{ dbVersion }}" to the datastore
   shell: >-
@@ -161,7 +161,7 @@
 - name: Halt on trove-manage datastore_update error
   fail:
     msg: "{{ troverc.stderr }}"
-  when: troverc['stdout'] != "Datastore \'{{ dbName }}\' updated."
+  when: troverc['stdout'] != "Datastore \'" + dbName + "\' updated."
 
 # Trove provides a default set of validation rules for each database which can
 # be updated by the user.  These rules are related to database configuration

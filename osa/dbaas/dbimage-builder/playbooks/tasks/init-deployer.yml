@@ -4,7 +4,7 @@
 #
 # ansible-playbook -i host_file dbimage-make.yml -u ubuntu -c ssh
 #
-# This is invoked on the deployer node AKA localhost as root
+# This is invoked on the deployer node AKA localhost as ubuntu
 
 - debug: var=deployment_environment
 
@@ -45,7 +45,7 @@
   with_items: "{{ dbimage_apt_packages }}"
   retries: 5
   delay: 20
-  when: "{{ dbimage_apt_packages }}"
+  when: dbimage_apt_packages
 
 - name: Install pip packages
   pip:
@@ -55,4 +55,4 @@
   until: install_packages|success
   retries: 5
   delay: 20
-  when: "{{ dbimage_pip_packages }}"
+  when: dbimage_pip_packages

@@ -12,16 +12,18 @@
 
 - name: Run fdisk to identify partitions in the image
   command: fdisk -l "{{ baseDir }}/images/{{ imageName }}.img"
+  become: yes
   register: fdiskrc
 
 - name: Get offset of rootfs partition in image
   set_fact:
     imageOffset: "{{ 512 * (item.split()[1]|int) }}"
   with_items: "{{ fdiskrc['stdout_lines'] }}"
-  when: "'{{ imageName }}.img2' in item"
+  when: imageName + '.img2' in item
 
 - name: Create temp directory to mount image
   command: mktemp -d "/mnt/dbimage.XXXX"
+  become: true
   register: mktemprc
 
 - name: Set permissions on temp directory
@@ -29,11 +31,13 @@
     path: "{{ mktemprc.stdout }}"
     state: directory
     mode: 0755
+  become: true
 
 - name: Mount image on {{ mktemprc.stdout }}
   shell: |
     sync
     mount -t ext4 -o loop,offset={{ imageOffset }} {{ baseDir }}/images/{{ imageName }}.img {{ mktemprc.stdout }}
+  become: true
   register: mountrc
   failed_when: false
 
@@ -206,6 +210,7 @@
             rm $RESOLV
         fi
         exit $rc
+      become: yes
       register: scriptrc
 
     - debug: var=scriptrc
@@ -216,12 +221,14 @@
 
 - name: Unmount image on {{ mktemprc.stdout }}
   shell: umount {{ mktemprc.stdout }}
+  become: yes
   when: not mountrc['rc']
 
 - name: Remove temp directory used to mount the image
   file:
     path: "{{ mktemprc.stdout }}"
     state: absent
+  become: yes
 
 - name: Halt on mount failure {{ baseDir }}/images/{{ imageName }}.img at {{ mktemprc.stdout }}
   fail:

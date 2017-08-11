@@ -47,7 +47,7 @@
   copy:
     src: "{{ pkg }}"
     dest: "{{ dib_home }}/pkg"
-  when: "{{ pkg }}"
+  when: pkg != ''
 
 - name: Create key for dibUser in alternate location
   command: "ssh-keygen -t rsa -f ~/dibuser/id_rsa -N ''"
@@ -121,8 +121,7 @@
     basedir: "{{ dib_home }}/tools/diskimage-builder"
     strip: 1
   with_items:
-    - "{{ src_dib_diffs | default('') }}"
-  when: "{{ src_dib_diffs }}"
+    - "{{ src_dib_diffs }}"
 
 - name: Apply trove integration patches
   patch:
@@ -130,8 +129,7 @@
     basedir: "{{ dib_home }}/tools/trove"
     strip: 1
   with_items:
-    - "{{ src_trove_integration_diffs | default('') }}"
-  when: "{{ src_trove_integration_diffs }}"
+    - "{{ src_trove_integration_diffs }}"
 
 - name: Apply trove guestagent patches
   patch:
@@ -139,8 +137,7 @@
     basedir: "{{ dib_home }}/trove"
     strip: 1
   with_items:
-    - "{{ src_trove_guestagent_diffs | default('') }}"
-  when: "{{ src_trove_guestagent_diffs }}"
+    - "{{ src_trove_guestagent_diffs }}"
 
 - name: Apply trove guestagent-debug patches
   patch:
@@ -148,10 +145,8 @@
     basedir: "{{ dib_home }}/trove"
     strip: 1
   with_items:
-    - "{{ src_trove_guestagent_debug_diffs | default('') }}"
-  when:
-    - dibDebug == 'true'
     - "{{ src_trove_guestagent_debug_diffs }}"
+  when: dibDebug == 'true'
 
 - name: Prepare elements that have new files
   file:
@@ -160,7 +155,7 @@
     mode: "a+x"
     recurse: yes
   with_items: "{{ trove_integration_elements_with_new_files }}"
-  when: "{{ src_trove_integration_diffs }}"
+  when: src_trove_integration_diffs != None
 
 - name: Configure diskimage-builder
   pip:

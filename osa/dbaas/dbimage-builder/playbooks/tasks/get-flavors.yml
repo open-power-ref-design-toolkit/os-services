@@ -22,6 +22,6 @@
     dbFlavors: "{{ dbFlavors }} + [ {{ item }} ]"
   with_items: "{{ flavorsrc['stdout'] | from_yaml | list }}"
   when:
-    - "{{ item['name'] == dbName }}"
+    - item['name'] == dbName
 
 - debug: var=dbFlavors

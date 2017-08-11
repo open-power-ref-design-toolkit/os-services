@@ -77,7 +77,14 @@ case "$dbName" in
         exit 1
 esac
 
-if [ -z "$dbVersion" ]; then
+# Truncate version to x.y.  User can't specify patch level x.y.z
+if [ -n "$dbVersion" ]; then
+    arrVersion=(${dbVersion//./ })
+    arrLength=${#arrVersion[@]}
+    if (( $arrLength > 2 )); then
+       dbVersion="${arrVersion[0]}.${arrVersion[1]}"
+    fi
+else
     echo "Error: -v <db-version> must be specified"
     exit 1
 fi
