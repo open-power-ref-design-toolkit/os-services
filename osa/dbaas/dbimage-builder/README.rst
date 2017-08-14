@@ -33,7 +33,7 @@ is initially deployed, when new database types and versions are
 made available, and to introduce or change database flavors.
 
 The commands provided in this toolset are non-privileged, although
-promptless sudo access is required.  This is required to install
+*promptless sudo access* is required.  This is required to install
 packages. Otherwise, this toolset does not need root access as it
 is mostly about creating and managing files produced under the
 user's account. The target of this toolset is an OpenStack controller
@@ -231,10 +231,12 @@ Getting Started
 
 **dbimage-make.sh** runs across three nodes:
 
-- The **Deployer** node where dbimage-make.sh is installed
-  which must be installed with Ubuntu 16.04.  There is no
-  processor specific requirement.  dbimage-make.sh provides orchestration for
-  image building which occurs on a user provided **DIB VM** and image
+- The **Deployer** node where dbimage-make.sh is installed.  This node must be
+  installed with Ubuntu 16.04.  *Promptless sudo access* must be provided for the
+  user account excluding root that will invoke the toolkit.  If the toolkit
+  is invoked as root, then it must be installed under */root/*.  There is no
+  processor specific requirement for this node.  dbimage-make.sh provides orchestration
+  for image building which occurs on a user provided **DIB VM** and image
   registration with a user specified **OpenStack controller** node, so the
   Deployer node must have network connectivity with these two nodes.  There
   is no requirement that the DIB VM and controller nodes have network connectivity
