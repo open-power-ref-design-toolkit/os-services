@@ -185,7 +185,7 @@ environment, nor can it be used to copy data into the image.  The command
 may be used to invoke commands in the image such as **apt-get, sed, and cat**.
 
 If the user wishes to make several changes to an image, then it is best
-to manually update the image and then upload itr.  This may
+to manually update the image and then upload it.  This may
 be accomplished in the following way::
 
     > convert qcow2 image to raw image via the qemu-convert command
@@ -292,9 +292,9 @@ the tool.  If the user's default SSH keys, ~/.ssh/id_rsa, are used to
 connect to the target node, then no environment variables should need
 to be specified to connect to that server.
 
-Set one of following variables to enable ansible connectivity
-with the controller.  Note the last one instructs the script to prompt
-the user as it is being run.  If this option is chosen, then
+Set one of following variables to enable alternative forms of SSH connectivity
+with the controller via Ansible.  Note the last one instructs Ansible
+to prompt the user as it is being run.  If this option is chosen, then
 the user is prompted twice at the start of the tool::
 
     export DBIMAGE_CTRL_PRIVATE_SSH_KEY=<path-to-key>
@@ -331,7 +331,7 @@ Deployment
 
     edit scripts/dbimagerc
     set 'export DBIMAGE_CONTROLLER_IP=<a.b.c.d>' in the file
-    set environment variables to enable connectivity to the dibvm and controller
+    optionally set environment variables for alternative ssh connectivity
 
     scripts/dbimage-make.sh -i <ip-addr-dibvm> -d dbname -k <cloud-key-name>
 
