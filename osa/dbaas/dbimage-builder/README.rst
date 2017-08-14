@@ -186,21 +186,21 @@ may be used to invoke commands in the image such as **apt-get, sed, and cat**.
 
 If the user wishes to make several changes to an image, then it is best
 to manually update the image and then upload itr.  This may
-be accomplished in the following way:
+be accomplished in the following way::
 
-- convert qcow2 image to raw image via the qemu-convert command
-- fdisk -l raw-image to identify partitions and offsets
-- calculate the offset of the root partition by multiplying the sector
-  size by the starting offset of the partition
-- mount -t ext4 -o loop,offset=<calculated offset> path/to/raw.img /mnt
-- copy or edit files in the mounted image
-- the chroot command may be used to run commands that need to be isolated
-  to the mount image.  For example, apt commands should be run via chroot.
-  It may be necessary to copy /etc/resolv.conf into the image as this
-  file is generated during the initial boot which may not have happened
-  yet.
-- when the image is updated as desired, run sync and umount /mnt
-- run dbimage-upload.sh without the -s option
+    > convert qcow2 image to raw image via the qemu-convert command
+      fdisk -l raw-image to identify partitions and offsets
+    > calculate the offset of the root partition by multiplying the sector
+      size by the starting offset of the partition
+    > mount -t ext4 -o loop,offset=<calculated offset> path/to/raw.img /mnt
+    > copy or edit files in the mounted image
+    > the chroot command may be used to run commands that need to be isolated
+      to the mount image.  For example, apt commands should be run via chroot.
+      It may be necessary to copy /etc/resolv.conf into the image as this
+      file is generated during the initial boot which may not have happened
+      yet.
+    > when the image is updated as desired, run sync and umount /mnt
+    > run dbimage-upload.sh without the -s option
 
 The -d, -v, -k, -c, -e, and -b arguments are the same as for the
 **dbimage-make.sh** command.  The -f argument identifies the previously
@@ -285,7 +285,7 @@ environment variables that are used by the mechanism.
 
 The controller is identified by setting::
 
-  export DBIMAGE_CONTROLLER=<A.B.C.D>
+    export DBIMAGE_CONTROLLER=<A.B.C.D>
 
 SSH connectivity must be manually setup by the user prior to running
 the tool.  If the user's default SSH keys, ~/.ssh/id_rsa, are used to
@@ -295,17 +295,17 @@ to be specified to connect to that server.
 Set one of following variables to enable ansible connectivity
 with the controller.  Note the last one instructs the script to prompt
 the user as it is being run.  If this option is chosen, then
-the user is prompted twice at the start of the tool.
+the user is prompted twice at the start of the tool::
 
-  export DBIMAGE_CTRL_PRIVATE_SSH_KEY=<path-to-key>
-  export DBIMAGE_CTRL_PASSWD=<password phrase>
-  export DBIMAGE_CTRL_SSH_PROMPT=<yes|no>
+    export DBIMAGE_CTRL_PRIVATE_SSH_KEY=<path-to-key>
+    export DBIMAGE_CTRL_PASSWD=<password phrase>
+    export DBIMAGE_CTRL_SSH_PROMPT=<yes|no>
 
 Set one of the following variables to enable ansible connectivity
-with the dibvm.
+with the dibvm::
 
-  export DBIMAGE_DIB_PRIVATE_SSH_KEY=<path-to-key>
-  export DBIMAGE_DIB_PASSWD=<password phrase>
+    export DBIMAGE_DIB_PRIVATE_SSH_KEY=<path-to-key>
+    export DBIMAGE_DIB_PASSWD=<password phrase>
 
 There is no prompt option provided for the dibvm.
 
@@ -318,20 +318,22 @@ should be removed and dbimagerc should be updated as required.
 Deployment
 ----------
 
-  create the deployer VM
-  create the dibvm
-  ensure ssh connectivity from deployer to controller and dibvm
+::
 
-  enable promptless sudo access
+    create the deployer VM
+    create the dibvm
+    ensure ssh connectivity from deployer to controller and dibvm
 
-  git clone https://github.com/open-power-ref-design-toolkit/os-services
-  cd os-services/osa/dbaas/dbimage-builder
+    enable promptless sudo access
 
-  edit scripts/dbimagerc
-  set 'export DBIMAGE_CONTROLLER_IP=<a.b.c.d>' in the file
-  set environment variables to enable connectivity to the dibvm and controller
+    git clone https://github.com/open-power-ref-design-toolkit/os-services
+    cd os-services/osa/dbaas/dbimage-builder
 
-  scripts/dbimage-make.sh -i <ip-addr-dibvm> -d dbname -k <cloud-key-name>
+    edit scripts/dbimagerc
+    set 'export DBIMAGE_CONTROLLER_IP=<a.b.c.d>' in the file
+    set environment variables to enable connectivity to the dibvm and controller
+
+    scripts/dbimage-make.sh -i <ip-addr-dibvm> -d dbname -k <cloud-key-name>
 
 **Note**: multiple database sources: distro, community, and enterprise are supported,
 but not necessarily for every database.  Sources are indicated by -c and -e as well as
