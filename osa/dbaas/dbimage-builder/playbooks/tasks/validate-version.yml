@@ -61,7 +61,7 @@
 
   - name: Halt on user specified version mismatch
     fail:
-      msg: "{{ dbName }} (vers={{ dbVersion }}) is not supported for {{ targetRelease }}!"
+      msg: "{{ dbName }} (vers={{ dbVersion }}) is not supported for {{ targetRelease }} by this tool!  Please choose a different version or database source"
     when: pkgDistroName is not defined
 
   when: dbVersion != ''
@@ -103,14 +103,14 @@
 
 - name: Halt on unsupported package
   fail:
-    msg: "The enterprise edition of {{ dbName }} is not supported for {{ targetRelease }}!"
+    msg: "The enterprise edition of {{ dbName }} is not supported for {{ targetRelease }} by this tool!   Please choose a different version or database source"
   when:
     - pkgDistroName is not defined
     - enterpriseEdition == true
 
 - name: Halt on unsupported package
   fail:
-    msg: "The community edition of {{ dbName }} is not supported for {{ targetRelease }}!"
+    msg: "The community edition of {{ dbName }} is not supported for {{ targetRelease }} by this tool!   Please choose a different version or database source"
   when:
     - pkgDistroName is not defined
     - communityEdition == true

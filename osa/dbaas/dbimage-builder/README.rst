@@ -45,6 +45,31 @@ is run as well as the DIB VM.  In total, there are three nodes
 involved - the deployer node which hosts this toolset, the DIB VM,
 and an OpenStack Controller node.
 
+The following databases are supported::
+
+  +--------------+----------+------------------+-----------------+------------------------------------------------------+
+  | Database     | Version  | Source/Edition   | Image Creation  | Notes                                                |
+  +==============+==========+==================+=================+======================================================+
+  | mariadb      | 10.1     | community        | 25-30 minutes   |                                                      |
+  +--------------+----------+------------------+-----------------+------------------------------------------------------+
+  | mongodb      | 3.4      | community        | ~2 hours        | Mongodb DBs must be created by the client from a     |
+  +--------------+----------+------------------+-----------------+ pre-authorized user to read/write the DB that is to  |
+  | mongodb      | 3.4      | enterprise       | 25-30           | be created.  First, use the OpenDBaaS GUI to create  |
+  |              |          |                  |                 | the user naming the target DB                        |
+  +--------------+----------+------------------+-----------------+------------------------------------------------------+
+  | mysql        | 5.7      | Ubuntu 16.04     | ~1 hour         |                                                      |
+  +--------------+----------+------------------+-----------------+------------------------------------------------------+
+  | postgresql   | 9.5      | Ubuntu 16.04     | 25-30           |                                                      |
+  +--------------+----------+------------------+-----------------+------------------------------------------------------+
+  | postgresql   | 9.6      | community        | 25-30           |                                                      |
+  +--------------+----------+------------------+-----------------+------------------------------------------------------+
+  | redis        | 3.0      | Ubuntu 16.04     | 25-30           |                                                      |
+  +--------------+----------+------------------+-----------------+------------------------------------------------------+
+  | redis        | 3.2      | community        | 25-30           |                                                      |
+  +--------------+----------+------------------+-----------------+------------------------------------------------------+
+
+
+
 dbimage-make.sh
 ---------------
 
@@ -98,11 +123,9 @@ file /home/<dib-user>/.ssh/authorized_keys. This is intended for DBA access.
 The -i argument identifies a running virtual machine (VM)
 that should be used to create the virtual disk image.  This VM must be
 installed with Ubuntu 16.04 ppc64le.  The DIB tool is installed on this VM.
-
 The VM associated with the -i argument is created by the user prior
 to invoking the dbimage-make.sh script.  This VM may be re-used to
-serially create databases images.  If the -i argument is not
-specified, then the localhost is assumed.
+serially create databases images.
 
 The -d argument must be one of
 mariadb, mongodb, mysql, postgresql, or redis.
