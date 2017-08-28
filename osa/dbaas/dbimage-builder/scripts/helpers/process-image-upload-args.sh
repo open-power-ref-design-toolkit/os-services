@@ -90,7 +90,7 @@ else
 fi
 
 if [ -z "$imageName" ]; then
-    echo "Error: -f <path-to-image> must be specified"
+    echo "Error: -f <qcow-image> must be specified"
     exit 1
 fi
 

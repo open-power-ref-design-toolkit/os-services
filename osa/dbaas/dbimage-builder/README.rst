@@ -4,24 +4,23 @@ dbimage-builder
 
 The **dbimage-make.sh** command creates a bootable
 virtual disk image that is configured to provide
-a user specified database from the following list:
-**mariadb, mongodb, mysql, postgresql, and redis**.
-This list is expected to grow over time, so check back on the
-availability of other databases.  Upon successful completion,
+a user specified database.  Upon successful completion,
 this command uploads the image to the OpenStack infrastucture.
 It is from these images that running database instances are created.
+The following databases are currently supported:
+**mariadb, mongodb, mysql, postgresql, and redis**.
+This list is expected to grow over time, so check back on the
+availability of other databases.
 
 The images that are produced by **dbimage-make.sh** are
 reusable across cloud instances.  The **dbimage-upload.sh**
-is provided for this purpose.  Basically, it applies the
-same operations that were performed by **dbimage-make-sh**,
-after having created the image.  This is a big time savings
-and ensures that the exact same bits are re-applied to the new
-cloud, excluding the few bits that are updated - ie.
-ssh keys and trove-guestagent meta data.
+is provided for this purpose.  It updates the image so that
+it may be integrated into the new cloud instance.  This is
+a big time savings as only a few bits need to updated -
+ie. ssh keys and trove-guestagent meta data.
 
 An additional set of commands **dbflavor-show.sh**, **dbflavor-change.sh**,
-and **dbflavor-upload.sh** are provided to create database flavors, which
+and **dbflavor-upload.sh** are provided to create database flavors which
 are used to control the size of the database instance.  A
 predefined set of these flavors are provided.  The user can
 list them, change them at the attribute level (cpu, memory,
@@ -52,10 +51,14 @@ The following databases are supported::
   +==============+==========+==================+=================+======================================================+
   | mariadb      | 10.1     | community        | 25-30 minutes   |                                                      |
   +--------------+----------+------------------+-----------------+------------------------------------------------------+
-  | mongodb      | 3.4      | community        | ~2 hours        | Mongodb DBs must be created by the client from a     |
-  +--------------+----------+------------------+-----------------+ pre-authorized user to read/write the DB that is to  |
-  | mongodb      | 3.4      | enterprise       | 25-30           | be created.  First, use the OpenDBaaS GUI to create  |
-  |              |          |                  |                 | the user naming the target DB                        |
+  | mongodb      | 3.4      | community        | ~2 hours        | Unlink other databases, the OpenDBaaS GUI cannot be  |
+  +--------------+----------+------------------+-----------------+ used to create a MongoDB database as MongoDB garbage |
+  | mongodb      | 3.4      | enterprise       | 25-30           | collects empty databases.  This means that a mongodb |
+  |              |          |                  |                 | client must be used to create and populate the       |
+  |              |          |                  |                 | database.  The user associated with this connection  |
+  |              |          |                  |                 | must be pre-authorized to create the desired DBs.    |
+  |              |          |                  |                 | Use the OpenDBaaS GUI to create the user and specify |
+  |              |          |                  |                 | the database(s) to be associated with the account.   |
   +--------------+----------+------------------+-----------------+------------------------------------------------------+
   | mysql        | 5.7      | Ubuntu 16.04     | ~1 hour         |                                                      |
   +--------------+----------+------------------+-----------------+------------------------------------------------------+
@@ -228,9 +231,11 @@ be accomplished in the following way::
 The -d, -v, -k, -c, -e, and -b arguments are the same as for the
 **dbimage-make.sh** command.  The -f argument identifies the previously
 created qcow2 image that is to be updated.  This image is located in
-*dbimage-builder/images*.  The -s argument is a command string such
-as *apt-get -y install x* which is invoked in a
-non-interactive shell.
+*dbimage-builder/images/*.  It does not include the path to the image.
+For example, -f ubuntu_xenial_mariadb_10_1_c.qcow2.
+
+The -s argument is a command string such as *apt-get -y install x* which
+is invoked in a non-interactive shell.
 
 This command uploads an image previously created by the
 **dbimage-make.sh** script.  The image is modified to reflect
