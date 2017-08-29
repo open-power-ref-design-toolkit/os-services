@@ -51,11 +51,11 @@ The following databases are supported::
   +==============+==========+==================+=================+======================================================+
   | mariadb      | 10.1     | community        | 25-30 minutes   |                                                      |
   +--------------+----------+------------------+-----------------+------------------------------------------------------+
-  | mongodb      | 3.4      | community        | ~2 hours        | Unlink other databases, the OpenDBaaS GUI cannot be  |
+  | mongodb      | 3.4      | community        | ~2 hours        | Unlike other databases, the OpenDBaaS GUI cannot be  |
   +--------------+----------+------------------+-----------------+ used to create a MongoDB database as MongoDB garbage |
   | mongodb      | 3.4      | enterprise       | 25-30           | collects empty databases.  This means that a mongodb |
-  |              |          |                  |                 | client must be used to create and populate the       |
-  |              |          |                  |                 | database.  The user associated with this connection  |
+  |              |          |                  |                 | client must be used to create and populate           |
+  |              |          |                  |                 | databases.  The user associated with this connection |
   |              |          |                  |                 | must be pre-authorized to create the desired DBs.    |
   |              |          |                  |                 | Use the OpenDBaaS GUI to create the user and specify |
   |              |          |                  |                 | the database(s) to be associated with the account.   |
@@ -121,7 +121,7 @@ if the user builds a guest database image using the -e argument.
 The -k argument names a ssh key pair that is registered with OpenStack.
 If this argument is specified, then the public ssh key is obtained from
 OpenStack and is placed in virtual disk image in the
-file /home/<dib-user>/.ssh/authorized_keys. This is intended for DBA access.
+file /home/ubuntu/.ssh/authorized_keys. This is intended for DBA access.
 
 The -i argument identifies a running virtual machine (VM)
 that should be used to create the virtual disk image.  This VM must be
@@ -229,10 +229,15 @@ be accomplished in the following way::
     > run dbimage-upload.sh without the -s option
 
 The -d, -v, -k, -c, -e, and -b arguments are the same as for the
-**dbimage-make.sh** command.  The -f argument identifies the previously
-created qcow2 image that is to be updated.  This image is located in
-*dbimage-builder/images/*.  It does not include the path to the image.
-For example, -f ubuntu_xenial_mariadb_10_1_c.qcow2.
+**dbimage-make.sh** command.
+
+The -f argument identifies the previously
+created qcow2 image that is to be uploaded.  This image is located in
+*dbimage-builder/images/*.  The -f argument does not include the path
+to the image.  For example,  -f ubuntu_xenial_mariadb_10_1_c.qcow2.
+The suffix '_c' indicates that the image is the community edition.
+'_e' denotes the enterprise edition. The absense of _c and _e in the
+file name indicates that the database was provided by the distro.
 
 The -s argument is a command string such as *apt-get -y install x* which
 is invoked in a non-interactive shell.
@@ -242,17 +247,13 @@ This command uploads an image previously created by the
 the OpenStack cloud associated with the controller that is
 named via *dbimagerc* file.
 
-Finally, it is important to know the git version of **os-services** project
-when the cloud was initially installed as the Trove guestagent code in
-the image must be compatible with Trove controller code.  This tool includes
-patches which are applied to the guestagent so that newer database versions
-can be supported. There are bug fixes as well.  The general rule is that
-the same branch of os-services should be used when creating or uploading
-images as was initially used to create the cloud. Another option is to
-use uplevel tags within the same major version. For example, if the cloud
-was installed with os-services version 1.4 (which equals the recipe version),
-it is OK to use the upload tool from os-services version 1.5 or 1.6.  It is
-not OK to use version 2.0 as that would constitute a change in branch.
+Finally, it is important to *synchronize* the version of Trove code that
+is included in the image with the version of Trove code on the
+OpenStack controller nodes.  This is done by checking out the git branch
+of the **os-services** project corresponding to the desired
+OpenStack version prior to running the tool.  This tool provides
+patches to the Trove guestagent code that enable the use of
+newer database versions.  There may be bug fixes provided as well.
 
 Getting Started
 ---------------
