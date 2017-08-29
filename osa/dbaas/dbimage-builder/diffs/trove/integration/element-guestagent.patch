@@ -1,3 +1,16 @@
+diff --git a/integration/scripts/files/elements/ubuntu-guest/install.d/15-trove-dep b/integration/scripts/files/elements/ubuntu-guest/install.d/15-trove-dep
+index c79ad87..6761f2a 100755
+--- a/integration/scripts/files/elements/ubuntu-guest/install.d/15-trove-dep
++++ b/integration/scripts/files/elements/ubuntu-guest/install.d/15-trove-dep
+@@ -7,7 +7,7 @@ set -e
+ set -o xtrace
+ 
+ export DEBIAN_FRONTEND=noninteractive
+-apt-get --allow-unauthenticated -y install python-dev libxml2-dev libxslt1-dev python-setuptools \
++apt-get --allow-unauthenticated -y install python-dev libffi-dev libssl-dev libxml2-dev libxslt1-dev python-setuptools \
+     python-pip python-sqlalchemy python-lxml \
+     python-routes python-eventlet python-webob \
+     python-pastedeploy python-paste python-netaddr \
 diff --git a/integration/scripts/files/elements/ubuntu-guest/install.d/29-user b/integration/scripts/files/elements/ubuntu-guest/install.d/29-user
 new file mode 100755
 index 0000000..99f6896
