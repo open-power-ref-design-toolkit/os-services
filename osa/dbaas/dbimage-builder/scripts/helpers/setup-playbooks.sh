@@ -29,8 +29,8 @@ GENESIS_SIMULATED="$DBIMAGE_DIR/etc/inventory-simulated"
 
 function create-playbook-inventory {
 
-    type pip >/dev/null 2>&1 || sudo apt-get install -qq -y python python-pip
-    type ansible-playbook >/dev/null 2>&1 || pip install ansible==2.3.2
+    type pip >/dev/null 2>&1 || sudo apt-get install -qq -y libssl-dev libffi-dev python-pip
+    type ansible-playbook >/dev/null 2>&1 || sudo pip install ansible==2.3.2
     sudo apt-get install -qq -y sshpass
 
     ctrl=$DBIMAGE_CONTROLLER_IP
