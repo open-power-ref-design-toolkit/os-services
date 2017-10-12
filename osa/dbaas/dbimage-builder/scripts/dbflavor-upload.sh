@@ -41,6 +41,8 @@ source $SCRIPTS_DIR/dbimagerc
 source $SCRIPTS_DIR/helpers/process-flavor-args.sh
 source $SCRIPTS_DIR/helpers/setup-playbooks.sh
 
+create-playbook-inventory
+
 ctrl=$DBIMAGE_CONTROLLER_IP
 if [ "$ctrl" == "localhost" ]; then
     type lxc-ls >/dev/null 2>&1
