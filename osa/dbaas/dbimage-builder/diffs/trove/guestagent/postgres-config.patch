@@ -21,10 +21,10 @@ index 43eb637..7ac1f18 100644
      @classmethod
      def update_name(cls, old, new):
 diff --git a/trove/guestagent/datastore/experimental/postgresql/service/config.py b/trove/guestagent/datastore/experimental/postgresql/service/config.py
-index 644d368..28d5c08 100644
+index 644d368..878ec4e 100644
 --- a/trove/guestagent/datastore/experimental/postgresql/service/config.py
 +++ b/trove/guestagent/datastore/experimental/postgresql/service/config.py
-@@ -221,7 +221,6 @@ class PgSqlConfig(PgSqlProcess):
+@@ -221,12 +221,13 @@ class PgSqlConfig(PgSqlProcess):
              'wal_level': 'hot_standby',
              'archive_mode ': 'on',
              'max_wal_senders': 8,
@@ -32,6 +32,13 @@ index 644d368..28d5c08 100644
              'wal_keep_segments': 8,
              'archive_command': arch_cmd
          }
+         if not self.pg_version[1] in ('9.3'):
+             opts['wal_log_hints'] = 'on'
++        if self.pg_version[1] in ('9.6'):
++            opts['wal_level'] = 'replica'  # replica subsumes hot_standby which is removed
+ 
+         self.configuration_manager.apply_system_override(
+             opts, BACKUP_CFG_OVERRIDE)
 diff --git a/trove/guestagent/datastore/experimental/postgresql/service/users.py b/trove/guestagent/datastore/experimental/postgresql/service/users.py
 index 0c61bbe..8c8f494 100644
 --- a/trove/guestagent/datastore/experimental/postgresql/service/users.py
@@ -45,15 +52,18 @@ index 0c61bbe..8c8f494 100644
  
      def _create_admin_user(self, context, databases=None):
 diff --git a/trove/guestagent/strategies/replication/experimental/postgresql_impl.py b/trove/guestagent/strategies/replication/experimental/postgresql_impl.py
-index 9942a67..0a61534 100644
+index 9942a67..e6ca988 100644
 --- a/trove/guestagent/strategies/replication/experimental/postgresql_impl.py
 +++ b/trove/guestagent/strategies/replication/experimental/postgresql_impl.py
-@@ -280,7 +280,7 @@ class PostgresqlReplicationStreaming(
+@@ -280,8 +280,10 @@ class PostgresqlReplicationStreaming(
          opts = {'hot_standby': 'on',
                  'wal_level': 'hot_standby'}
          # wal_log_hints for pg_rewind is only supported in 9.4+
 -        if self.pg_version[1] in ('9.4', '9.5'):
 +        if self.pg_version[1] in ('9.4', '9.5', '9.6'):
              opts['wal_log_hints'] = 'on'
++        if self.pg_version[1] == '9.6':
++            opts['wal_level'] = 'replica'    # replica subsumes hot_standby which is removed
  
          service.configuration_manager.\
+             apply_system_override(opts, SLAVE_STANDBY_OVERRIDE)

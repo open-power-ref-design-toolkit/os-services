@@ -1,5 +1,5 @@
 diff --git a/trove/guestagent/datastore/experimental/postgresql/manager.py b/trove/guestagent/datastore/experimental/postgresql/manager.py
-index 4206b8a..e2ea67b 100644
+index 4206b8a..1359c20 100644
 --- a/trove/guestagent/datastore/experimental/postgresql/manager.py
 +++ b/trove/guestagent/datastore/experimental/postgresql/manager.py
 @@ -72,6 +72,8 @@ class Manager(
@@ -32,8 +32,8 @@ index 4206b8a..e2ea67b 100644
 +        if version not in ('9.3', '9.4'):
 +            LOG.debug("do_prepare: remove deprecated checkpoint_segments for Postgresql %s" % version)
 +            config_contents = '#checkpoint_segments'.join(config_contents.split('checkpoint_segments'))
++            # Commenting out wal_level.  Setting initial value to quoted minimal
 +            config_contents = '#wal_level ='.join(config_contents.split('wal_level ='))
-+            LOG.debug("do_prepare: add max_connections, dynamic_shared_memory_type, log_line_prefix, stats_temp_directory, ...")
 +            config_contents = config_contents.split('\n')
 +            config_contents.append('wal_level = \'minimal\'')
 +            config_contents.append('ssl = off')
@@ -41,7 +41,7 @@ index 4206b8a..e2ea67b 100644
 +            config_contents.append('dynamic_shared_memory_type = sysv')
 +            config_contents.append('log_line_prefix = \'%t [%p-%l] %q%u@%d \'')
 +            config_contents.append('log_timezone = \'UTC\'')
-+            config_contents.append('stats_temp_directory = \'/var/run/postgresql/9.5-main.pg_stat_tmp\'')
++            config_contents.append('stats_temp_directory = \'/var/run/postgresql/%s-main.pg_stat_tmp\'' % version)
 +            config_contents.append('timezone = \'UTC\'')
 +            config_contents = '\n'.join(config_contents)
 +

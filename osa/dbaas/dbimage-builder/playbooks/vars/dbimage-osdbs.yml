@@ -31,10 +31,10 @@ osdb:                                   # All versions as of 4/14/17
     trusty: []                          # Requires compilation of missing package
     xenial:
       - version: '9.5'                  # 9.5.6
-        pkg: postgresql
+        pkg: postgresql-9.5
     community:
       - version: '9.6'                  # 9.6.2
-        pkg: postgresql
+        pkg: postgresql-9.6
     enterprise: []
   redis:
     trusty: []
