@@ -104,16 +104,13 @@
   retries: 3
   delay: 15
 
-- name: Get trove integration (vers={{ trove_integration_version }})
+- name: Get trove (vers={{ trove_version }})
   git:
     repo: https://github.com/openstack/trove.git
-    dest: "{{ dib_home }}/tools/trove"
-    version: "{{ trove_integration_version }}"
+    dest: "{{ dib_home }}/trove"
+    version: "{{ trove_version }}"
   retries: 3
   delay: 15
-
-- name: Get trove (vers={{ trove_version }}) for guest image
-  shell: "cp -r {{ dib_home }}/tools/trove {{ dib_home }}; cd ~/trove; git checkout {{ trove_version }}"
 
 - name: Apply diskimage-builder patches
   patch:
@@ -126,7 +123,7 @@
 - name: Apply trove integration patches
   patch:
     src: "{{ item }}"
-    basedir: "{{ dib_home }}/tools/trove"
+    basedir: "{{ dib_home }}/trove"
     strip: 1
   with_items:
     - "{{ src_trove_integration_diffs }}"
@@ -150,7 +147,7 @@
 
 - name: Prepare elements that have new files
   file:
-    path: "{{ dib_home }}/tools/trove/integration/scripts/files/elements/{{ item }}"
+    path: "{{ dib_home }}/trove/integration/scripts/files/elements/{{ item }}"
     state: directory
     mode: "a+x"
     recurse: yes

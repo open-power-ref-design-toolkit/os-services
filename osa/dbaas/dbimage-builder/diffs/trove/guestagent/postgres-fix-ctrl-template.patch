@@ -1,17 +1,17 @@
 diff --git a/trove/guestagent/datastore/experimental/postgresql/manager.py b/trove/guestagent/datastore/experimental/postgresql/manager.py
-index 4206b8a..1359c20 100644
+index 33a1d47..d71189c 100644
 --- a/trove/guestagent/datastore/experimental/postgresql/manager.py
 +++ b/trove/guestagent/datastore/experimental/postgresql/manager.py
-@@ -72,6 +72,8 @@ class Manager(
-             self.GUEST_LOG_DEFS_GENERAL_LABEL, self.PGSQL_OWNER,
-             datastore_dir=datastore_dir)
+@@ -77,6 +77,8 @@ class Manager(manager.Manager):
+             self.GUEST_LOG_DEFS_GENERAL_LABEL, owner,
+             datastore_dir=self.app.pgsql_log_dir)
          general_log_dir, general_log_filename = os.path.split(general_log_file)
 +        LOG.debug("datastore_log_defs: general_log_file = %s, long_query_time=%s" %
 +                  (general_log_file, str(long_query_time)))
          return {
              self.GUEST_LOG_DEFS_GENERAL_LABEL: {
                  self.GUEST_LOG_TYPE_LABEL: guest_log.LogType.USER,
-@@ -96,6 +98,10 @@ class Manager(
+@@ -209,6 +211,10 @@ class Manager(manager.Manager):
      def do_prepare(self, context, packages, databases, memory_mb, users,
                     device_path, mount_point, backup_info, config_contents,
                     root_password, overrides, cluster_config, snapshot):
@@ -19,15 +19,15 @@ index 4206b8a..1359c20 100644
 +        LOG.debug("do_prepare: device_path=%s, packages=%s, backup_info=%s, cluster_config=%s" %
 +                  (device_path, packages, str(backup_info), str(cluster_config)))
 +
-         pgutil.PG_ADMIN = self.PG_BUILTIN_ADMIN
-         self.install(context, packages)
-         self.stop_db(context)
-@@ -105,6 +111,25 @@ class Manager(
+         self.app.install(context, packages)
+         LOG.debug("Waiting for database first boot.")
+         if (self.app.status.wait_for_real_status_to_change_to(
+@@ -224,6 +230,26 @@ class Manager(manager.Manager):
              if os.path.exists(mount_point):
                  device.migrate_data(mount_point)
              device.mount(mount_point)
 +
-+        # Provide updates for 9.5
++        # Provide updates for 9.5 and 9.6
 +        version = self.pg_version[1]
 +        if version not in ('9.3', '9.4'):
 +            LOG.debug("do_prepare: remove deprecated checkpoint_segments for Postgresql %s" % version)
@@ -41,18 +41,11 @@ index 4206b8a..1359c20 100644
 +            config_contents.append('dynamic_shared_memory_type = sysv')
 +            config_contents.append('log_line_prefix = \'%t [%p-%l] %q%u@%d \'')
 +            config_contents.append('log_timezone = \'UTC\'')
-+            config_contents.append('stats_temp_directory = \'/var/run/postgresql/%s-main.pg_stat_tmp\'' % version)
++            statsDir = 'stats_temp_directory = \'/var/run/postgresql/%s-main.pg_stat_tmp\'' % version
++            config_contents.append(statsDir)
 +            config_contents.append('timezone = \'UTC\'')
 +            config_contents = '\n'.join(config_contents)
 +
          self.configuration_manager.save_configuration(config_contents)
-         self.apply_initial_guestagent_configuration()
- 
-@@ -126,6 +151,7 @@ class Manager(
-     def _secure(self, context):
-         # Create a new administrative user for Trove and also
-         # disable the built-in superuser.
-+        LOG.info("Creating user os_admin and database os_admin_db")
-         os_admin_db = models.PostgreSQLSchema(self.ADMIN_USER)
-         self._create_database(context, os_admin_db)
-         self._create_admin_user(context, databases=[os_admin_db])
+         self.app.apply_initial_guestagent_configuration()
+
