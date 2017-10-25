@@ -1,3 +1,52 @@
+diff --git a/trove/guestagent/datastore/experimental/postgresql/manager.py b/trove/guestagent/datastore/experimental/postgresql/manager.py
+index 4206b8a..9df59e6 100644
+--- a/trove/guestagent/datastore/experimental/postgresql/manager.py
++++ b/trove/guestagent/datastore/experimental/postgresql/manager.py
+@@ -72,6 +72,8 @@ class Manager(
+             self.GUEST_LOG_DEFS_GENERAL_LABEL, self.PGSQL_OWNER,
+             datastore_dir=datastore_dir)
+         general_log_dir, general_log_filename = os.path.split(general_log_file)
++        LOG.debug("datastore_log_defs: general_log_file = %s, long_query_time=%s" %
++                  (general_log_file, str(long_query_time)))
+         return {
+             self.GUEST_LOG_DEFS_GENERAL_LABEL: {
+                 self.GUEST_LOG_TYPE_LABEL: guest_log.LogType.USER,
+@@ -96,6 +98,10 @@ class Manager(
+     def do_prepare(self, context, packages, databases, memory_mb, users,
+                    device_path, mount_point, backup_info, config_contents,
+                    root_password, overrides, cluster_config, snapshot):
++
++        LOG.debug("do_prepare: device_path=%s, packages=%s, backup_info=%s, cluster_config=%s" %
++                  (device_path, packages, str(backup_info), str(cluster_config)))
++
+         pgutil.PG_ADMIN = self.PG_BUILTIN_ADMIN
+         self.install(context, packages)
+         self.stop_db(context)
+@@ -105,7 +111,8 @@ class Manager(
+             if os.path.exists(mount_point):
+                 device.migrate_data(mount_point)
+             device.mount(mount_point)
+-        self.configuration_manager.save_configuration(config_contents)
++
++        self.save_config(config_contents)
+         self.apply_initial_guestagent_configuration()
+ 
+         if backup_info:
+@@ -126,12 +133,13 @@ class Manager(
+     def _secure(self, context):
+         # Create a new administrative user for Trove and also
+         # disable the built-in superuser.
++        LOG.info("Creating user os_admin and database os_admin_db")
+         os_admin_db = models.PostgreSQLSchema(self.ADMIN_USER)
+         self._create_database(context, os_admin_db)
+         self._create_admin_user(context, databases=[os_admin_db])
+         pgutil.PG_ADMIN = self.ADMIN_USER
+         postgres = models.PostgreSQLRootUser()
+-        self.alter_user(context, postgres, 'NOSUPERUSER', 'NOLOGIN')
++#        self.alter_user(context, postgres, 'NOSUPERUSER', 'NOLOGIN')
+ 
+     def create_backup(self, context, backup_info):
+         with EndNotification(context):
 diff --git a/trove/guestagent/datastore/experimental/postgresql/pgutil.py b/trove/guestagent/datastore/experimental/postgresql/pgutil.py
 index 43eb637..7ac1f18 100644
 --- a/trove/guestagent/datastore/experimental/postgresql/pgutil.py
@@ -21,10 +70,89 @@ index 43eb637..7ac1f18 100644
      @classmethod
      def update_name(cls, old, new):
 diff --git a/trove/guestagent/datastore/experimental/postgresql/service/config.py b/trove/guestagent/datastore/experimental/postgresql/service/config.py
-index 644d368..878ec4e 100644
+index 644d368..d4134ba 100644
 --- a/trove/guestagent/datastore/experimental/postgresql/service/config.py
 +++ b/trove/guestagent/datastore/experimental/postgresql/service/config.py
-@@ -221,12 +221,13 @@ class PgSqlConfig(PgSqlProcess):
+@@ -58,6 +58,7 @@ class PgSqlConfig(PgSqlProcess):
+         revision_dir = guestagent_utils.build_file_path(
+             os.path.dirname(self.pgsql_config),
+             ConfigurationManager.DEFAULT_STRATEGY_OVERRIDES_SUB_DIR)
++        LOG.debug("PgSqlConfig: revision_dir=%s" % revision_dir)
+         self._configuration_manager = ConfigurationManager(
+             self.pgsql_config, self.PGSQL_OWNER, self.PGSQL_OWNER,
+             PropertiesCodec(
+@@ -92,11 +93,35 @@ class PgSqlConfig(PgSqlProcess):
+     def _find_config_file(self, name_pattern):
+         version_base = guestagent_utils.build_file_path(self.CONFIG_BASE,
+                                                         self.pg_version[1])
+-        return sorted(operating_system.list_files_in_directory(
++        flist = sorted(operating_system.list_files_in_directory(
+             version_base, recursive=True, pattern=name_pattern,
+             as_root=True), key=len)[0]
++        LOG.debug("_find_config_file: name_pattern=%s, flist=%s" % (name_pattern, str(flist)))
++        return flist
++
++    def save_config(self, config_contents):
++        version = self.pg_version[1]
++        if version not in ('9.3', '9.4'):
++            LOG.debug("save_config: remove deprecated checkpoint_segments for Postgresql %s" % version)
++            config_contents = '#checkpoint_segments'.join(config_contents.split('checkpoint_segments'))
++
++            # Comment out a few fields, so that they can be set below.  Guards against multiple instances
++            config_contents = '#log_line_prefix'.join(config_contents.split('log_line_prefix'))
++            config_contents = '#log_timezone'.join(config_contents.split('log_timezone'))
++            config_contents = '#stats_temp_directory'.join(config_contents.split('stats_temp_directory'))
++            config_contents = '#timezone'.join(config_contents.split('timezone'))
++
++            # Set a few logging parameters
++            config_contents = config_contents.split('\n')
++            config_contents.append('log_line_prefix = \'%t [%p-%l] %q%u@%d \'')
++            config_contents.append('log_timezone = \'UTC\'')
++            config_contents.append('stats_temp_directory = \'/var/run/postgresql/%s-main.pg_stat_tmp\'' % version)
++            config_contents.append('timezone = \'UTC\'')
++            config_contents = '\n'.join(config_contents)
++        self.configuration_manager.save_configuration(config_contents)
+ 
+     def update_overrides(self, context, overrides, remove=False):
++        LOG.debug("update_overrides: overrides=%s remove=%s" % (str(overrides), str(remove)))
+         if remove:
+             self.configuration_manager.remove_user_override()
+         elif overrides:
+@@ -110,20 +135,23 @@ class PgSqlConfig(PgSqlProcess):
+         #
+         # NOTE: Do not use the 'SET' command as it only affects the current
+         # session.
++        LOG.debug("apply_overrides: %s" % str(overrides))
+         pgutil.psql("SELECT pg_reload_conf()")
+ 
+     def reset_configuration(self, context, configuration):
+         """Reset the PgSql configuration to the one given.
+         """
+         config_contents = configuration['config_contents']
+-        self.configuration_manager.save_configuration(config_contents)
++        LOG.debug("reset_configuration: config_contents=%s" % str(config_contents))
++        self.save_config(config_contents)
+ 
+     def start_db_with_conf_changes(self, context, config_contents):
+         """Starts the PgSql instance with a new configuration."""
+         if PgSqlAppStatus.get().is_running:
+             raise RuntimeError(_("The service is still running."))
+ 
+-        self.configuration_manager.save_configuration(config_contents)
++        LOG.debug("start_db_with_conf_changes: config_contents=%s" % str(config_contents))
++        self.save_config(config_contents)
+         # The configuration template has to be updated with
+         # guestagent-controlled settings.
+         self.apply_initial_guestagent_configuration()
+@@ -141,6 +169,7 @@ class PgSqlConfig(PgSqlProcess):
+             'unix_socket_directories': self._quote(self.UNIX_SOCKET_DIR),
+             'listen_addresses': self._quote(','.join(self.LISTEN_ADDRESSES)),
+             'port': CONF.postgresql.postgresql_port}
++        LOG.debug("file_locations=%s" % str(file_locations))
+         self.configuration_manager.apply_system_override(file_locations)
+         self._apply_access_rules()
+ 
+@@ -221,12 +250,13 @@ class PgSqlConfig(PgSqlProcess):
              'wal_level': 'hot_standby',
              'archive_mode ': 'on',
              'max_wal_senders': 8,

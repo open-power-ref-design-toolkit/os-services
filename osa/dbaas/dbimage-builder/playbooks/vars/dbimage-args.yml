@@ -81,7 +81,7 @@ dib_pip_packages:
 # versions for git cloned projects in dibvm
 
 dib_version: 1.28.0
-trove_version: stable/newton
+trove_version: newton-eol
 trove_integration_version: 7.0.0
 
 # dibvm install options
@@ -117,7 +117,6 @@ trove_integration_elements_with_new_files:
 
 src_trove_guestagent_diffs:
   - "{{ baseDir }}/diffs/trove/guestagent/postgres-config.patch"
-  - "{{ baseDir }}/diffs/trove/guestagent/postgres-fix-ctrl-template.patch"
   - "{{ baseDir }}/diffs/trove/guestagent/mariadb-systemd.patch"
   - "{{ baseDir }}/diffs/trove/guestagent/mariadb-reload.patch"
   - "{{ baseDir }}/diffs/trove/guestagent/mongodb-database-user.patch"
