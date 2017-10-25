@@ -1,3 +1,37 @@
+diff --git a/trove/guestagent/datastore/experimental/postgresql/manager.py b/trove/guestagent/datastore/experimental/postgresql/manager.py
+index 33a1d47..c8a7e8d 100644
+--- a/trove/guestagent/datastore/experimental/postgresql/manager.py
++++ b/trove/guestagent/datastore/experimental/postgresql/manager.py
+@@ -77,6 +77,8 @@ class Manager(manager.Manager):
+             self.GUEST_LOG_DEFS_GENERAL_LABEL, owner,
+             datastore_dir=self.app.pgsql_log_dir)
+         general_log_dir, general_log_filename = os.path.split(general_log_file)
++        LOG.debug("datastore_log_defs: general_log_file = %s, long_query_time=%s" %
++                  (general_log_file, str(long_query_time)))
+         return {
+             self.GUEST_LOG_DEFS_GENERAL_LABEL: {
+                 self.GUEST_LOG_TYPE_LABEL: guest_log.LogType.USER,
+@@ -209,6 +211,10 @@ class Manager(manager.Manager):
+     def do_prepare(self, context, packages, databases, memory_mb, users,
+                    device_path, mount_point, backup_info, config_contents,
+                    root_password, overrides, cluster_config, snapshot):
++
++        LOG.debug("do_prepare: device_path=%s, packages=%s, backup_info=%s, cluster_config=%s" %
++                  (device_path, packages, str(backup_info), str(cluster_config)))
++
+         self.app.install(context, packages)
+         LOG.debug("Waiting for database first boot.")
+         if (self.app.status.wait_for_real_status_to_change_to(
+@@ -224,7 +230,8 @@ class Manager(manager.Manager):
+             if os.path.exists(mount_point):
+                 device.migrate_data(mount_point)
+             device.mount(mount_point)
+-        self.configuration_manager.save_configuration(config_contents)
++
++        self.save_config(config_contents)
+         self.app.apply_initial_guestagent_configuration()
+ 
+         os_admin = models.PostgreSQLUser(self.app.ADMIN_USER)
 diff --git a/trove/guestagent/datastore/experimental/postgresql/pgsql_query.py b/trove/guestagent/datastore/experimental/postgresql/pgsql_query.py
 index 2afb086..bba61cd 100644
 --- a/trove/guestagent/datastore/experimental/postgresql/pgsql_query.py
@@ -8,7 +42,7 @@ index 2afb086..bba61cd 100644
              password, encrypt_password, *options)
 -        return ''.join([create_clause, with_clause])
 +        return ' '.join([create_clause, with_clause])
-
+ 
      @classmethod
      def _build_with_clause(cls, password, encrypt_password=None, *options):
 @@ -135,7 +135,7 @@ class UserQuery(object):
@@ -17,14 +51,100 @@ index 2afb086..bba61cd 100644
              password, encrypt_password, *options)
 -        return ''.join([alter_clause, with_clause])
 +        return ' '.join([alter_clause, with_clause])
-
+ 
      @classmethod
      def update_name(cls, old, new):
 diff --git a/trove/guestagent/datastore/experimental/postgresql/service.py b/trove/guestagent/datastore/experimental/postgresql/service.py
-index 7ac3e47..7fae124 100644
+index 7ac3e47..955d163 100644
 --- a/trove/guestagent/datastore/experimental/postgresql/service.py
 +++ b/trove/guestagent/datastore/experimental/postgresql/service.py
-@@ -284,12 +284,13 @@ class PgSqlApp(object):
+@@ -60,6 +60,7 @@ class PgSqlApp(object):
+         revision_dir = guestagent_utils.build_file_path(
+             os.path.dirname(self.pgsql_config),
+             ConfigurationManager.DEFAULT_STRATEGY_OVERRIDES_SUB_DIR)
++        LOG.debug("PgSqlApp: revision_dir=%s" % revision_dir)
+         self.configuration_manager = ConfigurationManager(
+             self.pgsql_config, self.pgsql_owner, self.pgsql_owner,
+             PropertiesCodec(
+@@ -120,9 +121,11 @@ class PgSqlApp(object):
+     def _find_config_file(self, name_pattern):
+         version_base = guestagent_utils.build_file_path(self.pgsql_config_dir,
+                                                         self.pg_version[1])
+-        return sorted(operating_system.list_files_in_directory(
++        flist = sorted(operating_system.list_files_in_directory(
+             version_base, recursive=True, pattern=name_pattern,
+             as_root=True), key=len)[0]
++        LOG.debug("_find_config_file: name_pattern=%s, flist=%s" % (name_pattern, str(flist)))
++        return flist
+ 
+     @property
+     def pgsql_config_dir(self):
+@@ -140,6 +143,7 @@ class PgSqlApp(object):
+         return PgSqlAdmin(self.get_current_admin_user())
+ 
+     def update_overrides(self, context, overrides, remove=False):
++        LOG.debug("update_overrides: overrides=%s remove=%s" % (str(overrides), str(remove)))
+         if remove:
+             self.configuration_manager.remove_user_override()
+         elif overrides:
+@@ -157,7 +161,29 @@ class PgSqlApp(object):
+ 
+         return models.PostgreSQLUser(self.default_superuser_name)
+ 
++    def save_config(self, config_contents):
++        version = self.pg_version[1]
++        if version not in ('9.3', '9.4'):
++            LOG.debug("save_config: remove deprecated checkpoint_segments for Postgresql %s" % version)
++            config_contents = '#checkpoint_segments'.join(config_contents.split('checkpoint_segments'))
++
++            # Comment out a few fields, so that they can be set below.  Guards against multiple instances
++            config_contents = '#log_line_prefix'.join(config_contents.split('log_line_prefix'))
++            config_contents = '#log_timezone'.join(config_contents.split('log_timezone'))
++            config_contents = '#stats_temp_directory'.join(config_contents.split('stats_temp_directory'))
++            config_contents = '#timezone'.join(config_contents.split('timezone'))
++
++            # Set a few logging parameters
++            config_contents = config_contents.split('\n')
++            config_contents.append('log_line_prefix = \'%t [%p-%l] %q%u@%d \'')
++            config_contents.append('log_timezone = \'UTC\'')
++            config_contents.append('stats_temp_directory = \'/var/run/postgresql/%s-main.pg_stat_tmp\'' % version)
++            config_contents.append('timezone = \'UTC\'')
++            config_contents = '\n'.join(config_contents)
++        self.configuration_manager.save_configuration(config_contents)
++
+     def apply_overrides(self, context, overrides):
++        LOG.debug("apply_overrides: %s" % str(overrides))
+         self.reload_configuration()
+ 
+     def reload_configuration(self):
+@@ -176,14 +202,16 @@ class PgSqlApp(object):
+         """Reset the PgSql configuration to the one given.
+         """
+         config_contents = configuration['config_contents']
+-        self.configuration_manager.save_configuration(config_contents)
++        LOG.debug("reset_configuration")
++        self.save_config(config_contents)
+ 
+     def start_db_with_conf_changes(self, context, config_contents):
+         """Starts the PgSql instance with a new configuration."""
+         if self.status.is_running:
+             raise RuntimeError(_("The service is still running."))
+ 
+-        self.configuration_manager.save_configuration(config_contents)
++        LOG.debug("start_db_with_conf_changes")
++        self.save_config(config_contents)
+         # The configuration template has to be updated with
+         # guestagent-controlled settings.
+         self.apply_initial_guestagent_configuration()
+@@ -201,6 +229,7 @@ class PgSqlApp(object):
+             'unix_socket_directories': self._quote(self.pgsql_run_dir),
+             'listen_addresses': self._quote(','.join(self.LISTEN_ADDRESSES)),
+             'port': cfg.get_configuration_property('postgresql_port')}
++        LOG.debug("apply_initial_guestagent_configuration: file_locations=%s" % str(file_locations))
+         self.configuration_manager.apply_system_override(file_locations)
+         self._apply_access_rules()
+ 
+@@ -284,12 +313,13 @@ class PgSqlApp(object):
              'wal_level': 'hot_standby',
              'archive_mode': 'on',
              'max_wal_senders': 8,
@@ -35,25 +155,59 @@ index 7ac3e47..7fae124 100644
          if not self.pg_version[1] in ('9.3'):
              opts['wal_log_hints'] = 'on'
 +        if self.pg_version[1] in ('9.6'):
-+            opts['wal_level'] = 'replica'  # replica subsumes hot_standby which is removed
-
++            opts['wal_level'] = 'replica'  # replica includes hot_standby which is removed
+ 
          self.configuration_manager.apply_system_override(
              opts, BACKUP_CFG_OVERRIDE)
-@@ -400,6 +401,8 @@ class PgSqlApp(object):
+@@ -382,15 +412,18 @@ class PgSqlApp(object):
+         return version_file, version.strip()
+ 
+     def restart(self):
++        LOG.debug("restart: state_change_wait_time=%s" % str(CONF.state_change_wait_time))
+         self.status.restart_db_service(
+             self.service_candidates, CONF.state_change_wait_time)
+ 
+     def start_db(self, enable_on_boot=True, update_db=False):
++        LOG.debug("start_db: state_change_wait_time=%s" % str(CONF.state_change_wait_time))
+         self.status.start_db_service(
+             self.service_candidates, CONF.state_change_wait_time,
+             enable_on_boot=enable_on_boot, update_db=update_db)
+ 
+     def stop_db(self, do_not_start_on_reboot=False, update_db=False):
++        LOG.debug("stop_db: state_change_wait_time=%s" % str(CONF.state_change_wait_time))
+         self.status.stop_db_service(
+             self.service_candidates, CONF.state_change_wait_time,
+             disable_on_boot=do_not_start_on_reboot, update_db=update_db)
+@@ -400,6 +433,8 @@ class PgSqlApp(object):
          Force password encryption.
          Also disable the built-in superuser
          """
 +        LOG.info("Creating user os_admin and database os_admin_db")
 +
          password = utils.generate_random_password()
-
+ 
          os_admin_db = models.PostgreSQLSchema(self.ADMIN_USER)
-@@ -594,7 +597,7 @@ class PgSqlAdmin(object):
+@@ -412,8 +447,12 @@ class PgSqlApp(object):
+         admin._create_admin_user(context, os_admin,
+                                  encrypt_password=True)
+ 
+-        PgSqlAdmin(os_admin).alter_user(context, postgres, None,
+-                                        'NOSUPERUSER', 'NOLOGIN')
++        # This doesn't work when the instance is rebooted as the database is composed
++        # of multiple daemons which need to communicate with each other using the
++        # builtin superuser account.  This shows up as db log errors
++
++        #PgSqlAdmin(os_admin).alter_user(context, postgres, None,
++        #                                'NOSUPERUSER', 'NOLOGIN')
+ 
+         self.set_current_admin_user(os_admin)
+ 
+@@ -594,7 +633,7 @@ class PgSqlAdmin(object):
      # Default set of options of an administrative account.
      ADMIN_OPTIONS = (
          'SUPERUSER', 'CREATEDB', 'CREATEROLE', 'INHERIT', 'REPLICATION',
 -        'LOGIN'
 +        'BYPASSRLS', 'LOGIN'
      )
-
+ 
      def __init__(self, user):
