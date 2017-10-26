@@ -121,6 +121,7 @@ src_trove_guestagent_diffs:
   - "{{ baseDir }}/diffs/trove/guestagent/mariadb-reload.patch"
   - "{{ baseDir }}/diffs/trove/guestagent/mongodb-database-user.patch"
   - "{{ baseDir }}/diffs/trove/guestagent/mysql-ignore-sys-db.patch"
+  - "{{ baseDir }}/diffs/trove/guestagent/mysql-restore.patch"
 
 src_trove_guestagent_debug_diffs:
   - "{{ baseDir }}/diffs/trove/guestagent-debug/debug-common.patch"
