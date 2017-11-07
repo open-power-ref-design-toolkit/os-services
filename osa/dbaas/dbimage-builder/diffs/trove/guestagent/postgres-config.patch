@@ -1,5 +1,5 @@
 diff --git a/trove/guestagent/datastore/experimental/postgresql/manager.py b/trove/guestagent/datastore/experimental/postgresql/manager.py
-index 4206b8a..9df59e6 100644
+index 4206b8a..8185783 100644
 --- a/trove/guestagent/datastore/experimental/postgresql/manager.py
 +++ b/trove/guestagent/datastore/experimental/postgresql/manager.py
 @@ -72,6 +72,8 @@ class Manager(
@@ -11,18 +11,15 @@ index 4206b8a..9df59e6 100644
          return {
              self.GUEST_LOG_DEFS_GENERAL_LABEL: {
                  self.GUEST_LOG_TYPE_LABEL: guest_log.LogType.USER,
-@@ -96,6 +98,10 @@ class Manager(
+@@ -96,6 +98,7 @@ class Manager(
      def do_prepare(self, context, packages, databases, memory_mb, users,
                     device_path, mount_point, backup_info, config_contents,
                     root_password, overrides, cluster_config, snapshot):
 +
-+        LOG.debug("do_prepare: device_path=%s, packages=%s, backup_info=%s, cluster_config=%s" %
-+                  (device_path, packages, str(backup_info), str(cluster_config)))
-+
          pgutil.PG_ADMIN = self.PG_BUILTIN_ADMIN
          self.install(context, packages)
          self.stop_db(context)
-@@ -105,7 +111,8 @@ class Manager(
+@@ -105,7 +108,8 @@ class Manager(
              if os.path.exists(mount_point):
                  device.migrate_data(mount_point)
              device.mount(mount_point)
@@ -32,7 +29,7 @@ index 4206b8a..9df59e6 100644
          self.apply_initial_guestagent_configuration()
  
          if backup_info:
-@@ -126,12 +133,13 @@ class Manager(
+@@ -126,12 +130,13 @@ class Manager(
      def _secure(self, context):
          # Create a new administrative user for Trove and also
          # disable the built-in superuser.
