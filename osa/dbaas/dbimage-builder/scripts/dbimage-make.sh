@@ -60,18 +60,23 @@ source $SCRIPTS_DIR/helpers/setup-playbooks.sh
 
 create-playbook-inventory
 
+# There is a bug in diskimage-builder that corrupts the boot image so that it can't be rebooted.
+# The node goes into a grub rescue state and cannot be easily recovered
 ctrl=$DBIMAGE_CONTROLLER_IP
 if [ "$ctrl" == "localhost" ]; then
-
-    # There is a bug in diskimage-builder that corrupts the boot image so that it can't be rebooted.
-    # The node goes into a grub rescue state and cannot be easily recovered
-    if [ -z "$DBIMAGE_CONTROLLER_IP" ]; then
-        echo "You must specify DBIMAGE_CONTROLLER_IP in dbimage-builder/scripts/dbimagerc"
-    else
-        echo "DBIMAGE_CONTROLLER_IP must be set to an external node in dbimage-builder/scripts/dbimagerc"
-    fi
+    ip_addresses="$(hostname -I) 127.0.0.1 localhost"
+    for ip_address in $ip_addresses; do
+         if [ "$DBIMAGE_IPADDR" == "$ip_address" ]; then
+             echo "The dibvm must be set to an external node."
+             exit 1
+          fi
+    done
+elif [ "$DBIMAGE_IPADDR" == "$ctrl" ] || [ "$DBIMAGE_IPADDR" == "localhost" ]; then
+    echo "The dibvm must not be the same node as the controller or the deployer."
     exit 1
+fi
 
+if [ "$ctrl" == "localhost" ] && [ -z "$DBIMAGE_CHARM" ]; then
     type lxc-ls >/dev/null 2>&1
     if [ $? != 0 ] || [ -z "$(lxc-ls --filter=trove)" ]; then
         echo "The current host does not appear to be running Trove.  Did you forget the following?"
@@ -99,12 +104,10 @@ fi
 
 # This is set to localhost by create-playbook-inventory above if dibvm is the deployer's host
 
-if [ "$DBIMAGE_IPADDR" != "localhost" ]; then
-    echo "Validate ssh connection to the dibvm"
-    validate-playbook-environment dib "apt-get -y update && apt-get -y install python"
-    if [ $? != 0 ]; then
-        exit 4
-    fi
+echo "Validate ssh connection to the dibvm"
+validate-playbook-environment dib "apt-get -y update && apt-get -y install python"
+if [ $? != 0 ]; then
+    exit 4
 fi
 
 echo "Run playbooks to create image$promptmsg"

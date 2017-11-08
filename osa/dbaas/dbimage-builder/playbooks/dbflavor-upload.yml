@@ -19,3 +19,6 @@
     - vars/dbflavor-args.yml
   tasks:
     - include: tasks/upload-flavors.yml
+      when: not isJujuCharm
+    - include: tasks/charm-upload-flavors.yml
+      when: isJujuCharm

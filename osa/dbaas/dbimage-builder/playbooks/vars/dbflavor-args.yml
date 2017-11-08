@@ -8,6 +8,7 @@ mem: "{{ lookup('env', 'DBFLAVOR_MEM') | default('') }}"
 vdisk1: "{{ lookup('env', 'DBFLAVOR_VDISK1') | default('') }}"
 vdisk2: "{{ lookup('env', 'DBFLAVOR_VDISK2') | default('') }}"
 swift: "{{ lookup('env', 'DBFLAVOR_SWIFT') | default('') }}"
+isJujuCharm: "{{ lookup('env', 'DBIMAGE_CHARM') | bool }}"
 
 # Environment variables derived from the cluster genesis inventory file
 

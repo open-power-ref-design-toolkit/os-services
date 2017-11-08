@@ -22,6 +22,9 @@
     - vars/dbimage-args.yml
   tasks:
     - include: tasks/init-controller.yml
+      when: not isJujuCharm
+    - include: tasks/charm-init-controller.yml
+      when: isJujuCharm
 
 - name: Install and run diskimage-builder in DIB
   hosts: dib
@@ -50,4 +53,10 @@
     - vars/dbimage-args.yml
   tasks:
     - include: tasks/upload-image.yml
-      when: uploadImage == true
+      when:
+        - uploadImage == true
+        - not isJujuCharm
+    - include: tasks/charm-upload-image.yml
+      when:
+        - uploadImage == true
+        - isJujuCharm

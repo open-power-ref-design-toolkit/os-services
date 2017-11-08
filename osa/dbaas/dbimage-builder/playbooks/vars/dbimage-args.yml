@@ -19,6 +19,7 @@ uploadImage: "{{ lookup('env', 'DBIMAGE_UPLOAD_IMAGE') | bool }}"
 imageName: "{{ lookup('env', 'DBIMAGE_IMAGE_NAME') | default('') }}"
 dbimageCmd: "{{ lookup('env', 'DBIMAGE_CMD') }}"
 dbimageMyElements: "{{ lookup('env', 'DBIMAGE_MYELEMENTS') }}"
+isJujuCharm: "{{ lookup('env', 'DBIMAGE_CHARM') | bool }}"
 
 # Environment variables set by the user directed at diskimage-builder
 
