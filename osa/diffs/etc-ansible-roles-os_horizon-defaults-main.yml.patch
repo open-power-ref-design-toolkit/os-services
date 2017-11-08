@@ -1,17 +1,7 @@
 diff -Naur a/etc/ansible/roles/os_horizon/defaults/main.yml b/etc/ansible/roles/os_horizon/defaults/main.yml
---- a/etc/ansible/roles/os_horizon/defaults/main.yml	2017-07-17 07:26:03.301537561 -0400
-+++ b/etc/ansible/roles/os_horizon/defaults/main.yml	2017-07-17 07:46:48.457559826 -0400
-@@ -193,6 +193,9 @@
- ## Trove UI Panel
- horizon_enable_trove_ui: False
- 
-+## Trove UI Panel
-+horizon_enable_trove_ui: False
-+
- ## Designate UI Panel
- horizon_enable_designate_ui: False
- 
-@@ -302,3 +305,9 @@
+--- a/etc/ansible/roles/os_horizon/defaults/main.yml	2017-11-06 02:40:27.675680380 -0500
++++ b/etc/ansible/roles/os_horizon/defaults/main.yml	2017-11-06 02:47:20.819687768 -0500
+@@ -303,3 +303,9 @@
  
  horizon_keystone_admin_roles:
    - admin

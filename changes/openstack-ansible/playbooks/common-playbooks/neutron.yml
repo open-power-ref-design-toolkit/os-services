@@ -39,7 +39,7 @@
           - "lxc.cgroup.devices.allow=a *:* rmw"
           - "lxc.hook.start = /usr/local/bin/reload-sysctl-conf.sh"
         extra_container_config_no_restart:
-          - "lxc.start.order=79"
+          - "lxc.start.order=29"
       when:
         - "'neutron_agent' in group_names"
 

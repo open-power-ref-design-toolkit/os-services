@@ -1,7 +1,7 @@
 diff -Naur a/opt/openstack-ansible/playbooks/vars/configs/haproxy_config.yml b/opt/openstack-ansible/playbooks/vars/configs/haproxy_config.yml
---- a/opt/openstack-ansible/playbooks/vars/configs/haproxy_config.yml	2017-06-29 05:40:14.365614890 -0400
-+++ b/opt/openstack-ansible/playbooks/vars/configs/haproxy_config.yml	2017-06-29 03:09:06.921452752 -0400
-@@ -252,7 +252,9 @@
+--- a/opt/openstack-ansible/playbooks/vars/configs/haproxy_config.yml	2017-11-06 02:40:14.531680145 -0500
++++ b/opt/openstack-ansible/playbooks/vars/configs/haproxy_config.yml	2017-11-06 02:17:26.603655685 -0500
+@@ -250,7 +250,9 @@
        haproxy_port: 8779
        haproxy_balance_type: http
        haproxy_backend_options:

@@ -1,7 +1,7 @@
 diff -Naur a/opt/openstack-ansible/playbooks/inventory/group_vars/all.yml b/opt/openstack-ansible/playbooks/inventory/group_vars/all.yml
---- a/opt/openstack-ansible/playbooks/inventory/group_vars/all.yml	2017-05-05 11:21:14.389008364 -0400
-+++ b/opt/openstack-ansible/playbooks/inventory/group_vars/all.yml	2017-05-05 11:22:33.873009785 -0400
-@@ -315,6 +315,11 @@
+--- a/opt/openstack-ansible/playbooks/inventory/group_vars/all.yml	2017-11-06 02:40:14.527680145 -0500
++++ b/opt/openstack-ansible/playbooks/inventory/group_vars/all.yml	2017-11-06 02:17:26.603655685 -0500
+@@ -301,6 +301,11 @@
  keystone_service_internaluri: "{{ keystone_service_internaluri_proto }}://{{ internal_lb_vip_address }}:{{ keystone_service_port }}"
  keystone_service_internalurl: "{{ keystone_service_internaluri }}/v3"
  

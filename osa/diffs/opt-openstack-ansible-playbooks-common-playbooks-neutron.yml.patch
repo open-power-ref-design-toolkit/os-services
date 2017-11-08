@@ -1,13 +1,13 @@
 diff -Naur a/opt/openstack-ansible/playbooks/common-playbooks/neutron.yml b/opt/openstack-ansible/playbooks/common-playbooks/neutron.yml
---- a/opt/openstack-ansible/playbooks/common-playbooks/neutron.yml	2017-07-17 07:25:50.437537331 -0400
-+++ b/opt/openstack-ansible/playbooks/common-playbooks/neutron.yml	2017-07-19 02:20:58.164300144 -0400
+--- a/opt/openstack-ansible/playbooks/common-playbooks/neutron.yml	2017-11-06 02:40:14.519680145 -0500
++++ b/opt/openstack-ansible/playbooks/common-playbooks/neutron.yml	2017-11-06 02:17:26.607655685 -0500
 @@ -37,6 +37,7 @@
              mount_path: "{{ (ansible_pkg_mgr == 'apt') | ternary('/lib/modules', '/usr/lib/modules') }}"
          extra_container_config:
            - "lxc.cgroup.devices.allow=a *:* rmw"
 +          - "lxc.hook.start = /usr/local/bin/reload-sysctl-conf.sh"
          extra_container_config_no_restart:
-           - "lxc.start.order=79"
+           - "lxc.start.order=29"
        when:
 @@ -44,6 +45,9 @@
  

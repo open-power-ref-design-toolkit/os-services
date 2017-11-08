@@ -26,12 +26,12 @@
 #
 # Usual steps in porting os-services to a new OSA version:
 # (1) Run mkdiffs.py to get old OSA version git source code and then save it.
-#       ./mkdiffs
+#       ./mkdiffs.py
 #       cp -R ../.gitsrc ~/gitsrc_v1
 # (2) Modify the version/tag of different(all) roles in mkdiffs.yml to the
 #     new version from old version. Run mkdiffs.py again to get the new
 #     version's .gitsrc and save that also.
-#       ./mkdiffs
+#       ./mkdiffs.py
 #       cp -R ../.gitsrc ~/gitsrc_v2
 # (3) Run versionDiff.sh to get the differences between gitsrc_v1 and
 #     gitsrc_v2 for the files under ../changes/

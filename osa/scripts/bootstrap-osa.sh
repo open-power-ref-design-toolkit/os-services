@@ -29,7 +29,7 @@ echo "allNodes=$allNodes"
 echo "GIT_MIRROR=$GIT_MIRROR"
 
 # OpenStack-Ansible tag to be checkedout
-OSA_TAG=${OSA_TAG:-"15.1.6"}
+OSA_TAG=${OSA_TAG:-"15.1.10"}
 OSA_DIR="/opt/openstack-ansible"
 OSA_PLAYS="${OSA_DIR}/playbooks"
 
