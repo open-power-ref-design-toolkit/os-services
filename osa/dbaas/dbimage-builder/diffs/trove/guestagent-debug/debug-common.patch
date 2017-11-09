@@ -1,3 +1,26 @@
+diff --git a/trove/guestagent/backup/backupagent.py b/trove/guestagent/backup/backupagent.py
+index 7854035..f66c67a 100644
+--- a/trove/guestagent/backup/backupagent.py
++++ b/trove/guestagent/backup/backupagent.py
+@@ -81,7 +81,8 @@ class BackupAgent(object):
+         try:
+             with runner(filename=backup_id, extra_opts=extra_opts,
+                         **parent_metadata) as bkup:
+-                LOG.debug("Starting backup %s.", backup_id)
++                LOG.debug("Starting backup backup_id=%s.", backup_id)
++                LOG.debug("bkup=%s" % str(bkup))
+                 meta = {}
+                 meta['datastore'] = backup_info['datastore']
+                 meta['datastore_version'] = backup_info['datastore_version']
+@@ -104,6 +105,8 @@ class BackupAgent(object):
+                           "%(checksum)s.", backup_state)
+                 LOG.debug("Backup %(backup_id)s location: "
+                           "%(location)s.", backup_state)
++                LOG.debug("Backup %(backup_id)s backup_type: "
++                          "%(backup_type)s.", backup_state)
+ 
+                 if not success:
+                     raise BackupError(note)
 diff --git a/trove/guestagent/common/configuration.py b/trove/guestagent/common/configuration.py
 index 8b98686..43f2c58 100644
 --- a/trove/guestagent/common/configuration.py
@@ -118,19 +141,21 @@ index 8b98686..43f2c58 100644
          updated_revision = guestagent_utils.update_dict(changes, base_revision)
          operating_system.write_file(
 diff --git a/trove/guestagent/datastore/manager.py b/trove/guestagent/datastore/manager.py
-index 5d3e94d..aa868c5 100644
+index 0133eef..2e8fa89 100644
 --- a/trove/guestagent/datastore/manager.py
 +++ b/trove/guestagent/datastore/manager.py
-@@ -270,6 +270,8 @@ class Manager(periodic_task.PeriodicTasks):
+@@ -273,6 +273,10 @@ class Manager(periodic_task.PeriodicTasks):
                   config_contents, root_password, overrides,
                   cluster_config, snapshot, modules):
          LOG.info(_("Starting datastore prepare for '%s'.") % self.manager)
-+        LOG.debug("packages=%s, databases=%s, device_path=%s, mount_point=%s" %
-+                  (packages, databases, device_path, mount_point))
++        LOG.debug("packages=%s, databases=%s" % (packages, databases))
++        LOG.debug("device_path=%s, mount_point=%s" % (device_path, mount_point))
++        LOG.debug("backup_info=%s" % backup_info)
++        LOG.debug("cluster_config=%s, snapshot=%s" % (cluster_config, snapshot))
          self.status.begin_install()
          post_processing = True if cluster_config else False
          try:
-@@ -358,6 +360,7 @@ class Manager(periodic_task.PeriodicTasks):
+@@ -361,6 +365,7 @@ class Manager(periodic_task.PeriodicTasks):
              raise
  
      def apply_overrides_on_prepare(self, context, overrides):

@@ -3,6 +3,7 @@
 *.log
 *.mo
 *.pyc
+*.retry
 *.swo
 *.swp
 *.sqlite
@@ -26,3 +27,6 @@ openstack_user_config.yml
 user_var_haproxy.yml
 user_var_ceilometer.yml
 user_var_ceph.yml
+osa/dbaas/dbimage-builder/etc/trove/trove-guestagent.conf
+osa/dbaas/dbimage-builder/playbooks/.facts/
+osa/dbaas/dbimage-builder/playbooks/inventory
