@@ -21,6 +21,7 @@
     - "{{ dib_home }}/img"
     - "{{ dib_home }}/log"
     - "{{ dib_home }}/pkg"
+    - "{{ dib_home }}/trove-guestagent.conf"
 
 - name: Copy files from deployer to user {{ dibUser }}'s home directory in the dibvm
   copy:

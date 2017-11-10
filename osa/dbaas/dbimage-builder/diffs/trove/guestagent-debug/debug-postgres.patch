@@ -1,0 +1,93 @@
+diff --git a/trove/guestagent/strategies/backup/experimental/postgresql_impl.py b/trove/guestagent/strategies/backup/experimental/postgresql_impl.py
+index 0c9620c..081fd2d 100644
+--- a/trove/guestagent/strategies/backup/experimental/postgresql_impl.py
++++ b/trove/guestagent/strategies/backup/experimental/postgresql_impl.py
+@@ -125,6 +125,8 @@ class PgBaseBackup(base.BackupRunner, PgBaseBackupUtil):
+         operating_system.chmod(
+             metadata_file, FileMode(add=[stat.S_IROTH]), as_root=True)
+ 
++        LOG.debug("metadata_file=%s" % metadata_file)
++
+         start_re = re.compile("START WAL LOCATION: (.*) \(file (.*)\)")
+         stop_re = re.compile("STOP WAL LOCATION: (.*) \(file (.*)\)")
+         checkpt_re = re.compile("CHECKPOINT LOCATION: (.*)")
+@@ -154,6 +156,9 @@ class PgBaseBackup(base.BackupRunner, PgBaseBackupUtil):
+         if match:
+             self.label = match.group(1)
+             metadata['label'] = self.label
++
++        LOG.debug("metadata=%s" % str(metadata))
++
+         return metadata
+ 
+     def check_process(self):
+@@ -207,6 +212,7 @@ class PgBaseBackup(base.BackupRunner, PgBaseBackupUtil):
+                                         "pg_archivecleanup")
+         bk_file = os.path.basename(self.most_recent_backup_file())
+         cmd_full = " ".join((arch_cleanup_bin, WAL_ARCHIVE_DIR, bk_file))
++        LOG.debug("cmd_full=%s" % cmd_full)
+         utils.execute("sudo", "su", "-", self.app.pgsql_owner, "-c",
+                       "%s" % cmd_full)
+ 
+@@ -225,14 +231,18 @@ class PgBaseBackupIncremental(PgBaseBackup):
+         super(PgBaseBackupIncremental, self).__init__(*args, **kwargs)
+         self.parent_location = kwargs.get('parent_location')
+         self.parent_checksum = kwargs.get('parent_checksum')
++        LOG.debug("parent_location=%s" % self.parent_location)
++        LOG.debug("WAL_ARCHIVE_DIR=%s" % WAL_ARCHIVE_DIR)
+ 
+     def _run_pre_backup(self):
+         self.backup_label = self.base_filename
+         self.start_segment = self.app.pg_start_backup(self.backup_label)
+ 
+         self.start_wal_file = self.app.pg_xlogfile_name(self.start_segment)
++        LOG.debug("start_wal_file=%s" % self.start_wal_file)
+ 
+         self.stop_segment = self.app.pg_stop_backup()
++        LOG.debug("stop_segment=%s" % self.stop_segment)
+ 
+         # We have to hack this because self.command is
+         # initialized in the base class before we get here, which is
+@@ -244,6 +254,7 @@ class PgBaseBackupIncremental(PgBaseBackup):
+         cmd = 'sudo tar -cf - -C {wal_dir} {wal_list} '.format(
+             wal_dir=WAL_ARCHIVE_DIR,
+             wal_list=" ".join(wal_file_list))
++        LOG.debug("cmd=%s" % cmd)
+         return cmd + self.zip_cmd + self.encrypt_cmd
+ 
+     def metadata(self):
+diff --git a/trove/guestagent/strategies/restore/experimental/postgresql_impl.py b/trove/guestagent/strategies/restore/experimental/postgresql_impl.py
+index d2f5752..62f6ee6 100644
+--- a/trove/guestagent/strategies/restore/experimental/postgresql_impl.py
++++ b/trove/guestagent/strategies/restore/experimental/postgresql_impl.py
+@@ -105,6 +105,7 @@ class PgBaseBackup(base.RestoreRunner):
+         self.base_restore_cmd = 'sudo -u %s tar xCf %s - ' % (
+             self.app.pgsql_owner, self.app.pgsql_data_dir
+         )
++        LOG.debug("pgsql_data_dir=%s" % self.pgsql_data_dir)
+ 
+         super(PgBaseBackup, self).__init__(*args, **kwargs)
+ 
+@@ -135,10 +136,13 @@ class PgBaseBackup(base.RestoreRunner):
+ 
+     def write_recovery_file(self, restore=False):
+         metadata = self.storage.load_metadata(self.location, self.checksum)
++        LOG.debug("recovery metadata=%s" % str(metadata))
+         recovery_conf = ""
+         recovery_conf += "recovery_target_name = '%s' \n" % metadata['label']
+         recovery_conf += "recovery_target_timeline = '%s' \n" % 1
+ 
++        LOG.debug("recovery.conf content=%s" % recovery_conf)
++
+         if restore:
+             recovery_conf += ("restore_command = '" +
+                               self.pgsql_restore_cmd + "'\n")
+@@ -196,6 +200,8 @@ class PgBaseBackupIncremental(PgBaseBackup):
+             operating_system.chmod(self.app.pgsql_data_dir,
+                                    FileMode.SET_USR_RWX(),
+                                    as_root=True, recursive=True, force=True)
++        LOG.debug("content_length=%s" % str(self.content_length))
++        LOG.debug("cmd=%s" % cmd)
+ 
+     def _run_restore(self):
+         self._incremental_restore(self.location, self.checksum)
