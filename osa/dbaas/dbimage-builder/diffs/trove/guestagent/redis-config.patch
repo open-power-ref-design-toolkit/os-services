@@ -59,7 +59,7 @@ index 34137a3..5b67783 100644
  
          try:
 diff --git a/trove/guestagent/datastore/experimental/redis/service.py b/trove/guestagent/datastore/experimental/redis/service.py
-index 4b3d86a..bf8f169 100644
+index 4b3d86a..45f16c0 100644
 --- a/trove/guestagent/datastore/experimental/redis/service.py
 +++ b/trove/guestagent/datastore/experimental/redis/service.py
 @@ -24,7 +24,7 @@ from trove.common import exception
@@ -93,7 +93,16 @@ index 4b3d86a..bf8f169 100644
          operating_system.create_directory(system.REDIS_CONF_DIR, as_root=True)
          pkg_opts = {}
          packager.pkg_install(packages, pkg_opts, TIME_OUT)
-@@ -167,6 +168,9 @@ class RedisApp(object):
+@@ -145,6 +146,8 @@ class RedisApp(object):
+     def update_overrides(self, context, overrides, remove=False):
+         if overrides:
+             self.configuration_manager.apply_user_override(overrides)
++            self.admin = self._build_admin_client()
++            self.status = RedisAppStatus(self.admin)
+ 
+     def apply_overrides(self, client, overrides):
+         """Use the 'CONFIG SET' command to apply configuration at runtime.
+@@ -167,6 +170,9 @@ class RedisApp(object):
              args_string = self._join_lists(
                  self._value_converter.to_strings(prop_args), ' ')
              client.config_set(prop_name, args_string)
@@ -103,7 +112,7 @@ index 4b3d86a..bf8f169 100644
  
      def _join_lists(self, items, sep):
          """Join list items (including items from sub-lists) into a string.
-@@ -223,9 +227,10 @@ class RedisApp(object):
+@@ -223,9 +229,10 @@ class RedisApp(object):
          """Get current name of the 'CONFIG' command.
          """
          renamed_cmds = self.configuration_manager.get_value('rename-command')
@@ -117,7 +126,7 @@ index 4b3d86a..bf8f169 100644
  
          return None
  
-@@ -341,7 +346,7 @@ class RedisApp(object):
+@@ -341,7 +348,7 @@ class RedisApp(object):
              slots = map(str, range(first_slot, last_slot + 1))
              group_size = 200
              while slots:
@@ -126,7 +135,7 @@ index 4b3d86a..bf8f169 100644
                         + slots[0:group_size])
                  out, err = utils.execute_with_timeout(*cmd, run_as_root=True,
                                                        root_helper='sudo')
-@@ -402,10 +407,10 @@ class RedisAdmin(object):
+@@ -402,10 +409,10 @@ class RedisAdmin(object):
  
      DEFAULT_CONFIG_CMD = 'CONFIG'
  
@@ -139,7 +148,7 @@ index 4b3d86a..bf8f169 100644
  
      def set_config_command_name(self, name):
          """Set name of the 'CONFIG' command or None for default.
-@@ -424,7 +429,17 @@ class RedisAdmin(object):
+@@ -424,7 +431,17 @@ class RedisAdmin(object):
          save_cmd = 'SAVE'
          last_save = self.__client.lastsave()
          LOG.debug("Starting Redis data persist")
@@ -158,7 +167,7 @@ index 4b3d86a..bf8f169 100644
              save_cmd = 'BGSAVE'
  
              def _timestamp_changed():
-@@ -443,7 +458,7 @@ class RedisAdmin(object):
+@@ -443,7 +460,7 @@ class RedisAdmin(object):
          elif not self.__client.save():
              raise exception.BackupCreationError(_("Could not persist "
                                                  "Redis data (%s)") % save_cmd)
@@ -167,7 +176,7 @@ index 4b3d86a..bf8f169 100644
  
      def set_master(self, host=None, port=None):
          self.__client.slaveof(host, port)
-@@ -476,15 +491,17 @@ class RedisAdmin(object):
+@@ -476,15 +493,17 @@ class RedisAdmin(object):
      def wait_until(self, key, wait_value, section=None, timeout=None):
          """Polls redis until the specified 'key' changes to 'wait_value'."""
          timeout = timeout or CONF.usage_timeout
