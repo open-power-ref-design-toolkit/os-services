@@ -1,8 +1,8 @@
 diff --git a/integration/scripts/files/elements/ubuntu-mongodb/install.d/20-mongodb b/integration/scripts/files/elements/ubuntu-mongodb/install.d/20-mongodb
-index 4ab5c34..8be9d39 100755
+index 4ab5c34..692e73f 100755
 --- a/integration/scripts/files/elements/ubuntu-mongodb/install.d/20-mongodb
 +++ b/integration/scripts/files/elements/ubuntu-mongodb/install.d/20-mongodb
-@@ -1,8 +1,62 @@
+@@ -1,8 +1,91 @@
 -#!/bin/sh
 +#!/bin/bash
  
@@ -34,22 +34,27 @@ index 4ab5c34..8be9d39 100755
 +apt-get --allow-unauthenticated install -y build-essential scons tar wget \
 +    libcurl3 libgssapi-krb5-2 libldap-2.4-2 libpcap0.8 libpci3 libsasl2-2 \
 +    libsensors4 libsnmp30 libssl1.0.0 libwrap0 libboost-filesystem-dev \
-+    libboost-program-options-dev libboost-system-dev libboost-thread-dev
++    libboost-program-options-dev libboost-system-dev libboost-thread-dev \
++    golang-1.9 libpcap-dev
 +
 +# Build and install mongodb from source code from mongodb.org
 +
 +ARCH_SAV=$ARCH
-+MONGODB_NAME=$DIB_MYDBSRCPKG
-+
-+cd /tmp
-+wget https://fastdl.mongodb.org/src/$MONGODB_NAME.tar.gz
-+tar xvzf $MONGODB_NAME.tar.gz
-+cd $MONGODB_NAME
++MONGODB_NAME=mongodb-src-$DIB_MYDBSRCPKG
 +
 +unset ARCH
++
++pushd /tmp
++
++wget https://fastdl.mongodb.org/src/$MONGODB_NAME.tar.gz
++tar xvzf $MONGODB_NAME.tar.gz
++
++pushd $MONGODB_NAME
++
 +scons --disable-warnings-as-errors core
 +scons --prefix=/usr install
-+export ARCH=$ARCH_SAV
++
++popd
 +
 +adduser --system --group --no-create-home mongodb
 +
@@ -67,6 +72,30 @@ index 4ab5c34..8be9d39 100755
 +# Clean the build tree to minimize the size of the image and to avoid running out of space when creating the image
 +rm /tmp/$MONGODB_NAME.tar.gz
 +rm -rf /tmp/$MONGODB_NAME
++
++# Now build the mongodb backup and restore tools
++
++git clone git://github.com/mongodb/mongo-tools
++pushd mongo-tools
++git checkout $DIB_MYDBSRCPKG
++
++# Install golang-1.9.  The default is 1.6 which breaks compiling mongo-tools
++pushd /usr/lib/go-1.9/bin
++sudo ln go* /usr/bin
++popd
++
++source ./set_gopath.sh
++mkdir bin
++./build.sh
++sudo ln bin/* /usr/bin       # Install mongo-tools: backup and restore
++
++popd
++
++# Clean the git tree for mongo-tools
++rm -rf /tmp/mongo-tools
++
++export ARCH=$ARCH_SAV
++
 diff --git a/integration/scripts/files/elements/ubuntu-mongodb/install.d/25-trove-mongo-dep b/integration/scripts/files/elements/ubuntu-mongodb/install.d/25-trove-mongo-dep
 index a8b3ddc..6774019 100755
 --- a/integration/scripts/files/elements/ubuntu-mongodb/install.d/25-trove-mongo-dep

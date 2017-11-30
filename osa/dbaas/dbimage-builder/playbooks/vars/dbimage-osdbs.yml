@@ -1,6 +1,6 @@
 ---
 
-# default is first item when no version is specified -- mysql 5.6 trusty
+# default is first item when no version is specified -- mongodb community 3.4
 
 osdb:                                   # All versions as of 4/14/17
   mariadb:
@@ -14,11 +14,14 @@ osdb:                                   # All versions as of 4/14/17
     trusty: []
     xenial: []
     community:
-      - version: '3.4'                  # 3.4.4
+      - version: '3.4'                  # 3.4.10
         pkg: python-pymongo-doc         # This is a substitute pkg to avoid Trove re-installs
-        srcPkg: mongodb-src-r3.4.4      # as this database is built from source code
+        srcPkg: r3.4.10                 # as this database is built from source code
+      - version: '3.2'                  # 3.2.18
+        pkg: python-pymongo-doc         # This is a substitute pkg to avoid Trove re-installs
+        srcPkg: r3.2.18                 # as this database is built from source code
     enterprise:
-      - version: '3.4'                  # 3.4.4
+      - version: '3.4'                  # 3.4.10
         pkg: mongodb-enterprise
   mysql:
     trusty: []                          # Requires uplevel percona-xtrabackup
