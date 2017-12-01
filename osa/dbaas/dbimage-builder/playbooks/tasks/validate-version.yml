@@ -61,7 +61,7 @@
 
   - name: Halt on user specified version mismatch
     fail:
-      msg: "{{ dbName }} (vers={{ dbVersion }}) is not supported for {{ targetRelease }} by this tool!  Please choose a different version or database source"
+      msg: "{{ dbName }} (vers={{ dbVersion }}) is not supported for {{ targetRelease }} by this tool!  Please choose a different version (-v) or database source [-c|-e]"
     when: pkgDistroName is not defined
 
   when: dbVersion != ''
@@ -103,21 +103,21 @@
 
 - name: Halt on unsupported package
   fail:
-    msg: "The enterprise edition of {{ dbName }} is not supported for {{ targetRelease }} by this tool!   Please choose a different version or database source"
+    msg: "The enterprise edition of {{ dbName }} is not supported for {{ targetRelease }} by this tool!   Please choose a different version (-v) or database source [-c|-e]"
   when:
     - pkgDistroName is not defined
     - enterpriseEdition == true
 
 - name: Halt on unsupported package
   fail:
-    msg: "The community edition of {{ dbName }} is not supported for {{ targetRelease }} by this tool!   Please choose a different version or database source"
+    msg: "The community edition of {{ dbName }} is not supported for {{ targetRelease }} by this tool!   Please choose a different version (-v) or database source [-c|-e]"
   when:
     - pkgDistroName is not defined
     - communityEdition == true
 
 - name: Halt on unsupported package
   fail:
-    msg: "{{ dbName }} is not supported for {{ targetRelease }}!"
+    msg: "{{ dbName }} is not supported for {{ targetRelease }} by this tool!  Please try a different database source [-c|-e]"
   when: pkgDistroName is not defined
 
 - name: "Set source package for enterprise provided packages"

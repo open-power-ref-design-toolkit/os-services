@@ -17,9 +17,9 @@ osdb:                                   # All versions as of 4/14/17
       - version: '3.4'                  # 3.4.10
         pkg: python-pymongo-doc         # This is a substitute pkg to avoid Trove re-installs
         srcPkg: r3.4.10                 # as this database is built from source code
-      - version: '3.2'                  # 3.2.18
-        pkg: python-pymongo-doc         # This is a substitute pkg to avoid Trove re-installs
-        srcPkg: r3.2.18                 # as this database is built from source code
+#      - version: '3.2'                  # 3.2.18
+#        pkg: python-pymongo-doc         # This is a substitute pkg to avoid Trove re-installs
+#        srcPkg: r3.2.18                 # as this database is built from source code
     enterprise:
       - version: '3.4'                  # 3.4.10
         pkg: mongodb-enterprise
